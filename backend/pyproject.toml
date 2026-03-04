@@ -1,0 +1,82 @@
+[project]
+name = "omnia-backend"
+version = "0.1.0"
+description = "O.M.N.I.A. — Orchestrated Modular Network for Intelligent Automation (Backend)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Jays" },
+]
+
+dependencies = [
+    # Core
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "websockets>=13.0",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "sqlmodel>=0.0.22",
+    "aiosqlite>=0.20",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+
+    # LLM
+    "ollama>=0.4",
+
+    # STT
+    "faster-whisper>=1.1",
+    "sounddevice>=0.5",
+    "numpy>=1.26",
+
+    # TTS
+    "piper-tts>=1.2",
+
+    # PC Automation
+    "pyautogui>=0.9.54",
+    "pywinauto>=0.6.8",
+    "pywin32>=306",
+    "pynput>=1.7",
+
+    # IoT
+    "paho-mqtt>=2.1",
+
+    # Web Search
+    "duckduckgo-search>=6.0",
+    "beautifulsoup4>=4.12",
+
+    # Utils
+    "loguru>=0.7",
+    "watchfiles>=0.24",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+tts-xtts = [
+    "TTS>=0.22",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

@@ -1,0 +1,69 @@
+# ──────────────────────────────────────────────────
+# O.M.N.I.A. — Default Configuration
+# ──────────────────────────────────────────────────
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true          # dev only
+  cors_origins:
+    - "http://localhost:5173"   # Vite dev
+    - "http://localhost:3000"   # Electron dev
+
+llm:
+  provider: "ollama"
+  base_url: "http://localhost:11434"
+  model: "qwen2.5:14b"
+  temperature: 0.7
+  max_tokens: 4096
+  system_prompt_file: "config/system_prompt.md"
+
+stt:
+  engine: "faster-whisper"
+  model: "large-v3"
+  language: "it"
+  device: "cuda"            # cuda | cpu
+  compute_type: "float16"   # float16 | int8 | int8_float16
+  vad_filter: true
+  vad_threshold: 0.5
+
+tts:
+  engine: "piper"
+  voice: "it_IT-riccardo-x_low"
+  sample_rate: 22050
+  # Alternative XTTS config (opzionale):
+  # engine: "xtts"
+  # model: "tts_models/multilingual/multi-dataset/xtts_v2"
+  # speaker_wav: "config/voice_reference.wav"
+  # language: "it"
+
+database:
+  url: "sqlite+aiosqlite:///data/omnia.db"
+
+plugins:
+  enabled:
+    - system_info
+    - pc_automation
+    - web_search
+    - calendar
+    # - home_automation   # Abilitare quando Home Assistant è configurato
+
+home_assistant:
+  url: "http://homeassistant.local:8123"
+  token: ""   # Long-Lived Access Token
+
+mqtt:
+  broker: "localhost"
+  port: 1883
+  username: ""
+  password: ""
+
+voice:
+  wake_word: "omnia"
+  activation_mode: "push_to_talk"  # push_to_talk | wake_word | always_on
+  silence_timeout_ms: 1500
+
+ui:
+  theme: "dark"
+  global_hotkey: "Ctrl+Shift+O"
+  language: "it"

@@ -1,0 +1,77 @@
+# ══════════════════════════════════════════════════
+# O.M.N.I.A. — .gitignore
+# ══════════════════════════════════════════════════
+
+# ── Python ───────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+.eggs/
+*.whl
+
+# ── Node / Electron ─────────────────────────────
+node_modules/
+out/
+dist-electron/
+frontend/out/
+frontend/dist/
+.npm
+*.tgz
+
+# ── Models (large binaries) ─────────────────────
+models/stt/*
+models/tts/*
+models/llm/*
+!models/stt/.gitkeep
+!models/tts/.gitkeep
+!models/llm/.gitkeep
+
+# ── Data / Database ─────────────────────────────
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── IDE / Editor ────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Environment ─────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Logs ────────────────────────────────────────
+logs/
+*.log
+
+# ── Testing / Coverage ─────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# ── OS ──────────────────────────────────────────
+Desktop.ini
+$RECYCLE.BIN/
+ehthumbs.db
+ehthumbs_vista.db
+
+# ── Build artifacts ─────────────────────────────
+*.exe
+*.msi
+*.nsis
