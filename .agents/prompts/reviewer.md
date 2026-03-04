@@ -11,6 +11,19 @@ OMNIA is a local AI personal assistant. Standards:
 - **TypeScript**: strict mode, no `any`, Composition API only
 - **Architecture**: Plugin-based, async-first, DI via AppContext
 
+## Code Quality Principles (enforce in every review)
+
+1. **Coherence with existing codebase** — changes must not break or diverge from established patterns
+2. **Readability & simplicity** — code is intuitive, a new dev understands intent immediately
+3. **Detailed documentation** — public functions have docstrings, non-obvious logic has comments
+4. **Modularity** — large files/components are split; each file has a single responsibility
+5. **No technical debt** — no TODOs, no shortcuts, no deferred fixes
+6. **No regressions** — all callers verified, existing tests unbroken
+7. **No cascading incompatibilities** — signatures, types, API contracts, DB schema all consistent
+8. **Functions verified** — every call target exists; every new function is consistent with the project
+9. **Frontend ↔ Backend consistency** — types, endpoints, WS messages match across the stack
+10. **Task-oriented work** — each change is a complete, logical unit
+
 ## Review Checklist
 
 ### General

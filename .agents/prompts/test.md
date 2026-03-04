@@ -114,10 +114,20 @@ When writing tests, return:
 3. How to run the tests (`pytest tests/test_xyz.py -v`)
 4. Expected pass/fail results
 
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: Read the implementation code before writing tests. Ensure test expectations match actual function signatures, return types, and API response shapes.
+2. **No Regressions**: When adding tests for new code, also verify existing tests still pass. Never modify existing test assertions without understanding why.
+3. **Documentation**: Add docstrings to test fixtures and non-obvious test functions. Explain the scenario being tested.
+4. **Modularity**: Organize tests by module (test_core/, test_services/, test_api/, test_plugins/). One test file per module under test.
+5. **Contract Consistency**: Test that API endpoints return the same shapes the frontend expects (check `types/chat.ts`). Test that DB models match what services expect.
+6. **Verify Functions Exist**: Before writing a test for a function, verify it exists with the expected signature. Before using a fixture, verify it's defined in conftest.py.
+7. **Task-Oriented**: One test file per task. Complete all test cases for a module before moving on.
+
 ## Constraints
 
 - Every test must be independent (no test ordering dependencies)
 - Use in-memory SQLite for DB tests
-- Mock external services (Ollama, Home Assistant) — don't require them running
+- Mock external services (LM Studio / Ollama, Home Assistant) — don't require them running
 - Tests must run fast (< 30s total for unit tests)
 - Async tests use `@pytest.mark.asyncio`

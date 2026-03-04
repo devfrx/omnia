@@ -82,6 +82,17 @@ When implementing MCP features, return:
 3. How to test with an MCP client
 4. Any new dependencies needed
 
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: MCP tool definitions must mirror the plugin system's tool definitions exactly. Read `core/plugin_base.py` and `core/tool_registry.py` before implementing.
+2. **Readability & Simplicity**: The MCP layer is a thin adapter — keep it simple, no extra business logic.
+3. **Documentation**: Document every MCP tool and resource with clear descriptions. Add docstrings to all MCP server functions.
+4. **Modularity**: Keep MCP server code in a dedicated module, cleanly separated from the FastAPI backend.
+5. **No Regressions**: MCP must not affect existing WebSocket/REST functionality.
+6. **No Cascading Incompatibilities**: If plugin tools change, MCP definitions must be updated in sync.
+7. **Contract Consistency**: MCP tool input schemas must exactly match the OpenAI-compatible tool schemas used internally.
+8. **Task-Oriented**: Implement one MCP feature at a time (tools, then resources, then prompts).
+
 ## Constraints
 
 - MCP server must not interfere with the main FastAPI server

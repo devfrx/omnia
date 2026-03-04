@@ -80,6 +80,19 @@ When implementing code, return:
 3. Any npm packages that need to be installed
 4. Component hierarchy / relationships if relevant
 
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: Before writing any code, read the existing components, stores, and types. Never break existing props, emits, store interfaces, or API contracts. Every change must be compatible with the rest of the software.
+2. **Readability & Simplicity**: Write clean, intuitive code. Prefer explicit over clever. Component templates should be self-documenting.
+3. **Documentation**: Add TSDoc comments to every public function, composable, and store action. Add inline comments for non-obvious logic (especially WebSocket handling, streaming, and Electron IPC).
+4. **Modularity**: Always split large components into smaller ones. Extract reusable logic into composables. Keep each file under ~200 lines. Organize by feature (chat/, voice/, settings/, sidebar/).
+5. **No Technical Debt**: Implement things properly the first time. No `// TODO: fix later`, no `any` workarounds. If a design decision has trade-offs, document them.
+6. **No Regressions**: Before modifying any component or store, verify all consumers. After changes, ensure existing behavior is preserved.
+7. **No Cascading Incompatibilities**: Check that every function/method you call exists and has the correct signature. Check that every type you use matches the backend API responses (see `backend/api/routes/chat.py` for response shapes).
+8. **Signature & Contract Consistency**: Ensure frontend types (`types/chat.ts`) match backend response shapes exactly. Ensure store actions match what components expect. Ensure WebSocket message formats match backend.
+9. **Task-Oriented Work**: Work on one logical task at a time. Complete it fully (component + types + store integration) before moving to the next.
+10. **Verify Before Returning**: After implementation, mentally trace through the data flow (API/WS → store → component → template) to ensure nothing is broken.
+
 ## Constraints
 
 - Must work within Electron (renderer process security restrictions)

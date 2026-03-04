@@ -71,6 +71,14 @@ When writing documentation, return:
 2. Where the file should be placed in the project
 3. Any cross-references to other docs
 
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: Read the actual code before documenting. Documentation must match current signatures, types, and behavior exactly.
+2. **No Regressions**: When updating docs, verify all cross-references still point to existing files/functions.
+3. **Contract Consistency**: Document API endpoints with exact request/response shapes matching the implementation. Document types matching both frontend and backend definitions.
+4. **Modularity**: Organize documentation by topic. One doc per major feature/module. Keep guides focused.
+5. **Task-Oriented**: Complete documentation for one module/feature before moving to the next.
+
 ## Constraints
 
 - Keep technical accuracy — read the actual code, don't guess

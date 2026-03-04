@@ -64,6 +64,14 @@ When working on build/devops tasks, return:
 3. Any prerequisites or system-level installs needed
 4. Verification steps to confirm the setup works
 
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: Before modifying build configs, understand how they interact with the rest of the project (pyproject.toml ↔ imports, package.json ↔ component imports).
+2. **No Regressions**: After changing dependencies or build config, verify the project still builds and runs correctly.
+3. **No Cascading Incompatibilities**: Dependency version changes must be compatible with existing code. Test after any version bump.
+4. **Documentation**: Add comments in build scripts and config files explaining non-obvious settings.
+5. **Task-Oriented**: One build concern at a time (e.g., don't mix dependency updates with packaging changes).
+
 ## Constraints
 
 - Windows is the primary OS

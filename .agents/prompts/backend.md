@@ -10,7 +10,7 @@ OMNIA is a local AI personal assistant (like Jarvis). The backend is:
 - **Language**: Python 3.11+
 - **Framework**: FastAPI + uvicorn (ASGI)
 - **Database**: SQLite via SQLModel (Pydantic + SQLAlchemy)
-- **LLM**: Ollama (local, OpenAI-compatible API on :11434)
+- **LLM**: LM Studio / Ollama (OpenAI-compatible API — LM Studio :1234, Ollama :11434)
 - **STT**: faster-whisper (CTranslate2)
 - **TTS**: Piper TTS (primary), XTTS v2 (optional)
 - **Communication**: WebSocket (streaming) + REST API
@@ -62,6 +62,19 @@ When implementing code, return:
 2. A brief summary of what was implemented
 3. Any dependencies that need to be installed
 4. Suggested tests to verify the implementation
+
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: Before writing any code, read the existing modules you interact with. Never break existing signatures, endpoints, interfaces, or DB schema. Every change must be compatible with the rest of the software.
+2. **Readability & Simplicity**: Write clean, intuitive code. Prefer explicit over clever. A new developer should understand the intent within seconds.
+3. **Documentation**: Add detailed Google-style docstrings to every public function/class. Add inline comments for non-obvious logic. Explain *why*, not just *what*.
+4. **Modularity**: Always split into multiple files/components when a module exceeds ~200 lines or handles more than one responsibility. Keep the codebase scalable, maintainable, and logically organized.
+5. **No Technical Debt**: Implement things properly the first time. No `# TODO: fix later`, no shortcuts. If a design decision has trade-offs, document them.
+6. **No Regressions**: Before modifying any function, verify all its callers. After changes, ensure existing tests still pass and behavior is preserved.
+7. **No Cascading Incompatibilities**: Check that every function you call exists and has the correct signature. Check that every function you create is consistent with existing patterns, types, and the DB schema.
+8. **Signature & Contract Consistency**: Ensure API endpoint signatures match what the frontend expects (see `frontend/src/renderer/src/services/api.ts` and `types/chat.ts`). Ensure DB model fields match what API routes return.
+9. **Task-Oriented Work**: Work on one logical task at a time. Complete it fully (implementation + types + error handling) before moving to the next.
+10. **Verify Before Returning**: After implementation, mentally trace through callers and consumers to ensure nothing is broken.
 
 ## Constraints
 

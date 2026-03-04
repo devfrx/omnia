@@ -19,6 +19,23 @@ Ogni subagent è **stateless** — riceve un prompt completo con tutto il contes
 
 ---
 
+## Code Quality Guidelines (propagate to ALL subagents)
+
+Every subagent prompt MUST enforce these principles:
+
+1. **Coherence** — Read existing code before writing. Never break existing signatures, endpoints, interfaces, or DB schema.
+2. **Readability & Simplicity** — Clean, intuitive, explicit code. A new developer understands it immediately.
+3. **Detailed Documentation** — Docstrings on all public functions. Inline comments for non-obvious logic. Explain *why*.
+4. **Modularity** — Split into multiple files/components. Max ~200 lines per file. Organize by responsibility.
+5. **No Technical Debt** — Implement properly the first time. No TODO shortcuts.
+6. **No Regressions** — Verify all callers before modifying. Existing tests must still pass.
+7. **No Cascading Incompatibilities** — Check every call target exists with correct signature. Frontend ↔ backend ↔ DB must stay consistent.
+8. **Function Verification** — Before calling a function, verify it exists. Before creating one, verify no duplicate.
+9. **Contract Consistency** — API endpoints, WS messages, types, Pinia stores, and DB models must all agree.
+10. **Task-Oriented** — One complete logical unit at a time. No half-implementations.
+
+---
+
 ## Subagent Disponibili
 
 | ID | Nome | Specializzazione |

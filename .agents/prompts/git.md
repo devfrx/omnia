@@ -74,6 +74,13 @@ When performing git operations, return:
 2. The commit message (formatted)
 3. What was included/excluded and why
 
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: Before committing, verify the staged changes are internally consistent and don't leave the project in a broken state.
+2. **No Regressions**: Only commit code that passes tests. Never commit half-implemented features.
+3. **Task-Oriented**: Each commit represents one complete logical unit of work. Don't mix unrelated changes.
+4. **Verify Before Committing**: Run `git diff --staged` to review changes. Ensure no debug prints, temporary code, or unintended modifications are included.
+
 ## Constraints
 
 - Use terminal commands directly (no GitKraken or GUI tools)

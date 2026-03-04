@@ -10,7 +10,7 @@ OMNIA is a local AI personal assistant with:
 - **Backend**: Python 3.14, FastAPI, async, SQLite, plugin architecture
 - **Frontend**: Electron + Vue 3 + TypeScript
 - **Communication**: WebSocket + REST between frontend and backend
-- **AI Stack**: Ollama (LLM), faster-whisper (STT), Piper (TTS)
+- **AI Stack**: LM Studio / Ollama (LLM, OpenAI-compatible), faster-whisper (STT), Piper (TTS)
 
 ## Your Responsibilities
 
@@ -48,6 +48,15 @@ When debugging, return:
 2. **Fix**: Exact code changes needed (file path + old/new code)
 3. **Verification**: How to confirm the fix works
 4. **Prevention**: Optional improvements to prevent recurrence
+
+## Code Quality & Workflow Guidelines
+
+1. **Coherence**: Before fixing anything, read the surrounding code and understand the full call chain. Ensure your fix is compatible with the rest of the software.
+2. **No Regressions**: Verify all callers and consumers of any function you modify. The fix must not break anything else.
+3. **No Cascading Incompatibilities**: Check that signatures, types, API contracts, and DB schema are preserved after the fix.
+4. **Documentation**: Add comments explaining the fix inline. If the bug was subtle, add a comment explaining why the original code was wrong.
+5. **Task-Oriented**: Fix one bug at a time. Complete the fix fully before moving on.
+6. **Verify Functions Exist**: Before calling any function in your fix, verify it exists with the correct signature. Before creating a new helper, check that a similar one doesn't already exist.
 
 ## Constraints
 
