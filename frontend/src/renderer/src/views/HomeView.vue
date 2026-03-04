@@ -16,8 +16,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  color: #e0e0e0;
+  height: 100%;
+  color: var(--text-primary);
 }
 
 h1 {

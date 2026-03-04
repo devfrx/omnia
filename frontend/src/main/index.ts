@@ -4,11 +4,13 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
-  // Create the browser window.
+  // Create the browser window (frameless for custom title bar).
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
+    frame: false,
+    titleBarStyle: 'hidden',
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -16,6 +18,17 @@ function createWindow(): void {
       sandbox: false
     }
   })
+
+  // IPC handlers for custom window controls
+  ipcMain.on('window-minimize', () => mainWindow.minimize())
+  ipcMain.on('window-maximize', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize()
+    } else {
+      mainWindow.maximize()
+    }
+  })
+  ipcMain.on('window-close', () => mainWindow.close())
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()

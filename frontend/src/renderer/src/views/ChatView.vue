@@ -1,102 +1,152 @@
-<template>
-  <div class="chat-view">
-    <div class="messages" ref="messagesContainer">
-      <!-- Messages will render here -->
-      <p v-if="chatStore.messages.length === 0" class="empty-state">
-        Scrivi qualcosa per iniziare a parlare con OMNIA...
-      </p>
-    </div>
-    <div class="input-area">
-      <textarea
-        v-model="inputText"
-        @keydown.enter.exact.prevent="sendMessage"
-        placeholder="Scrivi un messaggio..."
-        rows="1"
-      />
-      <button @click="sendMessage" :disabled="!inputText.trim() || chatStore.isStreaming">
-        Invia
-      </button>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref } from 'vue'
+/**
+ * ChatView.vue — Full chat view with message history, streaming
+ * indicator, and an input area.
+ *
+ * Auto-scrolls on new messages.  Creates a blank conversation on
+ * mount when none is active.
+ */
+import { nextTick, onMounted, ref, watch } from 'vue'
+
+import ChatInput from '../components/chat/ChatInput.vue'
+import MessageBubble from '../components/chat/MessageBubble.vue'
+import StreamingIndicator from '../components/chat/StreamingIndicator.vue'
+import { useChat } from '../composables/useChat'
 import { useChatStore } from '../stores/chat'
 
 const chatStore = useChatStore()
-const inputText = ref('')
+const { sendMessage: send, isConnected } = useChat()
 
-function sendMessage() {
-  const text = inputText.value.trim()
-  if (!text || chatStore.isStreaming) return
+/** Template ref for the scrollable message container. */
+const messagesContainer = ref<HTMLElement | null>(null)
 
-  chatStore.addMessage({
-    id: crypto.randomUUID(),
-    role: 'user',
-    content: text,
-    timestamp: Date.now()
+/** Scroll the message container to the bottom. */
+function scrollToBottom(): void {
+  nextTick(() => {
+    const el = messagesContainer.value
+    if (el) el.scrollTop = el.scrollHeight
   })
-
-  inputText.value = ''
-  // TODO: send to backend via WebSocket
 }
+
+/** Handle a send event from the ChatInput component. */
+function handleSend(content: string): void {
+  send(content)
+  scrollToBottom()
+}
+
+// Auto-scroll whenever the message list or streaming content changes.
+watch(
+  () => [chatStore.messages.length, chatStore.currentStreamContent],
+  () => scrollToBottom()
+)
+
+// On mount: ensure a conversation exists so the user can start chatting.
+onMounted(() => {
+  if (!chatStore.currentConversation) {
+    chatStore.createConversation()
+  }
+  scrollToBottom()
+})
 </script>
+
+<template>
+  <div class="chat-view">
+    <!-- Messages area -->
+    <div ref="messagesContainer" class="chat-view__messages">
+      <!-- Empty state -->
+      <div v-if="chatStore.messages.length === 0 && !chatStore.isStreaming" class="chat-view__empty">
+        <div class="chat-view__empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+        </div>
+        <p class="chat-view__empty-title">O.M.N.I.A.</p>
+        <p class="chat-view__empty-sub">Scrivi qualcosa per iniziare a parlare con il tuo assistente.</p>
+      </div>
+
+      <!-- Message list -->
+      <MessageBubble
+        v-for="msg in chatStore.messages"
+        :key="msg.id"
+        :message="msg"
+      />
+
+      <!-- Streaming response -->
+      <StreamingIndicator
+        v-if="chatStore.isStreaming"
+        :content="chatStore.currentStreamContent"
+      />
+    </div>
+
+    <!-- Input -->
+    <ChatInput
+      :disabled="chatStore.isStreaming"
+      :is-connected="isConnected"
+      @send="handleSend"
+    />
+  </div>
+</template>
 
 <style scoped>
 .chat-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
 }
 
-.messages {
+/* ----------------------------------------------- Messages area */
+.chat-view__messages {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 20px 24px;
+  scroll-behavior: smooth;
 }
 
-.empty-state {
-  text-align: center;
-  opacity: 0.5;
-  margin-top: 40vh;
+/* Custom dark scrollbar */
+.chat-view__messages::-webkit-scrollbar {
+  width: 6px;
 }
 
-.input-area {
+.chat-view__messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-view__messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.chat-view__messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ----------------------------------------------- Empty state */
+.chat-view__empty {
   display: flex;
-  padding: 1rem;
-  gap: 0.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  opacity: 0.45;
+  user-select: none;
 }
 
-textarea {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
-  color: #e0e0e0;
-  resize: none;
-  font-family: inherit;
-  font-size: 0.9rem;
+.chat-view__empty-icon {
+  color: var(--accent);
+  opacity: 0.6;
 }
 
-button {
-  padding: 0.6rem 1.5rem;
-  background: rgba(100, 180, 255, 0.2);
-  border: 1px solid rgba(100, 180, 255, 0.3);
-  border-radius: 8px;
-  color: #e0e0e0;
-  cursor: pointer;
-  transition: all 0.2s;
+.chat-view__empty-title {
+  font-size: 1.6rem;
+  font-weight: 200;
+  letter-spacing: 0.2em;
+  color: var(--text-primary);
 }
 
-button:hover:not(:disabled) {
-  background: rgba(100, 180, 255, 0.3);
-}
-
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.chat-view__empty-sub {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 </style>

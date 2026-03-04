@@ -1,32 +1,123 @@
-/** Chat-related types */
+/**
+ * Chat-related types aligned with the OMNIA backend API.
+ *
+ * Every interface here mirrors the JSON shapes returned by
+ * `backend/api/routes/chat.py` so the frontend can consume
+ * responses without transformation.
+ */
 
+// ---------------------------------------------------------------------------
+// Message
+// ---------------------------------------------------------------------------
+
+/** A single tool-call attachment on a message (OpenAI-compatible shape). */
+export interface ToolCall {
+  id: string
+  type: 'function'
+  function: {
+    name: string
+    arguments: string
+  }
+}
+
+/** Role a message can have. */
+export type MessageRole = 'user' | 'assistant' | 'tool'
+
+/**
+ * A chat message as returned by
+ * `GET /api/chat/conversations/{id}`.
+ */
 export interface ChatMessage {
   id: string
-  role: 'user' | 'assistant' | 'system'
+  role: MessageRole
   content: string
-  timestamp: number
-  toolCalls?: ToolCall[]
+  tool_calls: ToolCall[] | null
+  tool_call_id: string | null
+  created_at: string
 }
 
-export interface ToolCall {
-  name: string
-  args: Record<string, unknown>
-  result?: string
-  status: 'pending' | 'running' | 'success' | 'error'
+// ---------------------------------------------------------------------------
+// Conversation
+// ---------------------------------------------------------------------------
+
+/**
+ * Conversation summary returned by `GET /api/chat/conversations`.
+ * Does NOT include the `messages` array — only a count.
+ */
+export interface ConversationSummary {
+  id: string
+  title: string | null
+  created_at: string
+  updated_at: string
+  message_count: number
 }
 
-export interface Conversation {
+/**
+ * Full conversation returned by `GET /api/chat/conversations/{id}`.
+ * Includes the ordered list of messages.
+ */
+export interface ConversationDetail {
+  id: string
+  title: string | null
+  created_at: string
+  updated_at: string
+  messages: ChatMessage[]
+}
+
+// ---------------------------------------------------------------------------
+// REST response helpers
+// ---------------------------------------------------------------------------
+
+/** Response from `DELETE /api/chat/conversations/{id}`. */
+export interface DeleteConversationResponse {
+  status: 'deleted'
+}
+
+/** Response from `POST /api/chat/conversations/{id}/title`. */
+export interface RenameConversationResponse {
   id: string
   title: string
-  messages: ChatMessage[]
-  createdAt: number
-  updatedAt: number
+  updated_at: string
 }
 
-/** WebSocket message types */
-export interface WsMessage {
-  type: 'token' | 'done' | 'error' | 'tool_call' | 'tool_result' | 'status'
-  content?: string
-  toolCall?: ToolCall
-  error?: string
+// ---------------------------------------------------------------------------
+// WebSocket
+// ---------------------------------------------------------------------------
+
+/** Payload the client sends over the WebSocket. */
+export interface WsSendPayload {
+  content: string
+  conversation_id?: string
 }
+
+/** A streamed token frame from the server. */
+export interface WsTokenMessage {
+  type: 'token'
+  content: string
+}
+
+/** Server signals the response is complete. */
+export interface WsDoneMessage {
+  type: 'done'
+  conversation_id: string
+  message_id: string
+}
+
+/** Server reports an error. */
+export interface WsErrorMessage {
+  type: 'error'
+  content: string
+}
+
+/** Future: server reports a tool call during generation. */
+export interface WsToolCallMessage {
+  type: 'tool_call'
+  [key: string]: unknown
+}
+
+/** Discriminated union of all server→client WebSocket frames. */
+export type WsMessage =
+  | WsTokenMessage
+  | WsDoneMessage
+  | WsErrorMessage
+  | WsToolCallMessage
