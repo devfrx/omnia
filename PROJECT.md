@@ -21,7 +21,7 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 
 | Componente | Tecnologia |
 |---|---|
-| LLM locale | Ollama + Qwen 2.5 14B Instruct (Q4_K_M, ~10GB VRAM) |
+| LLM locale | LM Studio / Ollama (OpenAI-compatible) + Qwen 2.5 14B Instruct (~10GB VRAM) |
 | STT | faster-whisper large-v3 (~1.5GB VRAM) |
 | TTS | Piper TTS (primario, CPU) + XTTS v2 (opzionale, voice cloning) |
 | Backend | Python — FastAPI + uvicorn (ASGI) |

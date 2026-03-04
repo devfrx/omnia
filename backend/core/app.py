@@ -1,0 +1,99 @@
+"""O.M.N.I.A. — FastAPI application factory."""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+
+from backend.core.config import OmniaConfig, load_config
+from backend.core.context import AppContext, create_context
+from backend.db.database import create_engine_and_session, init_db
+from backend.services.llm_service import LLMService
+
+__version__ = "0.1.0"
+
+
+# ---------------------------------------------------------------------------
+# Lifespan
+# ---------------------------------------------------------------------------
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Manage startup / shutdown of the OMNIA backend."""
+    # -- Startup ------------------------------------------------------------
+    config: OmniaConfig = app.state._config  # set by create_app
+    testing: bool = app.state._testing
+
+    if testing:
+        db_url = "sqlite+aiosqlite://"  # in-memory
+    else:
+        db_url = config.database.url
+
+    engine, session_factory = create_engine_and_session(db_url)
+    await init_db(engine)
+
+    ctx: AppContext = create_context(config)
+    ctx.db = session_factory  # type: ignore[assignment]
+
+    llm_service = LLMService(config.llm)
+    ctx.llm_service = llm_service
+
+    app.state.context = ctx
+    app.state.engine = engine
+
+    logger.info("OMNIA backend started (v{})", __version__)
+
+    yield
+
+    # -- Shutdown -----------------------------------------------------------
+    await llm_service.close()
+    await engine.dispose()
+    logger.info("OMNIA backend stopped")
+
+
+# ---------------------------------------------------------------------------
+# Factory
+# ---------------------------------------------------------------------------
+
+
+def create_app(testing: bool = False) -> FastAPI:
+    """Build and return the FastAPI application.
+
+    Args:
+        testing: When ``True`` an in-memory SQLite database is used.
+
+    Returns:
+        A fully configured ``FastAPI`` instance.
+    """
+    config = load_config()
+
+    app = FastAPI(
+        title="O.M.N.I.A.",
+        version=__version__,
+        lifespan=_lifespan,
+    )
+
+    # Stash config so the lifespan can retrieve it before context exists.
+    app.state._config = config
+    app.state._testing = testing
+
+    # -- Middleware ----------------------------------------------------------
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.server.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # -- Routes -------------------------------------------------------------
+    from backend.api.routes import router as api_router  # noqa: E402
+
+    app.include_router(api_router)
+
+    return app
