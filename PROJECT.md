@@ -32,7 +32,7 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 | IoT | Home Assistant REST API + MQTT (paho-mqtt) |
 | Ricerca Web | duckduckgo-search (o SearXNG self-hosted) |
 | Python Deps | uv |
-| Node Deps | pnpm |
+| Node Deps | npm |
 
 ## Architettura
 
