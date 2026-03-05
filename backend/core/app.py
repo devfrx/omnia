@@ -14,6 +14,7 @@ from loguru import logger
 from backend.core.config import OmniaConfig, PROJECT_ROOT, load_config
 from backend.core.context import AppContext, create_context
 from backend.db.database import create_engine_and_session, init_db
+from backend.services.conversation_file_manager import ConversationFileManager
 from backend.services.llm_service import LLMService
 
 __version__ = "0.1.0"
@@ -49,6 +50,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     llm_service = LLMService(config.llm)
     ctx.llm_service = llm_service
+
+    conversations_dir = PROJECT_ROOT / "data" / "conversations"
+    ctx.conversation_file_manager = ConversationFileManager(conversations_dir)
 
     app.state.context = ctx
     app.state.engine = engine

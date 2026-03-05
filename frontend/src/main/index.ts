@@ -29,6 +29,9 @@ function createWindow(): void {
     }
   })
   ipcMain.on('window-close', () => mainWindow.close())
+  ipcMain.on('show-in-folder', (_event, filePath: string) => {
+    shell.showItemInFolder(filePath)
+  })
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()

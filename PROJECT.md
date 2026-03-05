@@ -67,6 +67,21 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
               MQTT
 ```
 
+### Persistenza Conversazioni
+
+```
+data/conversations/
+├── {uuid}.json          # Una conversazione completa (metadata + messaggi)
+├── {uuid}.json
+└── ...
+```
+
+Ogni conversazione è salvata come file JSON atomico, sincronizzato automaticamente ad ogni modifica. Questo layer fornisce:
+- **Durabilità**: i dati sopravvivono a corruzione del DB SQLite
+- **Portabilità**: export/import di conversazioni come singoli file JSON
+- **Recovery**: ricostruzione completa del DB da file
+- **Leggibilità**: formato JSON human-readable per debug e backup
+
 ## Budget VRAM/RAM
 
 | Componente | VRAM | RAM |
@@ -117,6 +132,28 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 - [x] Image display in message bubbles
 - [x] Attachment DB model + file storage
 
+### Fase 1.6 — Persistenza Conversazioni su File
+- [x] ConversationFileManager service (salvataggio atomico JSON)
+- [x] Struttura file: `data/conversations/{id}.json`
+- [x] Auto-sync DB → file su ogni mutazione (create, message, delete, rename)
+- [x] REST: `POST /api/chat/conversations` (creazione immediata)
+- [x] REST: `GET /api/chat/conversations/{id}/export` (export JSON)
+- [x] REST: `POST /api/chat/conversations/import` (import JSON)
+- [x] Recovery DB da file JSON
+- [x] Frontend: persistenza immediata conversazioni
+- [x] Frontend: sync su riconnessione WebSocket
+- [x] Frontend: export/import conversazioni
+- [x] Edge case: backend offline, stream parziali, conversazioni orfane
+
+### Fase 1.7 — Code Block con Syntax Highlighting e Copia
+- [x] Syntax highlighting via highlight.js (25+ linguaggi: JS, TS, Python, Java, C#, C++, Go, Rust, Ruby, PHP, SQL, HTML, CSS, JSON, YAML, Bash, etc.)
+- [x] Header code block con label linguaggio
+- [x] Pulsante "Copia" nel header con feedback visivo ("Copiato!")
+- [x] Copia raw code nella clipboard al click
+- [x] Tema syntax highlighting warm-gold coerente con estetica OMNIA
+- [x] Supporto in MessageBubble (messaggi completati)
+- [x] Supporto in StreamingIndicator (risposte in streaming)
+
 ### Fase 3 — Plugin System
 - [ ] BasePlugin ABC
 - [ ] PluginManager (discovery, lifecycle)
@@ -161,6 +198,8 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 |---|---|
 | 1-2 | "Ciao OMNIA" → risposta streammata in italiano |
 | 1.5 | Immagine + "Cosa vedi?" → descrizione; Thinking model → blocco ragionamento collassabile |
+| 1.6 | Export conversazione → file JSON valido; import → conversazione ripristinata; recovery DB → dati intatti |
+| 1.7 | Codice in chat → syntax highlighting colorato; click "Copia" → codice nella clipboard + feedback "Copiato!" |
 | 3 | "Quanta RAM uso?" → tool call → risposta naturale |
 | 4 | Voce: "Che ore sono?" → risposta vocale |
 | 5 | "Apri Notepad" → si apre automaticamente |

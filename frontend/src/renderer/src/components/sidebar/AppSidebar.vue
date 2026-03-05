@@ -14,6 +14,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useChatStore } from '../../stores/chat'
+import { api } from '../../services/api'
 import ConversationList from './ConversationList.vue'
 
 const chatStore = useChatStore()
@@ -68,6 +69,16 @@ async function onDelete(id: string): Promise<void> {
 async function onRename(id: string, title: string): Promise<void> {
   await chatStore.renameConversation(id, title)
 }
+
+/** Open the conversation file in the system file manager. */
+async function onOpenFile(id: string): Promise<void> {
+  try {
+    const { path } = await api.getConversationFilePath(id)
+    window.electron.fileOps.showInFolder(path)
+  } catch (err) {
+    console.error(`[AppSidebar] Failed to open file for conversation ${id}:`, err)
+  }
+}
 </script>
 
 <template>
@@ -106,7 +117,7 @@ async function onRename(id: string, title: string): Promise<void> {
 
       <!-- Conversation list -->
       <ConversationList :conversations="chatStore.conversations" :active-id="chatStore.currentConversation?.id ?? null"
-        @select="onSelect" @create="onCreate" @delete="onDelete" @rename="onRename" />
+        @select="onSelect" @create="onCreate" @delete="onDelete" @rename="onRename" @open-file="onOpenFile" />
     </div>
   </aside>
 </template>

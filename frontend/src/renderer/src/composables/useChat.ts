@@ -62,6 +62,10 @@ export function useChat(): UseChatReturn {
   const onConnected = (): void => {
     isConnected.value = true
     connectionStatus.value = 'connected'
+    // Reload the active conversation to sync any messages missed during disconnect.
+    if (store.currentConversation?.id) {
+      store.loadConversation(store.currentConversation.id).catch(console.error)
+    }
   }
 
   const onDisconnected = (): void => {

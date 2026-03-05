@@ -26,6 +26,7 @@ from sqlmodel import select
 from backend.core.config import PROJECT_ROOT
 from backend.core.context import AppContext
 from backend.db.models import Attachment, Conversation, Message
+from backend.services.conversation_file_manager import ConversationFileManager
 from backend.services.llm_service import LLMService
 
 router = APIRouter()
@@ -43,6 +44,92 @@ def _utcnow() -> datetime:
 def _ctx(ws_or_request: Any) -> AppContext:
     """Extract the ``AppContext`` from the ASGI app state."""
     return ws_or_request.app.state.context
+
+
+async def _build_conversation_data(
+    session: Any, conv_id: uuid.UUID,
+) -> dict[str, Any]:
+    """Build the full conversation dict (with messages + attachments) from DB.
+
+    The returned attachment dicts include **both** ``url`` (for API / frontend
+    consumption) and ``file_path`` (for file-level backup / recovery).
+
+    Args:
+        session: An active async DB session.
+        conv_id: The conversation UUID.
+
+    Returns:
+        A dict matching the JSON file schema.
+    """
+    conv = await session.get(Conversation, conv_id)
+    if conv is None:
+        return {}
+
+    msg_stmt = (
+        select(Message)
+        .where(Message.conversation_id == conv_id)
+        .order_by(Message.created_at)
+    )
+    results = await session.exec(msg_stmt)
+    messages = results.all()
+
+    msg_ids = [m.id for m in messages]
+    att_map: dict[uuid.UUID, list[dict[str, str]]] = {}
+    if msg_ids:
+        att_stmt = select(Attachment).where(
+            Attachment.message_id.in_(msg_ids)  # type: ignore[union-attr]
+        )
+        att_results = await session.exec(att_stmt)
+        for att in att_results.all():
+            url = (
+                f"/uploads/{att.file_path.split('data/uploads/', 1)[-1]}"
+                if "data/uploads/" in att.file_path
+                else f"/uploads/{att.file_path}"
+            )
+            att_map.setdefault(att.message_id, []).append(
+                {
+                    "file_id": str(att.id),
+                    "url": url,
+                    "filename": att.filename,
+                    "content_type": att.content_type,
+                    "file_path": att.file_path,
+                }
+            )
+
+    return {
+        "id": str(conv.id),
+        "title": conv.title,
+        "created_at": conv.created_at.isoformat(),
+        "updated_at": conv.updated_at.isoformat(),
+        "messages": [
+            {
+                "id": str(m.id),
+                "role": m.role,
+                "content": m.content,
+                "thinking_content": m.thinking_content,
+                "tool_calls": m.tool_calls,
+                "tool_call_id": m.tool_call_id,
+                "created_at": m.created_at.isoformat(),
+                "attachments": att_map.get(m.id) or None,
+            }
+            for m in messages
+        ],
+    }
+
+
+async def _sync_conversation_to_file(
+    session: Any, conv_id: uuid.UUID, file_manager: ConversationFileManager,
+) -> None:
+    """Build the conversation data from DB and persist it to a JSON file.
+
+    Args:
+        session: An active async DB session (post-commit so data is flushed).
+        conv_id: The conversation UUID.
+        file_manager: The file manager instance.
+    """
+    data = await _build_conversation_data(session, conv_id)
+    if data:
+        await file_manager.save(data)
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +279,13 @@ async def ws_chat(websocket: WebSocket) -> None:
                         conv.title = user_content[:100]
 
                     await session.commit()
+
+                    # Sync conversation to JSON file.
+                    if ctx.conversation_file_manager:
+                        await _sync_conversation_to_file(
+                            session, conv_id,
+                            ctx.conversation_file_manager,
+                        )
                 except Exception:
                     logger.exception("DB commit error after streaming")
                     await session.rollback()
@@ -350,6 +444,13 @@ async def delete_conversation(
         await session.delete(conv)
         await session.commit()
 
+        # Remove JSON conversation file.
+        file_manager: ConversationFileManager | None = (
+            ctx.conversation_file_manager
+        )
+        if file_manager:
+            await file_manager.delete(str(conversation_id))
+
         # Clean up uploaded files for this conversation.
         upload_dir = PROJECT_ROOT / "data" / "uploads" / str(conversation_id)
         if upload_dir.exists():
@@ -381,10 +482,260 @@ async def update_conversation_title(
         conv.updated_at = _utcnow()
         await session.commit()
 
+        # Sync to JSON file.
+        if ctx.conversation_file_manager:
+            await _sync_conversation_to_file(
+                session, conversation_id, ctx.conversation_file_manager,
+            )
+
         return {
             "id": str(conv.id),
             "title": conv.title,
             "updated_at": conv.updated_at.isoformat(),
+        }
+
+
+# ---------------------------------------------------------------------------
+# REST — create / export / import conversations
+# ---------------------------------------------------------------------------
+
+
+@router.post("/chat/conversations")
+async def create_conversation(request: Request) -> dict[str, Any]:
+    """Create a new empty conversation and persist it immediately.
+
+    Accepts an optional JSON body::
+
+        {"id": "uuid", "title": "optional title"}
+
+    If ``id`` is provided the frontend's UUID is used; otherwise a new one
+    is generated server-side.
+
+    Returns:
+        A ``ConversationSummary``-shaped dict.
+    """
+    ctx = _ctx(request)
+
+    body: dict[str, Any] = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass  # empty body is fine
+
+    conv_id = uuid.UUID(body["id"]) if body.get("id") else uuid.uuid4()
+    title: str | None = body.get("title")
+
+    async with ctx.db() as session:
+        existing = await session.get(Conversation, conv_id)
+        if existing is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Conversation already exists",
+            )
+
+        conv = Conversation(id=conv_id, title=title)
+        session.add(conv)
+        await session.commit()
+        await session.refresh(conv)
+
+        if ctx.conversation_file_manager:
+            await _sync_conversation_to_file(
+                session, conv.id, ctx.conversation_file_manager,
+            )
+
+        return {
+            "id": str(conv.id),
+            "title": conv.title,
+            "created_at": conv.created_at.isoformat(),
+            "updated_at": conv.updated_at.isoformat(),
+            "message_count": 0,
+        }
+
+
+@router.get("/chat/conversations/{conversation_id}/export")
+async def export_conversation(
+    conversation_id: uuid.UUID, request: Request,
+) -> dict[str, Any]:
+    """Export a full conversation with all messages and metadata.
+
+    Args:
+        conversation_id: UUID of the conversation to export.
+
+    Returns:
+        The complete conversation JSON including messages and attachments.
+    """
+    ctx = _ctx(request)
+    async with ctx.db() as session:
+        data = await _build_conversation_data(session, conversation_id)
+        if not data:
+            raise HTTPException(
+                status_code=404, detail="Conversation not found",
+            )
+        return data
+
+
+@router.get("/chat/conversations/{conversation_id}/file-path")
+async def get_conversation_file_path(
+    conversation_id: uuid.UUID, request: Request,
+) -> dict[str, str]:
+    """Return the absolute filesystem path of the conversation JSON file.
+
+    Used by the Electron frontend to open the file in the system explorer.
+    """
+    ctx = _ctx(request)
+    fm: ConversationFileManager | None = ctx.conversation_file_manager
+    if fm is None:
+        raise HTTPException(
+            status_code=503,
+            detail="File manager not available",
+        )
+
+    file_path = fm.base_dir / f"{conversation_id}.json"
+    return {"path": str(file_path)}
+
+
+@router.post("/chat/conversations/import")
+async def import_conversation(request: Request) -> dict[str, Any]:
+    """Import a conversation from a JSON export.
+
+    Expects the full conversation JSON (same schema as export) in the
+    request body.  If a conversation with the same ``id`` already exists
+    the request is rejected with 409.
+
+    Returns:
+        A ``ConversationSummary``-shaped dict for the imported conversation.
+    """
+    ctx = _ctx(request)
+
+    try:
+        body: dict[str, Any] = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    if "id" not in body:
+        raise HTTPException(status_code=400, detail="Missing 'id' field")
+
+    try:
+        conv_id = uuid.UUID(body["id"])
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid conversation id")
+
+    # Validate top-level timestamps if present.
+    for ts_field in ("created_at", "updated_at"):
+        if body.get(ts_field):
+            try:
+                datetime.fromisoformat(body[ts_field])
+            except (ValueError, TypeError):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid '{ts_field}' timestamp",
+                )
+
+    # Validate messages before touching the DB.
+    for idx, msg_data in enumerate(body.get("messages", [])):
+        for required in ("id", "role"):
+            if required not in msg_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Message {idx}: missing '{required}'",
+                )
+        try:
+            uuid.UUID(msg_data["id"])
+        except (ValueError, TypeError):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Message {idx}: invalid 'id'",
+            )
+        for att_data in msg_data.get("attachments") or []:
+            for required in ("file_id", "filename", "content_type"):
+                if required not in att_data:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            f"Message {idx} attachment: "
+                            f"missing '{required}'"
+                        ),
+                    )
+
+    async with ctx.db() as session:
+        if await session.get(Conversation, conv_id) is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Conversation already exists",
+            )
+
+        conv = Conversation(
+            id=conv_id,
+            title=body.get("title"),
+            created_at=datetime.fromisoformat(body["created_at"])
+            if body.get("created_at")
+            else _utcnow(),
+            updated_at=datetime.fromisoformat(body["updated_at"])
+            if body.get("updated_at")
+            else _utcnow(),
+        )
+        session.add(conv)
+        await session.flush()
+
+        allowed_base = (PROJECT_ROOT / "data" / "uploads").resolve()
+
+        msg_count = 0
+        for msg_data in body.get("messages", []):
+            msg = Message(
+                id=uuid.UUID(msg_data["id"]),
+                conversation_id=conv_id,
+                role=msg_data["role"],
+                content=msg_data.get("content", ""),
+                tool_calls=msg_data.get("tool_calls"),
+                tool_call_id=msg_data.get("tool_call_id"),
+                thinking_content=msg_data.get("thinking_content"),
+                created_at=datetime.fromisoformat(msg_data["created_at"])
+                if msg_data.get("created_at")
+                else _utcnow(),
+            )
+            session.add(msg)
+            await session.flush()
+
+            for att_data in msg_data.get("attachments") or []:
+                file_path = att_data.get("file_path", "")
+                # Sanitise: reject paths that escape the uploads directory.
+                if file_path:
+                    resolved = (PROJECT_ROOT / file_path).resolve()
+                    if not str(resolved).startswith(str(allowed_base)):
+                        logger.warning(
+                            "Import: rejecting path traversal: {}",
+                            file_path,
+                        )
+                        file_path = ""
+                    elif not resolved.exists():
+                        logger.warning(
+                            "Import: attachment file missing: {}",
+                            file_path,
+                        )
+                att = Attachment(
+                    id=uuid.UUID(att_data["file_id"]),
+                    message_id=msg.id,
+                    filename=att_data["filename"],
+                    content_type=att_data["content_type"],
+                    file_path=file_path,
+                )
+                session.add(att)
+
+            msg_count += 1
+
+        await session.commit()
+
+        if ctx.conversation_file_manager:
+            await _sync_conversation_to_file(
+                session, conv_id, ctx.conversation_file_manager,
+            )
+
+        return {
+            "id": str(conv.id),
+            "title": conv.title,
+            "created_at": conv.created_at.isoformat(),
+            "updated_at": conv.updated_at.isoformat(),
+            "message_count": msg_count,
         }
 
 

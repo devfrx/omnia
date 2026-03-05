@@ -15,6 +15,7 @@ import { api, resolveBackendUrl } from '../services/api'
 import type {
   ChatMessage,
   ConversationDetail,
+  ConversationExport,
   ConversationSummary,
   FileAttachment
 } from '../types/chat'
@@ -60,11 +61,26 @@ export const useChatStore = defineStore('chat', () => {
     const remote = await api.getConversations()
 
     // Merge: keep any locally-created conversations that the backend
-    // does not know about yet (created but no message sent).
+    // does not know about yet (created while backend was down).
     const remoteIds = new Set(remote.map((c) => c.id))
     const localOnly = conversations.value.filter(
       (c) => !remoteIds.has(c.id) && c.message_count === 0
     )
+
+    // Try to persist orphan local-only conversations to the backend.
+    for (const orphan of localOnly) {
+      api
+        .createConversation(orphan.id, orphan.title ?? undefined)
+        .then((persisted) => {
+          // Write back authoritative server timestamps.
+          orphan.created_at = persisted.created_at
+          orphan.updated_at = persisted.updated_at
+        })
+        .catch(() => {
+          // Backend still unreachable — keep local, retry next load.
+        })
+    }
+
     conversations.value = [...localOnly, ...remote]
   }
 
@@ -114,12 +130,21 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * Start a fresh conversation locally.
-   * The backend will persist it when the first message is sent via WS.
+   * Start a fresh conversation and persist it to the backend immediately.
+   * Falls back to local-only if the backend is unreachable.
    */
-  function createConversation(): void {
+  async function createConversation(): Promise<void> {
     const now = new Date().toISOString()
-    const newId = crypto.randomUUID()
+    let newId = crypto.randomUUID()
+
+    // Optimistically set local state so the UI updates instantly.
+    const localSummary: ConversationSummary = {
+      id: newId,
+      title: null,
+      created_at: now,
+      updated_at: now,
+      message_count: 0
+    }
 
     currentConversation.value = {
       id: newId,
@@ -128,24 +153,62 @@ export const useChatStore = defineStore('chat', () => {
       updated_at: now,
       messages: []
     }
+    conversations.value.unshift(localSummary)
 
-    // Add a summary entry so the sidebar shows the new conversation immediately.
-    conversations.value.unshift({
-      id: newId,
-      title: null,
-      created_at: now,
-      updated_at: now,
-      message_count: 0
-    })
+    // Persist on backend — on conflict (duplicate UUID) retry with a new ID.
+    try {
+      const persisted = await api.createConversation(newId)
+      // Sync any server-provided timestamps back into local state.
+      localSummary.created_at = persisted.created_at
+      localSummary.updated_at = persisted.updated_at
+      if (currentConversation.value?.id === newId) {
+        currentConversation.value.created_at = persisted.created_at
+        currentConversation.value.updated_at = persisted.updated_at
+      }
+    } catch (err) {
+      // 409 Conflict — duplicate UUID, regenerate and retry once.
+      const isConflict = err instanceof Error && err.message.includes('409')
+      if (isConflict) {
+        const retryId = crypto.randomUUID()
+        try {
+          const persisted = await api.createConversation(retryId)
+          // Update local references to the new ID.
+          localSummary.id = retryId
+          localSummary.created_at = persisted.created_at
+          localSummary.updated_at = persisted.updated_at
+          if (currentConversation.value?.id === newId) {
+            currentConversation.value.id = retryId
+            currentConversation.value.created_at = persisted.created_at
+            currentConversation.value.updated_at = persisted.updated_at
+          }
+          newId = retryId
+        } catch {
+          // Both attempts failed — stay local-only.
+          console.warn('[chat store] createConversation: backend unreachable, keeping local-only')
+        }
+      } else {
+        // Backend down or other error — local-only is fine.
+        console.warn('[chat store] createConversation: backend unreachable, keeping local-only')
+      }
+    }
   }
 
   /** Delete a conversation on the backend and remove it from local state. */
   async function deleteConversation(id: string): Promise<void> {
-    // Only call the backend if the conversation was persisted (has messages).
-    const summary = conversations.value.find((c) => c.id === id)
-    if (summary && summary.message_count > 0) {
-      await api.deleteConversation(id)
+    // Cancel any active stream before deleting.
+    if (isStreaming.value && currentConversation.value?.id === id) {
+      cancelStream()
     }
+
+    // Always attempt backend deletion — empty conversations are now persisted too.
+    try {
+      await api.deleteConversation(id)
+    } catch (err) {
+      // Silently ignore 404 (conversation may not exist on backend if created while offline).
+      const is404 = err instanceof Error && err.message.includes('404')
+      if (!is404) throw err
+    }
+
     conversations.value = conversations.value.filter((c) => c.id !== id)
     if (currentConversation.value?.id === id) {
       currentConversation.value = null
@@ -154,9 +217,7 @@ export const useChatStore = defineStore('chat', () => {
 
   /** Rename a conversation on the backend and update local state. */
   async function renameConversation(id: string, title: string): Promise<void> {
-    // Only call the backend if the conversation was persisted (has messages).
-    const summary = conversations.value.find((c) => c.id === id)
-    if (summary && summary.message_count > 0) {
+    try {
       const result = await api.renameConversation(id, title)
 
       // Update sidebar entry
@@ -171,8 +232,9 @@ export const useChatStore = defineStore('chat', () => {
         currentConversation.value.title = result.title
         currentConversation.value.updated_at = result.updated_at
       }
-    } else {
-      // Local-only conversation: update state directly.
+    } catch {
+      // Backend unreachable or 404 — update state locally.
+      const summary = conversations.value.find((c) => c.id === id)
       if (summary) {
         summary.title = title
       }
@@ -247,6 +309,17 @@ export const useChatStore = defineStore('chat', () => {
     loadConversations().catch(console.error)
   }
 
+  /** Export a conversation as JSON from the backend. */
+  async function exportConversation(id: string): Promise<ConversationExport> {
+    return api.exportConversation(id)
+  }
+
+  /** Import a conversation from JSON and add it to the sidebar. */
+  async function importConversation(data: ConversationExport): Promise<void> {
+    const summary = await api.importConversation(data)
+    conversations.value.unshift(summary)
+  }
+
   /** Clear streaming state (e.g. on error). */
   function cancelStream(): void {
     currentStreamContent.value = ''
@@ -276,6 +349,8 @@ export const useChatStore = defineStore('chat', () => {
     createConversation,
     deleteConversation,
     renameConversation,
+    exportConversation,
+    importConversation,
 
     // message / streaming actions
     addUserMessage,

@@ -139,3 +139,16 @@ export type WsMessage =
   | WsDoneMessage
   | WsErrorMessage
   | WsToolCallMessage
+
+// ---------------------------------------------------------------------------
+// Export / Import
+// ---------------------------------------------------------------------------
+
+/** Full conversation export format (for backup/import). */
+export interface ConversationExport {
+  id: string
+  title: string | null
+  created_at: string
+  updated_at: string
+  messages: ChatMessage[]
+}

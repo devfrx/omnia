@@ -11,16 +11,21 @@ const windowControls = {
   close: (): void => ipcRenderer.send('window-close')
 }
 
+const fileOps = {
+  /** Open the system file explorer with the given file selected. */
+  showInFolder: (filePath: string): void => ipcRenderer.send('show-in-folder', filePath)
+}
+
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', { ...electronAPI, windowControls })
+    contextBridge.exposeInMainWorld('electron', { ...electronAPI, windowControls, fileOps })
   } catch (error) {
     console.error(error)
   }
 } else {
   // @ts-ignore (define in dts)
-  window.electron = { ...electronAPI, windowControls }
+  window.electron = { ...electronAPI, windowControls, fileOps }
 }

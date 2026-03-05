@@ -10,8 +10,14 @@ interface WindowControls {
   close: () => void
 }
 
+/** File operations exposed to the renderer process */
+interface FileOps {
+  /** Open the system file explorer with the given file selected. */
+  showInFolder: (filePath: string) => void
+}
+
 declare global {
   interface Window {
-    electron: ElectronAPI & { windowControls: WindowControls }
+    electron: ElectronAPI & { windowControls: WindowControls; fileOps: FileOps }
   }
 }

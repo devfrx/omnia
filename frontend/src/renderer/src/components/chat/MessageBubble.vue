@@ -10,6 +10,7 @@
 import { computed, ref } from 'vue'
 
 import { renderMarkdown } from '../../composables/useMarkdown'
+import { useCodeBlocks } from '../../composables/useCodeBlocks'
 import type { ChatMessage } from '../../types/chat'
 
 const props = defineProps<{
@@ -49,6 +50,8 @@ const formattedTime = computed(() => {
 
 /** CSS modifier class based on the message role. */
 const bubbleClass = computed(() => `bubble--${props.message.role}`)
+
+const { handleCodeBlockClick } = useCodeBlocks()
 
 /** Open full-size image overlay. */
 function openOverlay(url: string, alt: string): void {
@@ -93,13 +96,13 @@ function closeOverlay(): void {
         </button>
         <div v-show="!thinkingCollapsed" class="thinking-section__body">
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="thinking-section__content" v-html="thinkingHtml" />
+          <div class="thinking-section__content" v-html="thinkingHtml" @click="handleCodeBlockClick" />
         </div>
       </div>
 
       <!-- Message content -->
       <!-- eslint-disable-next-line vue/no-v-html — content is sanitised by markdown-it -->
-      <div class="bubble__content" v-html="htmlContent" />
+      <div class="bubble__content" v-html="htmlContent" @click="handleCodeBlockClick" />
       <span class="bubble__time">{{ formattedTime }}</span>
     </div>
 
@@ -281,17 +284,7 @@ function closeOverlay(): void {
   text-decoration: underline;
 }
 
-.bubble__content :deep(.code-block) {
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  overflow-x: auto;
-  margin: 6px 0;
-  font-family: var(--font-mono);
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-
+/* ----- Inline code */
 .bubble__content :deep(code) {
   font-family: var(--font-mono);
   font-size: 0.85em;
@@ -300,9 +293,170 @@ function closeOverlay(): void {
   border-radius: 3px;
 }
 
+/* ----- Code block wrapper */
+.bubble__content :deep(.code-block-wrapper) {
+  margin: 8px 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ----- Code block header (language label + copy button) */
+.bubble__content :deep(.code-block-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  min-height: 32px;
+}
+
+.bubble__content :deep(.code-block-lang) {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.bubble__content :deep(.code-block-copy) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.bubble__content :deep(.code-block-copy:hover) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.bubble__content :deep(.code-block-copy--copied) {
+  color: var(--success) !important;
+  border-color: rgba(92, 154, 110, 0.3) !important;
+}
+
+.bubble__content :deep(.code-block-copy__label) {
+  pointer-events: none;
+}
+
+.bubble__content :deep(.code-block-copy svg) {
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* ----- Code block body */
+.bubble__content :deep(.code-block) {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  border-radius: 0;
+}
+
 .bubble__content :deep(.code-block code) {
   background: none;
   padding: 0;
+  font-size: inherit;
+  border-radius: 0;
+}
+
+/* ----- highlight.js token colors (warm dark theme matching OMNIA gold aesthetic) */
+.bubble__content :deep(.hljs) {
+  color: #e0dcd4;
+}
+
+.bubble__content :deep(.hljs-keyword),
+.bubble__content :deep(.hljs-selector-tag),
+.bubble__content :deep(.hljs-built_in),
+.bubble__content :deep(.hljs-name) {
+  color: #c9a84c;
+}
+
+.bubble__content :deep(.hljs-string),
+.bubble__content :deep(.hljs-addition) {
+  color: #8fbc6a;
+}
+
+.bubble__content :deep(.hljs-comment),
+.bubble__content :deep(.hljs-quote) {
+  color: #6a6458;
+  font-style: italic;
+}
+
+.bubble__content :deep(.hljs-number),
+.bubble__content :deep(.hljs-literal) {
+  color: #d4956a;
+}
+
+.bubble__content :deep(.hljs-type),
+.bubble__content :deep(.hljs-class .hljs-title),
+.bubble__content :deep(.hljs-title) {
+  color: #e0c080;
+}
+
+.bubble__content :deep(.hljs-attr),
+.bubble__content :deep(.hljs-variable),
+.bubble__content :deep(.hljs-template-variable) {
+  color: #d4b896;
+}
+
+.bubble__content :deep(.hljs-function) {
+  color: #d4c49c;
+}
+
+.bubble__content :deep(.hljs-params) {
+  color: #c0b89c;
+}
+
+.bubble__content :deep(.hljs-regexp),
+.bubble__content :deep(.hljs-link) {
+  color: #c49060;
+}
+
+.bubble__content :deep(.hljs-meta) {
+  color: #8a8578;
+}
+
+.bubble__content :deep(.hljs-deletion) {
+  color: #c45c5c;
+}
+
+.bubble__content :deep(.hljs-symbol),
+.bubble__content :deep(.hljs-bullet) {
+  color: #c9a84c;
+}
+
+.bubble__content :deep(.hljs-subst) {
+  color: #e0dcd4;
+}
+
+.bubble__content :deep(.hljs-section) {
+  color: #c9a84c;
+  font-weight: bold;
+}
+
+.bubble__content :deep(.hljs-emphasis) {
+  font-style: italic;
+}
+
+.bubble__content :deep(.hljs-strong) {
+  font-weight: bold;
 }
 
 .bubble__content :deep(ul),

@@ -7,6 +7,7 @@
 
 import type {
   ConversationDetail,
+  ConversationExport,
   ConversationSummary,
   DeleteConversationResponse,
   FileAttachment,
@@ -67,6 +68,28 @@ export const api = {
   /** List all conversations (most recent first). */
   getConversations: (): Promise<ConversationSummary[]> =>
     request<ConversationSummary[]>('/chat/conversations'),
+
+  /** Create a new empty conversation on the backend. */
+  createConversation: (id: string, title?: string): Promise<ConversationSummary> =>
+    request<ConversationSummary>('/chat/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ id, title: title ?? null })
+    }),
+
+  /** Export a conversation as JSON. */
+  exportConversation: (id: string): Promise<ConversationExport> =>
+    request<ConversationExport>(`/chat/conversations/${id}/export`),
+
+  /** Import a conversation from JSON. */
+  importConversation: (data: ConversationExport): Promise<ConversationSummary> =>
+    request<ConversationSummary>('/chat/conversations/import', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  /** Get the absolute filesystem path of a conversation's JSON file. */
+  getConversationFilePath: (id: string): Promise<{ path: string }> =>
+    request<{ path: string }>(`/chat/conversations/${id}/file-path`),
 
   /** Fetch a single conversation with its full message list. */
   getConversation: (id: string): Promise<ConversationDetail> =>

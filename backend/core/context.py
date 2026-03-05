@@ -32,6 +32,7 @@ class AppContext:
     llm_service: Any = None     # TODO: type as LLMService
     stt_service: Any = None     # TODO: type as STTService
     tts_service: Any = None     # TODO: type as TTSService
+    conversation_file_manager: Any = None  # ConversationFileManager
 
 
 def create_context(config: OmniaConfig) -> AppContext:

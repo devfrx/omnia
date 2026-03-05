@@ -10,6 +10,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { renderMarkdown } from '../../composables/useMarkdown'
+import { useCodeBlocks } from '../../composables/useCodeBlocks'
 
 const props = defineProps<{
   /** Accumulated tokens so far (`currentStreamContent` from the store). */
@@ -36,6 +37,8 @@ const htmlContent = computed(() => renderMarkdown(props.content))
 
 /** Rendered HTML of the thinking content. */
 const thinkingHtml = computed(() => renderMarkdown(props.thinkingContent))
+
+const { handleCodeBlockClick } = useCodeBlocks()
 </script>
 
 <template>
@@ -60,14 +63,14 @@ const thinkingHtml = computed(() => renderMarkdown(props.thinkingContent))
         </button>
         <div v-show="!thinkingCollapsed" class="thinking-section__body">
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="thinking-section__content" v-html="thinkingHtml" />
+          <div class="thinking-section__content" v-html="thinkingHtml" @click="handleCodeBlockClick" />
           <span v-if="!content" class="streaming-bubble__cursor" />
         </div>
       </div>
 
       <!-- Main content -->
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-if="content" class="streaming-bubble__content" v-html="htmlContent" />
+      <div v-if="content" class="streaming-bubble__content" v-html="htmlContent" @click="handleCodeBlockClick" />
       <span v-if="content || !thinkingContent" class="streaming-bubble__cursor" />
     </div>
   </div>
@@ -173,17 +176,7 @@ const thinkingHtml = computed(() => renderMarkdown(props.thinkingContent))
   text-decoration: underline;
 }
 
-.streaming-bubble__content :deep(.code-block) {
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  overflow-x: auto;
-  margin: 6px 0;
-  font-family: var(--font-mono);
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-
+/* ----- Inline code */
 .streaming-bubble__content :deep(code) {
   font-family: var(--font-mono);
   font-size: 0.85em;
@@ -192,10 +185,117 @@ const thinkingHtml = computed(() => renderMarkdown(props.thinkingContent))
   border-radius: 3px;
 }
 
+/* ----- Code block wrapper */
+.streaming-bubble__content :deep(.code-block-wrapper) {
+  margin: 8px 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.streaming-bubble__content :deep(.code-block-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  min-height: 32px;
+}
+
+.streaming-bubble__content :deep(.code-block-lang) {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.streaming-bubble__content :deep(.code-block-copy) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.streaming-bubble__content :deep(.code-block-copy:hover) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.streaming-bubble__content :deep(.code-block-copy--copied) {
+  color: var(--success) !important;
+  border-color: rgba(92, 154, 110, 0.3) !important;
+}
+
+.streaming-bubble__content :deep(.code-block-copy__label) {
+  pointer-events: none;
+}
+
+.streaming-bubble__content :deep(.code-block-copy svg) {
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.streaming-bubble__content :deep(.code-block) {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  border-radius: 0;
+}
+
 .streaming-bubble__content :deep(.code-block code) {
   background: none;
   padding: 0;
+  font-size: inherit;
+  border-radius: 0;
 }
+
+/* ----- highlight.js token colors */
+.streaming-bubble__content :deep(.hljs) { color: #e0dcd4; }
+.streaming-bubble__content :deep(.hljs-keyword),
+.streaming-bubble__content :deep(.hljs-selector-tag),
+.streaming-bubble__content :deep(.hljs-built_in),
+.streaming-bubble__content :deep(.hljs-name) { color: #c9a84c; }
+.streaming-bubble__content :deep(.hljs-string),
+.streaming-bubble__content :deep(.hljs-addition) { color: #8fbc6a; }
+.streaming-bubble__content :deep(.hljs-comment),
+.streaming-bubble__content :deep(.hljs-quote) { color: #6a6458; font-style: italic; }
+.streaming-bubble__content :deep(.hljs-number),
+.streaming-bubble__content :deep(.hljs-literal) { color: #d4956a; }
+.streaming-bubble__content :deep(.hljs-type),
+.streaming-bubble__content :deep(.hljs-class .hljs-title),
+.streaming-bubble__content :deep(.hljs-title) { color: #e0c080; }
+.streaming-bubble__content :deep(.hljs-attr),
+.streaming-bubble__content :deep(.hljs-variable),
+.streaming-bubble__content :deep(.hljs-template-variable) { color: #d4b896; }
+.streaming-bubble__content :deep(.hljs-function) { color: #d4c49c; }
+.streaming-bubble__content :deep(.hljs-params) { color: #c0b89c; }
+.streaming-bubble__content :deep(.hljs-regexp),
+.streaming-bubble__content :deep(.hljs-link) { color: #c49060; }
+.streaming-bubble__content :deep(.hljs-meta) { color: #8a8578; }
+.streaming-bubble__content :deep(.hljs-deletion) { color: #c45c5c; }
+.streaming-bubble__content :deep(.hljs-symbol),
+.streaming-bubble__content :deep(.hljs-bullet) { color: #c9a84c; }
+.streaming-bubble__content :deep(.hljs-subst) { color: #e0dcd4; }
+.streaming-bubble__content :deep(.hljs-section) { color: #c9a84c; font-weight: bold; }
+.streaming-bubble__content :deep(.hljs-emphasis) { font-style: italic; }
+.streaming-bubble__content :deep(.hljs-strong) { font-weight: bold; }
 
 /* ------------------------------------------------------ Blinking cursor */
 .streaming-bubble__cursor {
