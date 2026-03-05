@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import shutil
 import uuid
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import (
     APIRouter,
@@ -31,6 +33,20 @@ from backend.services.llm_service import LLMService
 
 router = APIRouter()
 
+# Base path for uploaded files.
+_UPLOADS_BASE: Path = (PROJECT_ROOT / "data" / "uploads").resolve()
+
+# Magic byte signatures for allowed image types.
+_MAGIC_BYTES: dict[str, list[bytes]] = {
+    "image/jpeg": [b"\xff\xd8"],
+    "image/png": [b"\x89PNG"],
+    "image/gif": [b"GIF87a", b"GIF89a"],
+    "image/webp": [b"RIFF"],
+}
+
+# Active WebSocket connections per IP (for rate limiting).
+_ws_connections: dict[str, int] = defaultdict(int)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -44,6 +60,29 @@ def _utcnow() -> datetime:
 def _ctx(ws_or_request: Any) -> AppContext:
     """Extract the ``AppContext`` from the ASGI app state."""
     return ws_or_request.app.state.context
+
+
+def _attachment_url(file_path: str) -> str:
+    """Build a safe ``/uploads/…`` URL from an attachment's file_path.
+
+    Uses :meth:`pathlib.Path.relative_to` instead of string splitting
+    to avoid path-traversal issues.  Components are percent-encoded.
+    """
+    try:
+        relative = Path(file_path).resolve().relative_to(_UPLOADS_BASE)
+        return f"/uploads/{quote(str(relative), safe='/')}"
+    except ValueError:
+        return f"/uploads/{quote(file_path, safe='/')}"
+
+
+def _verify_magic_bytes(
+    data: bytes, claimed_type: str,
+) -> bool:
+    """Return ``True`` if the file's magic bytes match *claimed_type*."""
+    signatures = _MAGIC_BYTES.get(claimed_type)
+    if signatures is None:
+        return False
+    return any(data[:len(sig)] == sig for sig in signatures)
 
 
 async def _build_conversation_data(
@@ -81,11 +120,7 @@ async def _build_conversation_data(
         )
         att_results = await session.exec(att_stmt)
         for att in att_results.all():
-            url = (
-                f"/uploads/{att.file_path.split('data/uploads/', 1)[-1]}"
-                if "data/uploads/" in att.file_path
-                else f"/uploads/{att.file_path}"
-            )
+            url = _attachment_url(att.file_path)
             att_map.setdefault(att.message_id, []).append(
                 {
                     "file_id": str(att.id),
@@ -150,9 +185,27 @@ async def ws_chat(websocket: WebSocket) -> None:
         {"type": "token", "content": "..."} | {"type": "done",
          "conversation_id": "...", "message_id": "..."}
     """
-    await websocket.accept()
     ctx = _ctx(websocket)
-    llm: LLMService = ctx.llm_service
+    max_ws = ctx.config.server.ws_max_connections_per_ip
+
+    # Track per-IP WebSocket connections.
+    client_ip = (
+        websocket.client.host if websocket.client else "unknown"
+    )
+    if _ws_connections[client_ip] >= max_ws:
+        await websocket.close(
+            code=1008, reason="Too many connections",
+        )
+        logger.warning(
+            "WS rejected for {} — {} active connections",
+            client_ip, _ws_connections[client_ip],
+        )
+        return
+
+    await websocket.accept()
+    _ws_connections[client_ip] += 1
+
+    llm: LLMService = ctx.llm_service  # type: ignore[assignment]
     session_factory = ctx.db
 
     try:
@@ -308,6 +361,10 @@ async def ws_chat(websocket: WebSocket) -> None:
         logger.debug("WebSocket client disconnected")
     except Exception:
         logger.exception("WebSocket unexpected error")
+    finally:
+        _ws_connections[client_ip] = max(
+            0, _ws_connections[client_ip] - 1,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -320,34 +377,32 @@ async def list_conversations(request: Request) -> list[dict[str, Any]]:
     """List all conversations ordered by most recently updated."""
     ctx = _ctx(request)
     async with ctx.db() as session:
+        # Single query: conversation data + message count via LEFT JOIN.
         stmt = (
-            select(Conversation)
+            select(
+                Conversation,
+                sa_func.count(Message.id).label("msg_count"),
+            )
+            .outerjoin(
+                Message,
+                Message.conversation_id == Conversation.id,
+            )
+            .group_by(Conversation.id)
             .order_by(Conversation.updated_at.desc())  # type: ignore[union-attr]
         )
         results = await session.exec(stmt)
-        conversations = results.all()
+        rows = results.all()
 
-        summaries: list[dict[str, Any]] = []
-        for conv in conversations:
-            count_stmt = (
-                select(sa_func.count())
-                .select_from(Message)
-                .where(Message.conversation_id == conv.id)
-            )
-            count_result = await session.exec(count_stmt)
-            msg_count: int = count_result.one()
-
-            summaries.append(
-                {
-                    "id": str(conv.id),
-                    "title": conv.title,
-                    "created_at": conv.created_at.isoformat(),
-                    "updated_at": conv.updated_at.isoformat(),
-                    "message_count": msg_count,
-                }
-            )
-
-        return summaries
+        return [
+            {
+                "id": str(conv.id),
+                "title": conv.title,
+                "created_at": conv.created_at.isoformat(),
+                "updated_at": conv.updated_at.isoformat(),
+                "message_count": msg_count,
+            }
+            for conv, msg_count in rows
+        ]
 
 
 @router.get("/chat/conversations/{conversation_id}")
@@ -381,9 +436,7 @@ async def get_conversation(
                 att_map.setdefault(att.message_id, []).append(
                     {
                         "file_id": str(att.id),
-                        "url": f"/uploads/{att.file_path.split('data/uploads/', 1)[-1]}"
-                        if "data/uploads/" in att.file_path
-                        else f"/uploads/{att.file_path}",
+                        "url": _attachment_url(att.file_path),
                         "filename": att.filename,
                         "content_type": att.content_type,
                     }
@@ -769,7 +822,16 @@ async def upload_image(
 
     Raises:
         HTTPException 400: If the file type is not an allowed image format.
+        HTTPException 413: If the file exceeds the configured size limit.
     """
+    # Validate conversation_id as UUID (anti path-traversal).
+    try:
+        conv_uuid = uuid.UUID(conversation_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail="Invalid conversation_id",
+        )
+
     if file.content_type not in _ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=400,
@@ -779,39 +841,81 @@ async def upload_image(
             ),
         )
 
+    ctx = _ctx(request)
+    max_bytes = ctx.config.server.max_upload_size_mb * 1024 * 1024
+
+    # Check Content-Length header as an early rejection.
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"File too large. Maximum allowed: "
+                f"{ctx.config.server.max_upload_size_mb} MB"
+            ),
+        )
+
+    content = await file.read()
+
+    # Enforce actual file size after reading.
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"File too large ({len(content)} bytes). Maximum: "
+                f"{ctx.config.server.max_upload_size_mb} MB"
+            ),
+        )
+
+    # Verify magic bytes match the claimed MIME type.
+    if not _verify_magic_bytes(content, file.content_type or ""):
+        raise HTTPException(
+            status_code=400,
+            detail="File content does not match claimed MIME type",
+        )
+
     file_id = uuid.uuid4()
-    ext = Path(file.filename).suffix.lstrip(".") if file.filename else "bin"
-    relative_path = f"data/uploads/{conversation_id}/{file_id}.{ext}"
+    ext = (
+        Path(file.filename).suffix.lstrip(".") if file.filename else "bin"
+    )
+    relative_path = (
+        f"data/uploads/{conv_uuid}/{file_id}.{ext}"
+    )
     abs_path = PROJECT_ROOT / relative_path
 
     # Ensure the upload directory exists.
     abs_path.parent.mkdir(parents=True, exist_ok=True)
-
-    content = await file.read()
     abs_path.write_bytes(content)
 
     # Persist an attachment record (message_id linked later via WS handler).
-    ctx = _ctx(request)
-    async with ctx.db() as session:
-        attachment = Attachment(
-            id=file_id,
-            filename=file.filename or f"{file_id}.{ext}",
-            content_type=file.content_type or "application/octet-stream",
-            file_path=relative_path,
+    try:
+        async with ctx.db() as session:
+            attachment = Attachment(
+                id=file_id,
+                filename=file.filename or f"{file_id}.{ext}",
+                content_type=file.content_type or "application/octet-stream",
+                file_path=relative_path,
+            )
+            session.add(attachment)
+            await session.commit()
+    except Exception:
+        # Cleanup orphan file if DB transaction fails.
+        abs_path.unlink(missing_ok=True)
+        logger.exception("DB error during upload — cleaned up {}", abs_path)
+        raise HTTPException(
+            status_code=500, detail="Failed to save attachment record",
         )
-        session.add(attachment)
-        await session.commit()
 
     logger.info(
         "Uploaded {} ({}) for conversation {}",
         file.filename,
         file.content_type,
-        conversation_id,
+        conv_uuid,
     )
 
     return {
         "file_id": str(file_id),
-        "url": f"/uploads/{conversation_id}/{file_id}.{ext}",
+        "url": f"/uploads/{conv_uuid}/{file_id}.{ext}",
         "filename": file.filename,
         "content_type": file.content_type,
     }

@@ -10,7 +10,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 /** Tracks whether the window is currently maximized */
 const isMaximized = ref(false)
 
-const windowControls = window.electron.windowControls
+const windowControls = window.electron?.windowControls
 
 /** Minimize the application window */
 const handleMinimize = (): void => {

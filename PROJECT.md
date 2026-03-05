@@ -114,13 +114,6 @@ Ogni conversazione è salvata come file JSON atomico, sincronizzato automaticame
 - [x] REST chat history
 - [x] Database (SQLite + SQLModel)
 
-### Fase 2 — Frontend Base + Chat UI
-- [x] Electron window frameless + custom title bar
-- [x] WebSocket manager
-- [x] LLM stream composable
-- [x] Pinia chat store
-- [x] Chat UI components (ChatView, MessageBubble, ChatInput, StreamingIndicator)
-
 ### Fase 1.5 — Supporto Multimodale + Thinking
 
 - [x] Thinking model support (QwQ, DeepSeek R1) — parsing `<think>` tags + reasoning_content delta
@@ -154,43 +147,476 @@ Ogni conversazione è salvata come file JSON atomico, sincronizzato automaticame
 - [x] Supporto in MessageBubble (messaggi completati)
 - [x] Supporto in StreamingIndicator (risposte in streaming)
 
+### Fase 2 — Frontend Base + Chat UI
+- [x] Electron window frameless + custom title bar
+- [x] WebSocket manager
+- [x] LLM stream composable
+- [x] Pinia chat store
+- [x] Chat UI components (ChatView, MessageBubble, ChatInput, StreamingIndicator)
+
+### Fase 2.5 — Hardening & Debito Tecnico Pre-Plugin
+
+> Correzioni necessarie prima di iniziare Fase 3. Riducono debito tecnico e prevengono regressioni.
+
+#### 2.5.1 — Backend Hardening
+- [x] **Tipizzazione AppContext**: sostituire `Any` con Protocol/tipo concreto per `llm_service`, `stt_service`, `tts_service`, `plugin_manager`
+- [x] **BaseService Protocol**: creare `BaseService` con `async start()`, `async stop()`, `async health_check()` — tutti i service futuri lo implementano
+- [x] **Config immutabilità**: rimuovere `object.__setattr__` mutation; costruire config come frozen Pydantic model, ricreare istanza se serve
+- [x] **Event bus enum**: convertire event names da magic strings (`"llm.response"`) a `enum.StrEnum` (type-safe, refactoring-safe)
+- [x] **N+1 query fix**: riscrivere lista conversazioni con `SELECT COUNT(*) GROUP BY` invece di N query separate
+- [x] **Connection pool config**: aggiungere `pool_size`, `max_overflow`, `pool_pre_ping` a `create_async_engine()`
+- [x] **File upload security**:
+  - Max file size (50 MB) in config + validazione
+  - Validazione `conversation_id` come UUID (anti path-traversal)
+  - Verifica magic bytes per tipo file (non solo MIME type)
+  - Cleanup file orfani se transazione DB fallisce
+- [x] **URL generation safe**: sostituire `str.split("data/uploads/")` con `pathlib.Path.relative_to()` + `urllib.parse.quote()`
+- [x] **Timeout LLM configurabile**: spostare `httpx.AsyncClient(timeout=120.0)` in config, con override per-request
+- [x] **Rate limiting minimo**: `slowapi` middleware su REST + max WS connections per IP
+
+#### 2.5.2 — Frontend Hardening
+- [x] **Memory leak blob URL**: revocare `URL.createObjectURL()` su cleanup/re-render in `ChatInput.vue`
+- [x] **Race condition conversation switch**: dedup richieste, cancellare stream al cambio conversazione
+- [x] **Backpressure WebSocket**: buffer check prima di send; coda con limite
+- [x] **Virtualizzazione ConversationList**: `vue-virtual-scroller` o simile per 1000+ conversazioni
+- [x] **Estrazione componente condiviso**: eliminare duplicazione 100+ righe tra `MessageBubble` e `StreamingIndicator`
+- [x] **Error boundary**: componente Vue `<ErrorBoundary>` per isolare crash plugin UI futuri
+- [x] **Accessibilità base**: ARIA labels su pulsanti, focus indicators, keyboard navigation sidebar
+
+#### 2.5.3 — Sicurezza Electron
+- [x] **Sandbox attivo**: `sandbox: true` + `nodeIntegration: false` + `contextIsolation: true` in `BrowserWindow`
+- [x] **CSP header**: `Content-Security-Policy` in `index.html` — `default-src 'self'; connect-src ws://localhost:8000 http://localhost:8000; img-src 'self' blob: data: http://localhost:8000`
+- [x] **CORS produzione**: rimuovere `"null"` da `cors_origins` e usare whitelist specifica per environment (dev vs prod)
+
+#### 2.5.4 — Test Coverage Gap
+- [x] Test WebSocket: connessione, invio messaggio, ricezione stream, disconnessione, riconnessione
+- [x] Test file upload: validazione tipo, size limit, path traversal rejection
+- [x] Test ConversationFileManager: file corrotto, disco pieno, permessi mancanti
+- [x] Test concurrent: 10+ WS simultanei, race condition su stessa conversazione
+
+---
+
 ### Fase 3 — Plugin System
-- [ ] BasePlugin ABC
-- [ ] PluginManager (discovery, lifecycle)
-- [ ] ToolRegistry (aggregazione tool per LLM)
-- [ ] Tool calling loop
-- [ ] Plugin di esempio: system_info
+
+#### 3.1 — BasePlugin ABC + PluginManager
+- [ ] `BasePlugin` ABC con interfaccia completa:
+  - `plugin_name: str` — nome univoco del plugin (match chiave `PLUGIN_REGISTRY`)
+  - `plugin_version: str` — semver (es. `"1.0.0"`)
+  - `PLUGIN_API_VERSION: str` — semver API contract (per compatibilità retroattiva)
+  - `plugin_dependencies: list[str]` — nomi plugin da cui dipende (per load order)
+  - `plugin_priority: int = 50` — ordine esecuzione 0-100 (più alto = priorità maggiore)
+  - `requires_user_confirmation: bool = False` — override in plugin distruttivi (Fase 5)
+  - `async def initialize(ctx: AppContext)` / `async def cleanup()` (I/O deferred, no side-effects in `__init__`)
+  - `async def on_app_startup()` / `async def on_app_shutdown()` (per plugin stateful: MQTT, HA)
+  - `def get_tools() -> list[ToolDefinition]` — restituisce le definizioni tool (può essere vuoto)
+  - `async def execute_tool(tool_name: str, args: dict, context: ExecutionContext) -> ToolResult`
+  - `async def cancel_tool(tool_name: str, execution_id: str)` — default no-op
+  - `async def pre_execution_hook(tool_name, args) -> bool` (canary per conferma utente)
+  - `def check_dependencies() -> list[str]` (segnala dipendenze opzionali mancanti senza crash)
+  - `async def get_connection_status() -> ConnectionStatus` — `connected|disconnected|degraded|error` (default `UNKNOWN`)
+  - `async def on_dependency_status_change(plugin_name: str, status: ConnectionStatus)` — notifica cambio stato dipendenza
+  - `@classmethod def get_config_schema() -> dict` — JSON Schema per config plugin-specifica (UI auto-generata Fase 8)
+  - `@classmethod def get_db_models() -> list[type[SQLModel]]` — modelli DB plugin-specifici (tabelle create a startup)
+  - `@classmethod async def migrate_config(from_version, old_config, to_version) -> dict` — migrazione config tra versioni
+  - `@property def logger` — logger pre-configurato con `bind(plugin=self.plugin_name)`
+- [ ] `ToolDefinition` dataclass:
+  - `name: str` — nome tool (`^[a-zA-Z0-9_-]{1,64}$`)
+  - `description: str` — max 1024 caratteri
+  - `parameters: dict` — JSON Schema per argomenti
+  - `result_type: Literal["string", "json", "binary_base64"]` — tipo risultato
+  - `supports_cancellation: bool = False`
+  - `timeout_ms: int = 30000` — timeout esecuzione
+  - `requires_confirmation: bool = False` — richiede approvazione utente (Fase 5)
+  - `risk_level: Literal["safe", "medium", "dangerous", "forbidden"] = "safe"`
+- [ ] `ToolResult` dataclass:
+  - `success: bool`
+  - `content: str | dict | None` — risultato principale (string per OpenAI compat)
+  - `content_type: str` — `"text/plain"`, `"application/json"`, `"image/png"`, etc.
+  - `execution_time_ms: float`
+  - `truncated: bool = False` — True se risultato tagliato per dimensione
+  - `error_message: str | None`
+- [ ] `ExecutionContext` dataclass:
+  - `user_id: str | None = None` — forward-compat Fase 8 JWT
+  - `session_id: str`
+  - `conversation_id: str`
+  - `execution_id: str` — UUID per tracciamento/audit
+- [ ] `ConnectionStatus` enum: `UNKNOWN`, `CONNECTED`, `DISCONNECTED`, `DEGRADED`, `ERROR`
+- [ ] `PluginManager` con:
+  - Registro **statico** (`PLUGIN_REGISTRY` dict) per compatibilità PyInstaller (Fase 8)
+  - Flag env `OMNIA_PLUGIN_DISCOVERY=dynamic` per scan `importlib` in dev
+  - **Risoluzione dipendenze**: topological sort (algoritmo di Kahn) con cycle detection
+  - **Load order deterministico**: dipendenze prima, poi per `plugin_priority`
+  - Isolamento crash per ogni plugin: `ImportError`, `SyntaxError`, `AttributeError` non abbattono il server
+  - Gestione stub vuoti (`__init__.py` privi di classe `BasePlugin`) senza eccezioni
+  - `asyncio.Lock` per thread-safety su registry (accesso concorrente da più WS)
+  - Deduplicazione nomi plugin (collision detection al load)
+  - `startup()` / `shutdown()` che chiamano i lifecycle hooks su tutti i plugin attivi (in ordine dipendenze)
+  - `reload_plugin(name)`: freeze new calls → wait in-flight → cleanup → re-import → re-init → update registry
+  - Creazione tabelle DB plugin-specifiche a startup (`get_db_models()` → `SQLModel.metadata.create_all`)
+  - Health aggregation: `get_all_status() -> dict[str, ConnectionStatus]`
+  - Emissione eventi EventBus: `plugin.loaded`, `plugin.failed`, `plugin.status_changed`
+- [ ] `AppContext` esteso: `plugin_manager: PluginManager | None = None`, `tool_registry: ToolRegistry | None = None` (opzionali, backward-compat con test pre-Fase 3)
+- [ ] FastAPI lifespan: wrap PluginManager init con `try/except` + flag `app.state.healthy` se plugin critici falliscono
+
+#### 3.2 — ToolRegistry
+- [ ] Aggregazione tool descriptions (OpenAI format) da tutti i plugin attivi
+- [ ] Validazione nome: regex `^[a-zA-Z0-9_-]{1,64}$` (compatibilità OpenAI/Ollama)
+- [ ] **Namespacing opzionale**: nomi tool salvati come `plugin_name + "_" + tool_name` per evitare collisioni (escape dot in underscore)
+- [ ] Validazione description: max 1024 caratteri (warning se > 512)
+- [ ] Validazione `parameters`: JSON Schema valido (fallback a schema vuoto `{"type": "object"}`, non crash)
+- [ ] Collision detection: tool con stesso nome da plugin diversi → errore esplicito al load
+- [ ] Lookup `O(1)` per tool_call dispatch (dict)
+- [ ] Thread-safe read (RW-compatible con `asyncio.Lock`)
+- [ ] **Tool availability dinamica**: `get_available_tools()` filtra per `plugin.get_connection_status() != ERROR`
+- [ ] **Tool timeout enforcement**: `asyncio.wait_for()` wrapper su ogni `execute_tool()` con `tool.timeout_ms`
+- [ ] **Tool result truncation**: se `content` > 4096 chars, troncare + `truncated=True` + log warning
+- [ ] **Tool result sanitization**: strip eccezioni Python, path interni, PII prima di inviare a LLM
+- [ ] **Errore strutturato** per tool non trovato: `ToolResult(success=False, error_message="Tool 'X' not available: plugin Y disabled")`
+
+#### 3.3 — Tool Calling Loop + History Fix
+- [ ] **Refactor `build_messages()`**: normalizza `Message` DB → OpenAI-compatible includendo `tool_calls` (per `role:"assistant"`) e `tool_call_id` (per `role:"tool"`)
+- [ ] **Refactor history fetch** in `ws_chat`: usare normalizzatore invece di `{"role", "content"}` solo
+- [ ] Tool calling loop in `ws_chat`:
+  - `MAX_TOOL_ITERATIONS = 10` (anti-loop-infinito, configurabile)
+  - `asyncio.gather` per parallel tool_calls nella stessa risposta LLM
+  - **Ogni tool_call**: `asyncio.wait_for(execute, timeout=tool.timeout_ms/1000)` con `TimeoutError` handling
+  - Error handling per tool execution: errori formattati come `{"role": "tool", "content": "Error: ..."}` — l'LLM riceve errori strutturati, non eccezioni Python
+  - Salvataggio in DB di messaggi `role:"tool"` con `tool_call_id` dopo ogni esecuzione
+  - Sync file JSON dopo ogni round di tool execution
+  - **Recovery**: se WS si chiude mid-loop, cleanup tool in-flight + salva stato parziale
+  - **Dedup**: se LLM chiama stesso tool con stessi args nella stessa iterazione, skip e log warning
+- [ ] **Confirmation flow (async)**: se `tool.requires_confirmation`:
+  1. Invia `{"type": "tool_confirmation_required", "tool_name": ..., "args": ..., "execution_id": ...}` al client
+  2. Attendi risposta `{"type": "tool_confirmation_response", "execution_id": ..., "approved": bool}` con timeout 60s
+  3. Se approvato → esegui; se rifiutato o timeout → `ToolResult(success=False, error_message="User rejected")`
+- [ ] `ExecutionContext` dataclass: `user_id=None`, `session_id`, `conversation_id`, `execution_id` — forward-compat con Fase 8 JWT multi-user
+- [ ] **Audit trail**: emetti `EVENT_TOOL_EXECUTION_START`, `EVENT_TOOL_EXECUTION_SUCCEEDED`, `EVENT_TOOL_EXECUTION_FAILED` su EventBus
+
+#### 3.4 — Plugin system_info (esempio)
+- [ ] `psutil` con lazy import (`try/except ImportError` + `check_dependencies()`)
+- [ ] Tool: `get_system_info()` → CPU%, RAM%, disco, OS — output whitelist (no path utente, no processi privati)
+- [ ] Tool: `get_process_list()` → lista processi (filtrata, no PID sensibili)
+- [ ] Schema JSON Schema per parametri e validazione argomenti prima dell'esecuzione
+- [ ] `risk_level: "safe"` per entrambi i tool (nessuna conferma richiesta)
+- [ ] Test unitari: mock psutil, verifica output schema, verifica whitelist campi
+
+#### 3.5 — ConversationFileManager: schema versioning
+- [ ] `schema_version: int` nei file JSON (v1 = pre-Fase 3, v2 = con tool_calls)
+- [ ] Migration v1→v2 al caricamento (aggiunge `tool_calls: null`, `tool_call_id: null` ai messaggi legacy)
+- [ ] Serializzazione corretta di `role:"tool"` e `tool_calls` array nei nuovi file
+- [ ] **Sharding futuro**: preparare struttura `data/conversations/` per eventuale sotto-directory per user (`data/conversations/{user_id}/`)
+
+#### 3.6 — Frontend: tool call UI
+- [ ] Nuovi tipi WS protocol:
+  - `{"type": "tool_execution_start", "tool_name": "...", "execution_id": "..."}`
+  - `{"type": "tool_execution_done", "tool_name": "...", "result": "...", "execution_id": "..."}`
+  - `{"type": "tool_confirmation_required", "tool_name": "...", "args": {...}, "execution_id": "..."}`
+  - `{"type": "tool_confirmation_response", "execution_id": "...", "approved": bool}` (client → server)
+- [ ] Loading state intermedio visibile (spinner/badge tra token LLM e risposta finale)
+- [ ] `MessageBubble`: visualizzazione tool calls eseguiti (collapsible, come il thinking block)
+- [ ] **ToolConfirmationDialog**: modale per approvazione/rifiuto azioni con risk_level ≥ medium
+- [ ] **Chat store**: gestione stato `pendingConfirmations: Map<execution_id, ConfirmationRequest>`
+
+#### 3.7 — Inter-Plugin Communication + EventBus Extension
+- [ ] Nuovi eventi standard:
+  - `plugin.loaded`, `plugin.failed`, `plugin.status_changed`
+  - `tool.execution_start`, `tool.execution_succeeded`, `tool.execution_failed`
+- [ ] **Plugin local state**: `AppContext.plugin_local_state: dict[str, dict]` — ogni plugin aggiorna il proprio stato, read-only per gli altri via `ctx.get_plugin_state(name)`
+- [ ] **Circuit breaker** su EventBus: se handler fallisce N volte consecutive, disabilitare temporaneamente (evita log flood)
+
+#### 3.8 — Test Suite Fase 3
+- [ ] Test BasePlugin: lifecycle (init → startup → tool_call → shutdown → cleanup)
+- [ ] Test PluginManager: load order, collision, crash isolation, reload
+- [ ] Test ToolRegistry: validazione nome, collision, lookup, thread-safety, timeout
+- [ ] Test tool calling loop: max iterations, parallel calls, error recovery, confirmation flow
+- [ ] Test system_info plugin: mock psutil, output schema
+- [ ] Test ConversationFileManager: migration v1→v2, serializzazione tool_calls
+
+---
 
 ### Fase 4 — Voce (STT + TTS)
-- [ ] faster-whisper + Silero VAD
-- [ ] Audio capture service
-- [ ] WebSocket voice endpoint
-- [ ] Piper TTS + voci italiane
-- [ ] Frontend voice composable + UI
-- [ ] (Opzionale) XTTS v2 voice cloning
+
+#### 4.1 — STT Service (faster-whisper)
+- [ ] `STTService` implementa `BaseService` protocol (`start`, `stop`, `health_check`)
+- [ ] faster-whisper large-v3 + Silero VAD per voice activity detection
+- [ ] Lazy VRAM allocation: carica modello STT solo quando voice è attivata (non a startup)
+- [ ] **Audio buffer validation**: max durata 5 minuti, max size 50 MB, formato supportato (wav, mp3, ogg, flac) con magic bytes check
+- [ ] **Timeout trascrizione**: `asyncio.wait_for(transcribe, timeout=durata_audio * 1.5)`
+- [ ] Config: `voice.stt.enabled: bool`, `voice.stt.model`, `voice.stt.language`, `voice.stt.vad_threshold`
+
+#### 4.2 — TTS Service (Piper + opzionale XTTS v2)
+- [ ] `TTSService` implementa `BaseService` protocol
+- [ ] Piper TTS primario (CPU-only, ~0.1 GB RAM) — voci italiane
+- [ ] Opzionale: XTTS v2 per voice cloning (GPU, ~1-2 GB VRAM)
+- [ ] Config: `voice.tts.engine: Literal["piper", "xtts"]`, `voice.tts.voice`, `voice.tts.speed`
+- [ ] **Output audio streaming**: genera audio chunk-by-chunk, non attendere fine sintesi
+
+#### 4.3 — WebSocket Voice Protocol
+- [ ] **Endpoint separato** `/ws/voice` (non mescolare con `/ws/chat` per evitare complessità multiplexing)
+- [ ] Protocollo binario + JSON su stesso WS:
+  - Client → Server: binary frames (audio PCM/opus) + JSON `{"type": "voice_start"/"voice_stop"}`
+  - Server → Client: binary frames (audio TTS) + JSON `{"type": "transcript", "text": "..."}`
+- [ ] **Head-of-line blocking prevention**: se arrivano audio + text simultanei, coda prioritizzata (text ha priorità sulla voice)
+- [ ] **Auto-cancellation**: se utente invia nuovo messaggio voice mentre LLM sta rispondendo, cancellare risposta precedente
+
+#### 4.4 — Audio Capture Frontend
+- [ ] `useVoice` composable: `startListening()`, `stopListening()`, `isListening`, `transcript`
+- [ ] `navigator.mediaDevices.getUserMedia()` con config ottimale per Whisper (16kHz, mono)
+- [ ] **Push-to-talk** (default) + wake word opzionale
+- [ ] **Visual indicator**: icona microfono animata durante recording, badge durante processing
+- [ ] **Audio playback**: `AudioContext` per riproduzione risposte TTS, coda audio per chunk multipli
+- [ ] **Permessi**: richiesta esplicita permesso microfono con UX chiara; gestione denied gracefully
+
+#### 4.5 — Voice + Tool Calling Interazione
+- [ ] Se voice input attiva tool call → TTS legge risposta finale (non i tool results intermedi)
+- [ ] **Confirmation vocale**: per tool `requires_confirmation`, sintetizzare domanda TTS + attendere risposta voice "sì/no"
+- [ ] Fallback: se TTS/STT non disponibili, degradare silenziosamente a text-only
+
+#### 4.6 — VRAM Budget Manager
+- [ ] `VRAMMonitor` service: monitora VRAM usata via `nvidia-smi` o `pynvml`
+- [ ] **Budget tracking**: registra VRAM allocata per componente (LLM ~6GB, STT ~1.5GB, TTS ~0-2GB)
+- [ ] **Graceful degradation**: se VRAM > 14GB (su 16GB disponibili):
+  - Disattiva STT VAD (usa solo push-to-talk)
+  - Scalare modello STT a `medium` o `small`
+  - Se XTTS attivo, fallback a Piper (CPU)
+- [ ] Alert via EventBus: `vram.warning`, `vram.critical`
+
+#### 4.7 — Voice Data Privacy
+- [ ] Audio temporaneo: file WAV salvati in `tempfile.gettempdir()` con auto-delete dopo 60s
+- [ ] Nessun salvataggio permanente di audio (solo transcript in chat history)
+- [ ] UI: indicatore chiaro "microfono attivo" + facile disabilitazione
+
+#### 4.8 — Test Suite Fase 4
+- [ ] Test STT: mock faster-whisper, verifica transcript, timeout, formati invalidi
+- [ ] Test TTS: mock Piper, verifica output audio, streaming chunk
+- [ ] Test WS voice: connessione, send audio, ricevi transcript + audio risposta
+- [ ] Test VRAM monitor: mock nvidia-smi, graceful degradation trigger
+- [ ] Test voice + tool calling: voice input → tool call → voice output completo
+
+---
 
 ### Fase 5 — Plugin: PC Automation
-- [ ] Tools LLM (open/close app, type, keys, screenshot)
-- [ ] Executor (pywinauto + pyautogui + subprocess)
-- [ ] Layer di conferma per azioni distruttive
+
+#### 5.1 — Security Framework (PREREQUISITO — questa è la fase più critica per sicurezza)
+- [ ] `ToolRiskLevel` enum: `SAFE`, `MEDIUM`, `DANGEROUS`, `FORBIDDEN`
+- [ ] **Whitelist comandi**: solo comandi pre-approvati eseguibili (no shell arbitrario)
+- [ ] **Subprocess sicuro**: sempre `shell=False`, argomenti come lista, `timeout=30s`, output troncato a 500 chars
+- [ ] **Path validation**: file target deve esistere, non in directory di sistema (`C:\Windows`, `C:\Program Files`, etc.)
+- [ ] **Anti-prompt-injection**: LLM reasoning loggato; se tool `DANGEROUS`, utente vede reasoning + args prima di approvare
+- [ ] **Post-screenshot lockout**: dopo screenshot, bloccare tool `send_email`, `upload_file`, `execute_command` per 60s (anti-exfiltration)
+- [ ] **Confirmation timing attack prevention**: `asyncio.Lock` su executor — un solo tool alla volta quando confirmation pending
+
+#### 5.2 — Tool Definitions
+- [ ] `open_application(app_name: str)` — risk: `MEDIUM`, whitelist app names
+- [ ] `close_application(app_name: str)` — risk: `MEDIUM`
+- [ ] `type_text(text: str)` — risk: `MEDIUM` (potrebbe digitare comandi pericolosi)
+- [ ] `press_keys(keys: list[str])` — risk: `MEDIUM`, whitelist combinazioni (no Ctrl+Alt+Del, no Win+R)
+- [ ] `take_screenshot() -> base64_png` — risk: `MEDIUM`, privacy warning obbligatorio
+- [ ] `get_active_window() -> str` — risk: `SAFE`
+- [ ] `get_running_apps() -> list[str]` — risk: `SAFE`
+- [ ] `execute_command(command: str)` — risk: `DANGEROUS`, solo whitelist pre-approvata (`ipconfig`, `systeminfo`, `tasklist`, etc.)
+- [ ] `move_mouse(x, y)` / `click(x, y)` — risk: `MEDIUM`
+
+#### 5.3 — Executor (async wrapper)
+- [ ] **Tutte le chiamate blocking** (`pywinauto`, `pyautogui`, `subprocess`) wrappate in `asyncio.to_thread()` — MAI bloccare event loop FastAPI
+- [ ] Timeout per-tool (default 30s, screenshot 10s)
+- [ ] Error handling: catturare `WindowNotFoundError`, `FailSafeException`, `CalledProcessError` ecc.
+- [ ] **Screenshot**: downscale automatico se > 2MP (ottimizza per vision model), auto-delete dopo 60s
+
+#### 5.4 — Confirmation UI
+- [ ] Modale frontend con: tool name, args, LLM reasoning (dalla `<think>` section), risk level badge
+- [ ] Timer visuale: 60s per approvare, poi timeout automatico → reject
+- [ ] **Keyboard shortcut**: Enter = approva, Esc = rifiuta (per rapidità)
+- [ ] **Log azioni**: ogni azione approvata/rifiutata salvata in log (audit trail)
+
+#### 5.5 — Test Suite Fase 5
+- [ ] Test security: tool FORBIDDEN non eseguibile, path traversal bloccato, shell injection bloccato
+- [ ] Test confirmation flow: approval, rejection, timeout
+- [ ] Test executor: mock pyautogui/pywinauto, async wrapping, timeout
+- [ ] Test screenshot: downscale, auto-delete, post-screenshot lockout
+
+---
 
 ### Fase 6 — Plugin: Domotica / IoT
-- [ ] Home Assistant client (REST + WS)
-- [ ] MQTT client
-- [ ] Registro dispositivi unificato
+
+#### 6.1 — Home Assistant Client
+- [ ] `HomeAssistantService`: singleton con persistent `httpx.AsyncClient` (connection pool, non nuova connessione per ogni tool call)
+- [ ] REST API: `GET /api/states`, `POST /api/services/{domain}/{service}` con retry + backoff
+- [ ] WebSocket HA: subscribe state changes (real-time device updates)
+- [ ] **Credential management**: `SecretStr` per token HA; config attuale usa plaintext → migrare; ideale: OS keyring (`keyring` library)
+- [ ] **Connectivity validation**: test connessione a startup, emit `plugin.status_changed` se offline
+- [ ] **Rate limiting**: max 10 req/s verso HA API (evitare flood)
+
+#### 6.2 — MQTT Client
+- [ ] `MQTTService`: `paho-mqtt` con persistent connection + auto-reconnect (backoff esponenziale)
+- [ ] **TLS obbligatorio di default**: porta 8883, verifica certificato, TLS 1.2+
+- [ ] **Credenziali sicure**: `SecretStr` per password MQTT; no plaintext in config YAML
+- [ ] **QoS 1** (at least once) per comandi dispositivi
+- [ ] Background task per `loop_start()` — non bloccare event loop
+- [ ] **Command validation whitelist**: solo comandi conosciuti per tipo dispositivo (light, switch, lock, climate, sensor)
+- [ ] **IoT command sanitization**: no caratteri speciali (`;`, `|`, `&`, backtick) nei parametri
+
+#### 6.3 — Device Registry
+- [ ] DB model: `Device(id, name, device_type, area, capabilities, protocol, last_seen, state)`
+- [ ] Sync automatico da Home Assistant → device registry locale
+- [ ] Filtro per area/tipo → tool descriptions contestuali per LLM
+- [ ] **Device access control**: lista dispositivi "protetti" non controllabili da LLM (es. serrature, telecamere di sicurezza, allarme)
+- [ ] Config: `iot.protected_devices: list[str]` — nomi/ID dispositivi mai auto-controllabili
+
+#### 6.4 — Event-Driven Updates
+- [ ] **Unsolicited messages**: quando un dispositivo cambia stato, inviare al frontend:
+  - `{"type": "iot_state_update", "device_id": "...", "new_state": "...", "changed_by": "external|omnia"}`
+- [ ] **Notification vs message**: gli update IoT NON finiscono nella chat history; sono notifiche separate
+- [ ] Frontend: notification toast per state changes (opzionale, configurabile per dispositivo)
+
+#### 6.5 — Test Suite Fase 6
+- [ ] Test HA client: mock httpx, autenticazione, retry su errore, rate limiting
+- [ ] Test MQTT: mock paho-mqtt, TLS, reconnect, QoS
+- [ ] Test command validation: whitelist, sanitization, device access control
+- [ ] Test device registry: sync, filtro, dispositivi protetti
+
+---
 
 ### Fase 7 — Plugin: Ricerca Web + Calendario
-- [ ] Web search (DDG / SearXNG)
-- [ ] Web scraping (httpx + bs4)
-- [ ] Calendario/Task (SQLModel)
-- [ ] UI dedicate
+
+#### 7.1 — Web Search Plugin
+- [ ] DuckDuckGo search primario (`duckduckgo-search` library)
+- [ ] Opzionale: SearXNG self-hosted come alternativa
+- [ ] **SSRF prevention**: validare URL risultati — bloccare `localhost`, `127.0.0.1`, `10.*`, `192.168.*`, `169.254.*`, indirizzi IPv6 locali
+- [ ] **Rate limiting**: max 1 req/10s verso DDG (evitare ban)
+- [ ] **Proxy support** in config: `web.proxy.http`, `web.proxy.https`, `web.proxy.no_proxy`
+- [ ] **Result caching**: cache resultati per 5 minuti (evitare ricerche duplicate); LRU con max 100 entries
+- [ ] Tool: `web_search(query: str, max_results: int = 5) -> list[SearchResult]`
+- [ ] Tool: `web_scrape(url: str) -> str` — estrai testo con `httpx` + `beautifulsoup4`; max 50KB output; timeout 10s
+
+#### 7.2 — Calendario Plugin
+- [ ] DB models plugin-specifici: `CalendarEvent(id, title, description, start_time, end_time, recurrence_rule, reminder_minutes, created_by)`
+- [ ] Tool: `create_event(title, start, end, description?, recurrence?)` — risk: `SAFE`
+- [ ] Tool: `list_events(from_date, to_date)` — risk: `SAFE`
+- [ ] Tool: `delete_event(event_id)` — risk: `MEDIUM` (confirmation)
+- [ ] **Recurring events**: RRULE format (RFC 5545) con parsing via `python-dateutil`
+- [ ] **Reminder system**: background task che controlla reminder ogni minuto; emette `calendar.reminder` event
+- [ ] **Timezone handling**: tutti i tempi in UTC nel DB; conversione a timezone utente (config `calendar.timezone: str`)
+- [ ] **Futura integrazione esterna**: forward-compat con CalDAV/Google Calendar (non implementare ora, ma struttura DB pronta)
+
+#### 7.3 — Plugin UI (Vue components)
+- [ ] **Strategia**: plugin components bundled nel frontend (Option A — semplice per Electron; Option B con fetch remoto in Fase 8)
+- [ ] `defineAsyncComponent()` per lazy loading componenti plugin
+- [ ] **Plugin component registry**: `PluginManager.get_frontend_components()` → REST endpoint `GET /api/plugins/components` → frontend carica async
+- [ ] **Mount points** per plugin UI: `sidebar`, `modal`, `toolbar`, `settings-panel`
+- [ ] Componente `CalendarView.vue`: vista settimanale/mensile base, CRUD eventi
+- [ ] Componente `SearchResultsPanel.vue`: risultati ricerca in sidebar collassabile
+
+#### 7.4 — Test Suite Fase 7
+- [ ] Test web search: mock DDG, rate limiting, SSRF blocking, caching
+- [ ] Test web scrape: mock httpx, max size, timeout, URL validation
+- [ ] Test calendar: CRUD, recurring events, reminder trigger, timezone
+- [ ] Test plugin UI loading: async component, mount points
+
+---
 
 ### Fase 8 — Polish e Server-readiness
-- [ ] System prompt personalizzato
-- [ ] Settings UI
-- [ ] Global hotkey (Ctrl+Shift+O)
-- [ ] Auth JWT per deployment remoto
-- [ ] Packaging (PyInstaller + electron-builder)
+
+#### 8.1 — System Prompt & Settings
+- [ ] System prompt personalizzabile da UI Settings
+- [ ] Editor system prompt con preview (markdown)
+- [ ] Settings UI completa: modello LLM, temperatura, max tokens, lingua, tema, plugin on/off
+- [ ] **Settings persistence**: salvare su file `config/user.yaml` (overlay su `default.yaml`)
+- [ ] REST: `GET/PUT /api/config` per leggere/scrivere settings
+- [ ] **Plugin settings**: auto-generate form dalla `get_config_schema()` di ogni plugin
+- [ ] Global hotkey: `Ctrl+Shift+O` → attivazione finestra OMNIA (Electron `globalShortcut`)
+
+#### 8.2 — Auth JWT per Deployment Remoto
+- [ ] `AuthConfig`: `enabled: bool = False` (local: off), `jwt_secret: SecretStr`, `jwt_algorithm: str = "HS256"`, `token_expiry: int = 3600`
+- [ ] Middleware FastAPI: validazione JWT su tutte le route REST quando `auth.enabled = True`
+- [ ] **WebSocket auth**: dopo `accept()`, primo messaggio dev'essere `{"type": "auth", "token": "..."}` — timeout 5s, altrimenti `close(403)`
+- [ ] Login endpoint: `POST /api/auth/login` → JWT token
+- [ ] **Secret management per produzione**: JWT secret da env var `OMNIA_JWT_SECRET`, MAI in config file
+
+#### 8.3 — Multi-User Isolation
+- [ ] `Conversation.user_id: str | None` — nullable per backward compat (local = tutti None)
+- [ ] Filtro `WHERE user_id = ?` su tutte le query quando auth attivo
+- [ ] File conversazioni: `data/conversations/{user_id}/{conv_id}.json` (migrazione path da flat)
+- [ ] Plugin context: `ExecutionContext.user_id` propagato a ogni tool call
+- [ ] **Isolamento plugin state**: `plugin_local_state` scoped per user quando multi-user attivo
+- [ ] **PC Automation + multi-user**: disabilitare se multi-user attivo (chi controlla il PC di chi?)
+- [ ] **Voice + multi-user**: una sola sessione voice alla volta (chi parla?)
+
+#### 8.4 — Database Migrations
+- [ ] **Alembic** per schema migrations (non `create_all` manual)
+- [ ] Script migration: v1 (pre-Fase3) → v2 (tool_calls) → v3 (user_id) → v4 (plugin tables)
+- [ ] Auto-migration a startup se version mismatch detected
+- [ ] Backup automatico DB prima di migration
+
+#### 8.5 — Packaging
+- [ ] **Backend**: PyInstaller con static `PLUGIN_REGISTRY` (no importlib dinamico in prod)
+  - `--hidden-import` per ogni plugin
+  - Data files: `config/`, `data/`, modelli Piper
+  - Test: built executable funziona identico a dev
+- [ ] **Frontend**: electron-builder per Windows (`nsis`), macOS (`dmg`), Linux (`appimage`)
+  - Auto-update: `electron-updater` con GitHub Releases
+  - **Backend spawn**: Electron spawna processo Python bundled come child process
+  - Shared data directory: `%APPDATA%\OMNIA` (Win), `~/Library/Application Support/OMNIA` (macOS), `~/.config/omnia` (Linux)
+- [ ] **Crash handling**: unhandled exception → salva log + notifica utente; restart automatico backend
+- [ ] **Versioning coordinato**: backend version + frontend version in sync (semver, tag Git)
+
+#### 8.6 — Observability & Logging
+- [ ] Log strutturati (JSON) in produzione (loguru con JSON sink)
+- [ ] **Trace ID** per ogni request/WS session: propagato attraverso tool calls, plugin, DB
+- [ ] Performance metrics via EventBus: tool execution time, LLM latency, WebSocket round-trip
+- [ ] Health endpoint arricchito: `GET /api/health` → `{status, plugins: {name: status}, vram_usage, db_ok, uptime}`
+
+#### 8.7 — Test Suite Fase 8
+- [ ] Test JWT: login, token validation, expiry, WS auth flow
+- [ ] Test multi-user: isolation conversazioni, plugin state scoping, migration path file
+- [ ] Test packaging: PyInstaller build → smoke test; electron-builder → smoke test
+- [ ] Test migrations: Alembic upgrade/downgrade, backup/restore
+- [ ] E2E: Electron app avviato, connessione backend, chat funzionante, plugin attivi
+
+---
+
+## Requisiti Cross-Cutting (Tutte le Fasi)
+
+### Gestione VRAM
+| Configurazione | Componenti | VRAM Stimata |
+|---|---|---|
+| Solo chat | Qwen 3.5 9B | ~6 GB |
+| Chat + voice | Qwen + faster-whisper | ~7.5 GB |
+| Chat + voice + XTTS | Qwen + whisper + XTTS v2 | ~9.5 GB |
+| Chat + vision (screenshot) | Qwen + immagine in contesto | ~6.2 GB |
+| Thinking model | QwQ / DeepSeek R1 (swap Qwen) | ~6-10 GB |
+| **Massimo simultaneo** | Qwen + whisper + Piper(CPU) | **~7.5 / 16 GB** |
+
+**Regola**: non superare 14 GB allocati (2 GB headroom per OS + driver). `VRAMMonitor` emette alert.
+
+### Error Handling Standard
+```
+ToolError → { tool_name, error_type (timeout|permission|network|logic|internal), message, suggestions[] }
+```
+- Errori plugin: loggati con trace ID, non esposti raw all'utente
+- Errori LLM: retry automatico 1 volta, poi errore user-friendly
+- Errori DB: log + alert, fallback read-only se possibile
+- Errori WS: riconnessione automatica con exponential backoff (max 30s, non 8+ minuti)
+
+### WebSocket Protocol Completo (Evoluzione per Fase)
+| Type | Fase | Direzione | Payload |
+|---|---|---|---|
+| `token` | 1 | S→C | `{content}` |
+| `thinking` | 1.5 | S→C | `{content}` |
+| `done` | 1 | S→C | `{message}` |
+| `error` | 1 | S→C | `{content}` |
+| `tool_call` | 3 | S→C | `{id, function: {name, arguments}}` |
+| `tool_execution_start` | 3 | S→C | `{tool_name, execution_id}` |
+| `tool_execution_done` | 3 | S→C | `{tool_name, result, execution_id}` |
+| `tool_confirmation_required` | 3 | S→C | `{tool_name, args, risk_level, reasoning, execution_id}` |
+| `tool_confirmation_response` | 3 | C→S | `{execution_id, approved}` |
+| `voice_start` / `voice_stop` | 4 | C→S | `{}` |
+| `transcript` | 4 | S→C | `{text}` |
+| `audio` | 4 | bidirezionale | binary frames |
+| `iot_state_update` | 6 | S→C | `{device_id, new_state, changed_by}` |
+| `auth` | 8 | C→S | `{token}` |
+
+---
 
 ## Verifiche per Fase
 
@@ -200,9 +626,16 @@ Ogni conversazione è salvata come file JSON atomico, sincronizzato automaticame
 | 1.5 | Immagine + "Cosa vedi?" → descrizione; Thinking model → blocco ragionamento collassabile |
 | 1.6 | Export conversazione → file JSON valido; import → conversazione ripristinata; recovery DB → dati intatti |
 | 1.7 | Codice in chat → syntax highlighting colorato; click "Copia" → codice nella clipboard + feedback "Copiato!" |
-| 3 | "Quanta RAM uso?" → tool call → risposta naturale |
-| 4 | Voce: "Che ore sono?" → risposta vocale |
-| 5 | "Apri Notepad" → si apre automaticamente |
-| 6 | "Accendi la luce" → luce si accende |
-| 7 | "Che tempo fa a Roma?" → ricerca + risposta |
-| 8 | Ctrl+Shift+O → attivazione globale |
+| 2.5 | Upload file > 50MB → errore 413; `sandbox: true` in Electron; N+1 query eliminata |
+| 3 | "Quanta RAM uso?" → tool call `get_system_info` → risposta naturale con dati reali |
+| 3 (edge) | Plugin crash → server stabile; tool timeout → errore user-friendly; loop infinito → stop a 10 iterazioni |
+| 4 | Voce: "Che ore sono?" → transcript → risposta testuale → audio TTS; VRAM < 14GB |
+| 4 (edge) | Voice + text simultanei → nessun hang; STT non disponibile → fallback text-only |
+| 5 | "Apri Notepad" → confirmation dialog → approvazione → Notepad si apre |
+| 5 (edge) | Prompt injection "cancella tutto" → tool FORBIDDEN bloccato; shell injection → bloccato |
+| 6 | "Accendi la luce" → HA API call → luce si accende; MQTT disconnect → plugin status degraded |
+| 6 (edge) | Dispositivo protetto → rifiuto; command injection → bloccato; HA offline → errore user-friendly |
+| 7 | "Che tempo fa a Roma?" → DDG search → risposta con fonti; "Ricordami riunione domani" → evento creato |
+| 7 (edge) | SSRF `http://localhost` → bloccato; DDG rate limit → caching; timezone UTC↔local corretta |
+| 8 | JWT login → token → WS auth → chat; PyInstaller build → app funzionante; Ctrl+Shift+O → attivazione |
+| 8 (edge) | Multi-user: utente A non vede conversazioni utente B; migration DB → zero data loss |

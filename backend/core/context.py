@@ -7,12 +7,18 @@ injected where needed without relying on module-level globals.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from backend.core.config import OmniaConfig
 from backend.core.event_bus import EventBus
+from backend.core.protocols import (
+    ConversationFileManagerProtocol,
+    LLMServiceProtocol,
+    PluginManagerProtocol,
+    STTServiceProtocol,
+    TTSServiceProtocol,
+)
 
 
 @dataclass
@@ -27,12 +33,11 @@ class AppContext:
     event_bus: EventBus
     db: async_sessionmaker | None = None
 
-    # TODO: Replace ``Any`` with concrete types once services are implemented.
-    plugin_manager: Any = None  # TODO: type as PluginManager
-    llm_service: Any = None     # TODO: type as LLMService
-    stt_service: Any = None     # TODO: type as STTService
-    tts_service: Any = None     # TODO: type as TTSService
-    conversation_file_manager: Any = None  # ConversationFileManager
+    plugin_manager: PluginManagerProtocol | None = None
+    llm_service: LLMServiceProtocol | None = None
+    stt_service: STTServiceProtocol | None = None
+    tts_service: TTSServiceProtocol | None = None
+    conversation_file_manager: ConversationFileManagerProtocol | None = None
 
 
 def create_context(config: OmniaConfig) -> AppContext:

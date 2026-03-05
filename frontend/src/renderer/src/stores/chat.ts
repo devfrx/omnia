@@ -34,6 +34,9 @@ export const useChatStore = defineStore('chat', () => {
   /** Whether the LLM is currently streaming a response. */
   const isStreaming = ref(false)
 
+  /** The conversation ID for which streaming is currently active. */
+  const streamingConversationId = ref<string | null>(null)
+
   /** Tokens accumulated so far for the in-progress assistant response. */
   const currentStreamContent = ref('')
 
@@ -86,6 +89,11 @@ export const useChatStore = defineStore('chat', () => {
 
   /** Load a full conversation (with messages) and set it as active. */
   async function loadConversation(id: string): Promise<void> {
+    // Cancel any in-progress stream for a DIFFERENT conversation.
+    if (isStreaming.value && streamingConversationId.value && streamingConversationId.value !== id) {
+      cancelStream()
+    }
+
     // If the conversation only exists locally (created but no message sent yet),
     // skip the API call — the backend doesn't know about it and would return 404.
     const summary = conversations.value.find((c) => c.id === id)
@@ -264,6 +272,7 @@ export const useChatStore = defineStore('chat', () => {
 
     currentConversation.value.messages.push(msg)
     isStreaming.value = true
+    streamingConversationId.value = currentConversation.value.id
     currentStreamContent.value = ''
     currentThinkingContent.value = ''
   }
@@ -304,6 +313,7 @@ export const useChatStore = defineStore('chat', () => {
     currentStreamContent.value = ''
     currentThinkingContent.value = ''
     isStreaming.value = false
+    streamingConversationId.value = null
 
     // Refresh sidebar list asynchronously (fire-and-forget)
     loadConversations().catch(console.error)
@@ -325,6 +335,7 @@ export const useChatStore = defineStore('chat', () => {
     currentStreamContent.value = ''
     currentThinkingContent.value = ''
     isStreaming.value = false
+    streamingConversationId.value = null
   }
 
   // -----------------------------------------------------------------------
@@ -336,6 +347,7 @@ export const useChatStore = defineStore('chat', () => {
     conversations,
     currentConversation,
     isStreaming,
+    streamingConversationId,
     currentStreamContent,
     currentThinkingContent,
     pendingAttachments,

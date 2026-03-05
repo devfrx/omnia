@@ -10,7 +10,7 @@
  * - Thumbnails of pending images appear above the input area.
  * - The send button is disabled when the input is empty (and no files) or streaming.
  */
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps<{
   /** Disable the input (e.g. while streaming). */
@@ -171,6 +171,12 @@ function handleDrop(event: DragEvent): void {
 }
 
 // -----------------------------------------------------------------------
+// Lifecycle — revoke blob URLs on unmount
+// -----------------------------------------------------------------------
+
+onBeforeUnmount(() => clearAllFiles())
+
+// -----------------------------------------------------------------------
 // Clipboard paste
 // -----------------------------------------------------------------------
 
@@ -228,7 +234,8 @@ function handlePaste(event: ClipboardEvent): void {
         @change="handleFileSelect" />
 
       <textarea ref="textareaRef" v-model="text" class="chat-input__textarea" placeholder="Scrivi un messaggio..."
-        rows="1" :disabled="disabled" @keydown="handleKeydown" @input="autoResize" @paste="handlePaste" />
+        rows="1" :disabled="disabled" aria-label="Scrivi un messaggio" @keydown="handleKeydown" @input="autoResize"
+        @paste="handlePaste" />
 
       <button class="chat-input__send" :disabled="(!text.trim() && pendingFiles.length === 0) || disabled"
         aria-label="Invia messaggio" @click="submit">

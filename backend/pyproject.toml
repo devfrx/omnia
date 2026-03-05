@@ -49,6 +49,7 @@ dependencies = [
     # Utils
     "loguru>=0.7",
     "watchfiles>=0.24",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]

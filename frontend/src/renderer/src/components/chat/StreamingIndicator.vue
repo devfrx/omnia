@@ -11,6 +11,7 @@ import { computed, ref, watch } from 'vue'
 
 import { renderMarkdown } from '../../composables/useMarkdown'
 import { useCodeBlocks } from '../../composables/useCodeBlocks'
+import ThinkingSection from './ThinkingSection.vue'
 
 const props = defineProps<{
   /** Accumulated tokens so far (`currentStreamContent` from the store). */
@@ -18,19 +19,6 @@ const props = defineProps<{
   /** Accumulated thinking tokens (`currentThinkingContent` from the store). */
   thinkingContent: string
 }>()
-
-/** Whether the thinking section is collapsed. */
-const thinkingCollapsed = ref(false)
-
-/** Auto-expand while thinking tokens are arriving. */
-watch(
-  () => props.thinkingContent,
-  (val, old) => {
-    if (val.length > (old?.length ?? 0)) {
-      thinkingCollapsed.value = false
-    }
-  }
-)
 
 /** Rendered HTML of the partial markdown content. */
 const htmlContent = computed(() => renderMarkdown(props.content))
@@ -45,28 +33,10 @@ const { handleCodeBlockClick } = useCodeBlocks()
   <div class="bubble-row row--assistant">
     <div class="streaming-bubble">
       <!-- Thinking section -->
-      <div v-if="thinkingContent" class="thinking-section">
-        <button class="thinking-section__toggle" @click="thinkingCollapsed = !thinkingCollapsed">
-          <svg class="thinking-section__icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path
-              d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
-            <line x1="9" y1="21" x2="15" y2="21" />
-            <line x1="10" y1="24" x2="14" y2="24" />
-          </svg>
-          <span class="thinking-section__label">Ragionamento</span>
-          <svg class="thinking-section__chevron" :class="{ 'thinking-section__chevron--collapsed': thinkingCollapsed }"
-            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-        <div v-show="!thinkingCollapsed" class="thinking-section__body">
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="thinking-section__content" v-html="thinkingHtml" @click="handleCodeBlockClick" />
-          <span v-if="!content" class="streaming-bubble__cursor" />
-        </div>
-      </div>
+      <ThinkingSection v-if="thinkingContent" :thinking-html="thinkingHtml" :initial-collapsed="false"
+        :auto-expand="true" :content-length="thinkingContent.length">
+        <span v-if="!content" class="streaming-bubble__cursor" />
+      </ThinkingSection>
 
       <!-- Main content -->
       <!-- eslint-disable-next-line vue/no-v-html -->
@@ -98,71 +68,9 @@ const { handleCodeBlockClick } = useCodeBlocks()
   animation: pulseGlow 2.5s ease-in-out infinite;
 }
 
-/* ----- Thinking section */
-.thinking-section {
-  margin-bottom: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.02);
-  overflow: hidden;
-}
+/* ----- Thinking section — now rendered by ThinkingSection.vue */
 
-.thinking-section__toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 6px 10px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  cursor: pointer;
-  transition: color var(--transition-normal);
-}
-
-.thinking-section__toggle:hover {
-  color: var(--text-primary);
-}
-
-.thinking-section__icon {
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-
-.thinking-section__label {
-  font-style: italic;
-  flex: 1;
-  text-align: left;
-}
-
-.thinking-section__chevron {
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-.thinking-section__chevron--collapsed {
-  transform: rotate(-90deg);
-}
-
-.thinking-section__body {
-  padding: 4px 10px 8px;
-  font-style: italic;
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-  line-height: 1.5;
-  opacity: 0.8;
-}
-
-.thinking-section__content :deep(p) {
-  margin: 0 0 0.4em;
-}
-
-.thinking-section__content :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-/* ----- markdown content (re-uses same deep selectors as MessageBubble) */
+/* ----- markdown content */
 .streaming-bubble__content :deep(p) {
   margin: 0 0 0.4em;
 }
@@ -176,126 +84,7 @@ const { handleCodeBlockClick } = useCodeBlocks()
   text-decoration: underline;
 }
 
-/* ----- Inline code */
-.streaming-bubble__content :deep(code) {
-  font-family: var(--font-mono);
-  font-size: 0.85em;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
-/* ----- Code block wrapper */
-.streaming-bubble__content :deep(.code-block-wrapper) {
-  margin: 8px 0;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.streaming-bubble__content :deep(.code-block-header) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 12px;
-  background: rgba(0, 0, 0, 0.45);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  min-height: 32px;
-}
-
-.streaming-bubble__content :deep(.code-block-lang) {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  user-select: none;
-}
-
-.streaming-bubble__content :deep(.code-block-copy) {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
-  padding: 2px 8px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  user-select: none;
-}
-
-.streaming-bubble__content :deep(.code-block-copy:hover) {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.streaming-bubble__content :deep(.code-block-copy--copied) {
-  color: var(--success) !important;
-  border-color: rgba(92, 154, 110, 0.3) !important;
-}
-
-.streaming-bubble__content :deep(.code-block-copy__label) {
-  pointer-events: none;
-}
-
-.streaming-bubble__content :deep(.code-block-copy svg) {
-  pointer-events: none;
-  flex-shrink: 0;
-}
-
-.streaming-bubble__content :deep(.code-block) {
-  background: rgba(0, 0, 0, 0.35);
-  padding: 12px 14px;
-  overflow-x: auto;
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.84rem;
-  line-height: 1.55;
-  border-radius: 0;
-}
-
-.streaming-bubble__content :deep(.code-block code) {
-  background: none;
-  padding: 0;
-  font-size: inherit;
-  border-radius: 0;
-}
-
-/* ----- highlight.js token colors */
-.streaming-bubble__content :deep(.hljs) { color: #e0dcd4; }
-.streaming-bubble__content :deep(.hljs-keyword),
-.streaming-bubble__content :deep(.hljs-selector-tag),
-.streaming-bubble__content :deep(.hljs-built_in),
-.streaming-bubble__content :deep(.hljs-name) { color: #c9a84c; }
-.streaming-bubble__content :deep(.hljs-string),
-.streaming-bubble__content :deep(.hljs-addition) { color: #8fbc6a; }
-.streaming-bubble__content :deep(.hljs-comment),
-.streaming-bubble__content :deep(.hljs-quote) { color: #6a6458; font-style: italic; }
-.streaming-bubble__content :deep(.hljs-number),
-.streaming-bubble__content :deep(.hljs-literal) { color: #d4956a; }
-.streaming-bubble__content :deep(.hljs-type),
-.streaming-bubble__content :deep(.hljs-class .hljs-title),
-.streaming-bubble__content :deep(.hljs-title) { color: #e0c080; }
-.streaming-bubble__content :deep(.hljs-attr),
-.streaming-bubble__content :deep(.hljs-variable),
-.streaming-bubble__content :deep(.hljs-template-variable) { color: #d4b896; }
-.streaming-bubble__content :deep(.hljs-function) { color: #d4c49c; }
-.streaming-bubble__content :deep(.hljs-params) { color: #c0b89c; }
-.streaming-bubble__content :deep(.hljs-regexp),
-.streaming-bubble__content :deep(.hljs-link) { color: #c49060; }
-.streaming-bubble__content :deep(.hljs-meta) { color: #8a8578; }
-.streaming-bubble__content :deep(.hljs-deletion) { color: #c45c5c; }
-.streaming-bubble__content :deep(.hljs-symbol),
-.streaming-bubble__content :deep(.hljs-bullet) { color: #c9a84c; }
-.streaming-bubble__content :deep(.hljs-subst) { color: #e0dcd4; }
-.streaming-bubble__content :deep(.hljs-section) { color: #c9a84c; font-weight: bold; }
-.streaming-bubble__content :deep(.hljs-emphasis) { font-style: italic; }
-.streaming-bubble__content :deep(.hljs-strong) { font-weight: bold; }
+/* ----- Code block styles are in assets/styles/code-blocks.css */
 
 /* ------------------------------------------------------ Blinking cursor */
 .streaming-bubble__cursor {

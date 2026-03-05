@@ -15,7 +15,9 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: true,
+      nodeIntegration: false,
+      contextIsolation: true
     }
   })
 
@@ -48,6 +50,11 @@ function createWindow(): void {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+
+  // Open DevTools automatically in dev mode
+  if (is.dev) {
+    mainWindow.webContents.openDevTools()
   }
 }
 

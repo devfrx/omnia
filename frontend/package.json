@@ -21,7 +21,6 @@
     "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
-    "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "electron-updater": "^6.3.9",
     "highlight.js": "^11.11.1",
@@ -30,6 +29,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/eslint-config-prettier": "3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^2.0.0",

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
+from enum import StrEnum
 from typing import Any, Callable, Coroutine
 
 from loguru import logger
@@ -12,12 +13,25 @@ from loguru import logger
 # Well-known event names
 # ---------------------------------------------------------------------------
 
-EVENT_LLM_RESPONSE: str = "llm.response"
-EVENT_STT_RESULT: str = "stt.result"
-EVENT_TTS_START: str = "tts.start"
-EVENT_PLUGIN_LOADED: str = "plugin.loaded"
-EVENT_TOOL_CALLED: str = "tool.called"
-EVENT_ERROR: str = "error"
+
+class OmniaEvent(StrEnum):
+    """Enumeration of well-known event names used by the bus."""
+
+    LLM_RESPONSE = "llm.response"
+    STT_RESULT = "stt.result"
+    TTS_START = "tts.start"
+    PLUGIN_LOADED = "plugin.loaded"
+    TOOL_CALLED = "tool.called"
+    ERROR = "error"
+
+
+# Backward-compatible aliases so existing imports keep working.
+EVENT_LLM_RESPONSE: str = OmniaEvent.LLM_RESPONSE
+EVENT_STT_RESULT: str = OmniaEvent.STT_RESULT
+EVENT_TTS_START: str = OmniaEvent.TTS_START
+EVENT_PLUGIN_LOADED: str = OmniaEvent.PLUGIN_LOADED
+EVENT_TOOL_CALLED: str = OmniaEvent.TOOL_CALLED
+EVENT_ERROR: str = OmniaEvent.ERROR
 
 # Type alias for async handlers
 AsyncHandler = Callable[..., Coroutine[Any, Any, None]]
@@ -40,11 +54,13 @@ class EventBus:
 
     # -- public API ---------------------------------------------------------
 
-    def subscribe(self, event_name: str, handler: AsyncHandler) -> None:
+    def subscribe(
+        self, event_name: str | OmniaEvent, handler: AsyncHandler,
+    ) -> None:
         """Register *handler* for *event_name*.
 
         Args:
-            event_name: The event to listen for.
+            event_name: The event to listen for (str or ``OmniaEvent``).
             handler: An async callable to invoke when the event fires.
         """
         self._handlers[event_name].append(handler)
@@ -52,7 +68,9 @@ class EventBus:
             "Subscribed {} to '{}'", handler.__qualname__, event_name
         )
 
-    def unsubscribe(self, event_name: str, handler: AsyncHandler) -> None:
+    def unsubscribe(
+        self, event_name: str | OmniaEvent, handler: AsyncHandler,
+    ) -> None:
         """Remove *handler* from *event_name*.
 
         Args:
@@ -73,7 +91,9 @@ class EventBus:
                 event_name,
             )
 
-    def once(self, event_name: str, handler: AsyncHandler) -> None:
+    def once(
+        self, event_name: str | OmniaEvent, handler: AsyncHandler,
+    ) -> None:
         """Register *handler* so it fires exactly once then auto-unsubscribes.
 
         Args:
@@ -89,7 +109,9 @@ class EventBus:
         _wrapper.__qualname__ = f"{handler.__qualname__}[once]"
         self.subscribe(event_name, _wrapper)
 
-    async def emit(self, event_name: str, **kwargs: Any) -> None:
+    async def emit(
+        self, event_name: str | OmniaEvent, **kwargs: Any,
+    ) -> None:
         """Fire *event_name*, calling all registered handlers concurrently.
 
         Args:

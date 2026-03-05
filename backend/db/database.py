@@ -29,12 +29,19 @@ def create_engine_and_session(
     """
     engine_kwargs: dict[str, Any] = {
         "echo": False,
+        "pool_pre_ping": True,
     }
+
+    is_sqlite = db_url.startswith("sqlite")
 
     # In-memory SQLite requires StaticPool so all sessions share the same DB.
     if db_url in ("sqlite+aiosqlite://", "sqlite+aiosqlite:///:memory:"):
         engine_kwargs["poolclass"] = StaticPool
         engine_kwargs["connect_args"] = {"check_same_thread": False}
+    elif not is_sqlite:
+        # Connection pool tuning for non-SQLite databases (e.g. PostgreSQL).
+        engine_kwargs["pool_size"] = 5
+        engine_kwargs["max_overflow"] = 10
 
     engine = create_async_engine(
         db_url,

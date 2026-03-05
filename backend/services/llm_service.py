@@ -24,7 +24,7 @@ class LLMService:
 
     def __init__(self, config: LLMConfig) -> None:
         self._config = config
-        self._client = httpx.AsyncClient(timeout=120.0)
+        self._client = httpx.AsyncClient(timeout=config.timeout)
         self._system_prompt: str | None = None
 
     # ------------------------------------------------------------------

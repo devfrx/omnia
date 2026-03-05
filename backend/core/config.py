@@ -13,7 +13,7 @@ from typing import Any
 
 import yaml
 from loguru import logger
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ---------------------------------------------------------------------------
@@ -63,12 +63,25 @@ class ServerConfig(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     reload: bool = True
+    environment: str = "development"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
             "http://localhost:3000",
         ]
     )
+
+    @field_validator("cors_origins", mode="after")
+    @classmethod
+    def _sanitize_cors_origins(cls, v: list[str]) -> list[str]:
+        """Strip dangerous origin values ('null' and '*') in production."""
+        return [o for o in v if o not in ("null", "*")]
+    max_upload_size_mb: int = 50
+    """Maximum upload file size in megabytes."""
+    ws_max_connections_per_ip: int = 5
+    """Maximum concurrent WebSocket connections per IP address."""
+    rate_limit: str = "60/minute"
+    """Default rate limit for REST endpoints."""
 
 
 class LLMConfig(BaseSettings):
@@ -81,22 +94,28 @@ class LLMConfig(BaseSettings):
     model: str = DEFAULT_MODEL
     temperature: float = 0.7
     max_tokens: int = 4096
+    timeout: float = 120.0
+    """HTTP timeout in seconds for LLM API requests."""
     system_prompt_file: str = "config/system_prompt.md"
     supports_thinking: bool = False
     """Enable for reasoning models (QwQ, DeepSeek-R1) that emit <think> tags."""
     supports_vision: bool = False
     """Enable for multimodal models (LLaVA, Qwen2-VL) that accept images."""
 
-    @model_validator(mode="after")
-    def _infer_capabilities(self) -> "LLMConfig":
+    @model_validator(mode="before")
+    @classmethod
+    def _infer_capabilities(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Auto-detect capabilities from KNOWN_MODELS if not explicitly set."""
-        if self.model in KNOWN_MODELS:
-            caps = KNOWN_MODELS[self.model]
-            if "supports_vision" not in self.model_fields_set:
-                object.__setattr__(self, "supports_vision", caps["vision"])
-            if "supports_thinking" not in self.model_fields_set:
-                object.__setattr__(self, "supports_thinking", caps["thinking"])
-        return self
+        if not isinstance(data, dict):
+            return data
+        model = data.get("model", DEFAULT_MODEL)
+        if model in KNOWN_MODELS:
+            caps = KNOWN_MODELS[model]
+            if "supports_vision" not in data:
+                data["supports_vision"] = caps["vision"]
+            if "supports_thinking" not in data:
+                data["supports_thinking"] = caps["thinking"]
+        return data
 
 
 class STTConfig(BaseSettings):
@@ -212,25 +231,37 @@ class OmniaConfig(BaseSettings):
     voice: VoiceConfig = Field(default_factory=VoiceConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
 
-    @model_validator(mode="after")
-    def _resolve_paths(self) -> "OmniaConfig":
+    @model_validator(mode="before")
+    @classmethod
+    def _resolve_paths(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Resolve relative paths to absolute using the project root."""
-        # -- system prompt file --
-        raw = self.llm.system_prompt_file
-        resolved = PROJECT_ROOT / raw
-        object.__setattr__(self.llm, "system_prompt_file", str(resolved))
+        if not isinstance(data, dict):
+            return data
 
-        # -- database URL (make relative sqlite path absolute) --
-        db_url = self.database.url
-        if db_url.startswith("sqlite") and ":///" in db_url:
-            prefix, db_path = db_url.split(":///", 1)
-            if db_path and not Path(db_path).is_absolute():
-                abs_path = PROJECT_ROOT / db_path
-                object.__setattr__(
-                    self.database, "url", f"{prefix}:///{abs_path}"
+        # -- system prompt file --
+        llm_data = data.get("llm", {})
+        if isinstance(llm_data, dict):
+            raw = llm_data.get(
+                "system_prompt_file", "config/system_prompt.md"
+            )
+            if raw and not Path(raw).is_absolute():
+                llm_data["system_prompt_file"] = str(
+                    PROJECT_ROOT / raw
                 )
 
-        return self
+        # -- database URL (make relative sqlite path absolute) --
+        db_data = data.get("database", {})
+        if isinstance(db_data, dict):
+            db_url = db_data.get(
+                "url", "sqlite+aiosqlite:///data/omnia.db"
+            )
+            if db_url.startswith("sqlite") and ":///" in db_url:
+                prefix, db_path = db_url.split(":///", 1)
+                if db_path and not Path(db_path).is_absolute():
+                    abs_path = PROJECT_ROOT / db_path
+                    db_data["url"] = f"{prefix}:///{abs_path}"
+
+        return data
 
 
 # ---------------------------------------------------------------------------

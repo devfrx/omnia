@@ -24,6 +24,15 @@ export class WebSocketManager {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private intentionalClose = false
 
+  /** Backpressure: pending messages queued when WebSocket buffer is full. */
+  private sendQueue: string[] = []
+  /** Maximum bytes in the WebSocket send buffer before queuing. */
+  private readonly bufferHighWaterMark = 1_048_576 // 1 MB
+  /** Maximum queued messages — oldest are dropped when exceeded. */
+  private readonly maxQueueSize = 100
+  /** Timer for draining the send queue. */
+  private drainTimer: ReturnType<typeof setTimeout> | null = null
+
   constructor(url: string = 'ws://localhost:8000/api/ws/chat') {
     this.url = url
   }
@@ -82,6 +91,11 @@ export class WebSocketManager {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
+    if (this.drainTimer !== null) {
+      clearTimeout(this.drainTimer)
+      this.drainTimer = null
+    }
+    this.sendQueue.length = 0
     this.reconnectAttempts = 0
     if (this.ws) {
       this.ws.close()
@@ -115,17 +129,54 @@ export class WebSocketManager {
   // Sending
   // -----------------------------------------------------------------------
 
-  /** Send a JSON-serialisable payload. */
+  /** Send a JSON-serialisable payload with backpressure management. */
   send(data: unknown): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(typeof data === 'string' ? data : JSON.stringify(data))
+    if (this.ws?.readyState !== WebSocket.OPEN) return
+
+    const payload = typeof data === 'string' ? data : JSON.stringify(data)
+
+    if (this.ws.bufferedAmount < this.bufferHighWaterMark) {
+      this.ws.send(payload)
+      return
     }
+
+    // Buffer is full — queue the message
+    console.warn(`[OMNIA WS] Backpressure: bufferedAmount=${this.ws.bufferedAmount}, queueing message`)
+    if (this.sendQueue.length >= this.maxQueueSize) {
+      this.sendQueue.shift() // drop oldest
+      console.warn('[OMNIA WS] Queue full, dropping oldest message')
+    }
+    this.sendQueue.push(payload)
+    this.scheduleDrain()
   }
 
   /** Send raw binary data (ArrayBuffer or Blob). */
   sendBinary(data: ArrayBuffer | Blob): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(data)
+    }
+  }
+
+  /** Schedule periodic queue draining until the buffer is clear. */
+  private scheduleDrain(): void {
+    if (this.drainTimer !== null) return
+    this.drainTimer = setTimeout(() => this.drainQueue(), 50)
+  }
+
+  /** Flush queued messages when the send buffer has capacity. */
+  private drainQueue(): void {
+    this.drainTimer = null
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.sendQueue.length = 0
+      return
+    }
+
+    while (this.sendQueue.length > 0 && this.ws.bufferedAmount < this.bufferHighWaterMark) {
+      this.ws.send(this.sendQueue.shift()!)
+    }
+
+    if (this.sendQueue.length > 0) {
+      this.scheduleDrain()
     }
   }
 

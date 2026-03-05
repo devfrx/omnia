@@ -91,16 +91,24 @@ export function useChat(): UseChatReturn {
 
   const onToken = (data: unknown): void => {
     const msg = data as WsTokenMessage
+    // Ignore tokens for a conversation we've navigated away from
+    if (store.streamingConversationId && store.currentConversation?.id !== store.streamingConversationId) return
     store.appendToStream(msg.content)
   }
 
   const onThinking = (data: unknown): void => {
     const msg = data as WsThinkingMessage
+    if (store.streamingConversationId && store.currentConversation?.id !== store.streamingConversationId) return
     store.appendToThinking(msg.content)
   }
 
   const onDone = (data: unknown): void => {
     const msg = data as WsDoneMessage
+    // Ignore done events for a conversation we've navigated away from
+    if (store.currentConversation && store.currentConversation.id !== msg.conversation_id) {
+      store.cancelStream()
+      return
+    }
     store.finalizeStream(msg.conversation_id, msg.message_id)
   }
 

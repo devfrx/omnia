@@ -16,6 +16,7 @@ from backend.core.context import AppContext, create_context
 from backend.db.database import create_engine_and_session, init_db
 from backend.services.conversation_file_manager import ConversationFileManager
 from backend.services.llm_service import LLMService
+from backend.api.middleware.rate_limit import setup_rate_limiting
 
 __version__ = "0.1.0"
 
@@ -101,6 +102,9 @@ def create_app(testing: bool = False) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Rate limiting (slowapi).
+    setup_rate_limiting(app, config.server.rate_limit)
 
     # -- Routes -------------------------------------------------------------
     from backend.api.routes import router as api_router  # noqa: E402
