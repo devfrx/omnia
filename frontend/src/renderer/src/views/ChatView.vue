@@ -29,14 +29,14 @@ function scrollToBottom(): void {
 }
 
 /** Handle a send event from the ChatInput component. */
-function handleSend(content: string): void {
-  send(content)
+function handleSend(content: string, attachments: File[]): void {
+  send(content, undefined, attachments)
   scrollToBottom()
 }
 
 // Auto-scroll whenever the message list or streaming content changes.
 watch(
-  () => [chatStore.messages.length, chatStore.currentStreamContent],
+  () => [chatStore.messages.length, chatStore.currentStreamContent, chatStore.currentThinkingContent],
   () => scrollToBottom()
 )
 
@@ -56,7 +56,8 @@ onMounted(() => {
       <!-- Empty state -->
       <div v-if="chatStore.messages.length === 0 && !chatStore.isStreaming" class="chat-view__empty">
         <div class="chat-view__empty-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 6v6l4 2" />
           </svg>
@@ -66,25 +67,15 @@ onMounted(() => {
       </div>
 
       <!-- Message list -->
-      <MessageBubble
-        v-for="msg in chatStore.messages"
-        :key="msg.id"
-        :message="msg"
-      />
+      <MessageBubble v-for="msg in chatStore.messages" :key="msg.id" :message="msg" />
 
       <!-- Streaming response -->
-      <StreamingIndicator
-        v-if="chatStore.isStreaming"
-        :content="chatStore.currentStreamContent"
-      />
+      <StreamingIndicator v-if="chatStore.isStreaming" :content="chatStore.currentStreamContent"
+        :thinking-content="chatStore.currentThinkingContent" />
     </div>
 
     <!-- Input -->
-    <ChatInput
-      :disabled="chatStore.isStreaming"
-      :is-connected="isConnected"
-      @send="handleSend"
-    />
+    <ChatInput :disabled="chatStore.isStreaming" :is-connected="isConnected" @send="handleSend" />
   </div>
 </template>
 
@@ -113,12 +104,12 @@ onMounted(() => {
 }
 
 .chat-view__messages::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(201, 168, 76, 0.1);
   border-radius: 3px;
 }
 
 .chat-view__messages::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(201, 168, 76, 0.2);
 }
 
 /* ----------------------------------------------- Empty state */
@@ -141,8 +132,9 @@ onMounted(() => {
 .chat-view__empty-title {
   font-size: 1.6rem;
   font-weight: 200;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.25em;
   color: var(--text-primary);
+  text-shadow: 0 0 30px rgba(201, 168, 76, 0.15);
 }
 
 .chat-view__empty-sub {

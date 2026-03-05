@@ -34,6 +34,23 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Model catalog
+# ---------------------------------------------------------------------------
+
+DEFAULT_MODEL: str = "qwen3.5:9b"
+"""Default LLM model tag used when no model is specified."""
+
+KNOWN_MODELS: dict[str, dict[str, bool]] = {
+    "qwen3.5:9b": {"vision": True, "thinking": False},
+    "qwen2.5:14b": {"vision": False, "thinking": False},
+    "qwq": {"vision": False, "thinking": True},
+    "deepseek-r1:14b": {"vision": False, "thinking": True},
+    "llava": {"vision": True, "thinking": False},
+}
+"""Known models mapped to their capabilities (vision, thinking)."""
+
+
+# ---------------------------------------------------------------------------
 # Sub-models
 # ---------------------------------------------------------------------------
 
@@ -60,11 +77,26 @@ class LLMConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OMNIA_LLM__")
 
     provider: str = "openai-compatible"
-    base_url: str = "http://localhost:1234"
-    model: str = "qwen2.5-14b-instruct"
+    base_url: str = "http://localhost:11434"
+    model: str = DEFAULT_MODEL
     temperature: float = 0.7
     max_tokens: int = 4096
     system_prompt_file: str = "config/system_prompt.md"
+    supports_thinking: bool = False
+    """Enable for reasoning models (QwQ, DeepSeek-R1) that emit <think> tags."""
+    supports_vision: bool = False
+    """Enable for multimodal models (LLaVA, Qwen2-VL) that accept images."""
+
+    @model_validator(mode="after")
+    def _infer_capabilities(self) -> "LLMConfig":
+        """Auto-detect capabilities from KNOWN_MODELS if not explicitly set."""
+        if self.model in KNOWN_MODELS:
+            caps = KNOWN_MODELS[self.model]
+            if "supports_vision" not in self.model_fields_set:
+                object.__setattr__(self, "supports_vision", caps["vision"])
+            if "supports_thinking" not in self.model_fields_set:
+                object.__setattr__(self, "supports_thinking", caps["thinking"])
+        return self
 
 
 class STTConfig(BaseSettings):
@@ -181,11 +213,23 @@ class OmniaConfig(BaseSettings):
     ui: UIConfig = Field(default_factory=UIConfig)
 
     @model_validator(mode="after")
-    def _resolve_system_prompt_path(self) -> "OmniaConfig":
-        """Resolve ``system_prompt_file`` relative to the project root."""
+    def _resolve_paths(self) -> "OmniaConfig":
+        """Resolve relative paths to absolute using the project root."""
+        # -- system prompt file --
         raw = self.llm.system_prompt_file
         resolved = PROJECT_ROOT / raw
         object.__setattr__(self.llm, "system_prompt_file", str(resolved))
+
+        # -- database URL (make relative sqlite path absolute) --
+        db_url = self.database.url
+        if db_url.startswith("sqlite") and ":///" in db_url:
+            prefix, db_path = db_url.split(":///", 1)
+            if db_path and not Path(db_path).is_absolute():
+                abs_path = PROJECT_ROOT / db_path
+                object.__setattr__(
+                    self.database, "url", f"{prefix}:///{abs_path}"
+                )
+
         return self
 
 

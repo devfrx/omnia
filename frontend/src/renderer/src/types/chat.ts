@@ -20,8 +20,16 @@ export interface ToolCall {
   }
 }
 
+/** A file attachment on a message (image, document, etc.). */
+export interface FileAttachment {
+  file_id: string
+  url: string
+  filename: string
+  content_type: string
+}
+
 /** Role a message can have. */
-export type MessageRole = 'user' | 'assistant' | 'tool'
+export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
 /**
  * A chat message as returned by
@@ -34,6 +42,8 @@ export interface ChatMessage {
   tool_calls: ToolCall[] | null
   tool_call_id: string | null
   created_at: string
+  thinking_content?: string | null
+  attachments?: FileAttachment[]
 }
 
 // ---------------------------------------------------------------------------
@@ -88,11 +98,18 @@ export interface RenameConversationResponse {
 export interface WsSendPayload {
   content: string
   conversation_id?: string
+  attachments?: string[]
 }
 
 /** A streamed token frame from the server. */
 export interface WsTokenMessage {
   type: 'token'
+  content: string
+}
+
+/** A thinking token frame from the server. */
+export interface WsThinkingMessage {
+  type: 'thinking'
   content: string
 }
 
@@ -118,6 +135,7 @@ export interface WsToolCallMessage {
 /** Discriminated union of all server→client WebSocket frames. */
 export type WsMessage =
   | WsTokenMessage
+  | WsThinkingMessage
   | WsDoneMessage
   | WsErrorMessage
   | WsToolCallMessage

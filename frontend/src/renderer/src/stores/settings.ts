@@ -24,7 +24,7 @@ export interface OmniaSettings {
 export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<OmniaSettings>({
     llm: {
-      model: 'qwen2.5:14b',
+      model: 'qwen3.5:9b',
       temperature: 0.7,
       maxTokens: 4096
     },

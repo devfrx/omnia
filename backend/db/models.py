@@ -65,9 +65,44 @@ class Message(SQLModel, table=True):
         sa_column=sa.Column(sa.JSON, nullable=True),
     )
     tool_call_id: Optional[str] = Field(default=None, max_length=64)
+    thinking_content: Optional[str] = Field(
+        default=None,
+        description="Reasoning/thinking tokens from models that support it.",
+    )
     created_at: datetime = Field(default_factory=_utcnow)
 
     # -- relationships ------------------------------------------------------
     conversation: Optional[Conversation] = Relationship(
         back_populates="messages"
     )
+    attachments: list["Attachment"] = Relationship(back_populates="message")
+
+
+# ---------------------------------------------------------------------------
+# Attachment
+# ---------------------------------------------------------------------------
+
+
+class Attachment(SQLModel, table=True):
+    """A file attached to a message (e.g. images for vision models)."""
+
+    __tablename__ = "attachments"
+
+    id: uuid.UUID = Field(
+        default_factory=_new_uuid,
+        primary_key=True,
+    )
+    message_id: Optional[uuid.UUID] = Field(
+        default=None,
+        foreign_key="messages.id",
+        description="Linked after the user message is persisted.",
+    )
+    filename: str = Field(max_length=256)
+    content_type: str = Field(max_length=128)
+    file_path: str = Field(
+        description="Relative path from the project root.",
+    )
+    created_at: datetime = Field(default_factory=_utcnow)
+
+    # -- relationships ------------------------------------------------------
+    message: Optional[Message] = Relationship(back_populates="attachments")

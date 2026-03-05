@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -11,6 +12,7 @@ import httpx
 from loguru import logger
 
 from backend.core.config import LLMConfig
+from backend.services.thinking_parser import ThinkTagParser
 
 
 class LLMService:
@@ -59,12 +61,15 @@ class LLMService:
         self,
         user_content: str,
         history: list[dict[str, Any]] | None = None,
+        attachments: list[dict[str, str]] | None = None,
     ) -> list[dict[str, Any]]:
         """Build a full message list with system prompt, history, and user msg.
 
         Args:
             user_content: The new user message text.
             history: Optional prior messages to include.
+            attachments: Optional list of dicts with ``file_path`` (absolute)
+                and ``content_type`` keys for vision-model image inputs.
 
         Returns:
             A list of message dicts ready for the chat completions API.
@@ -74,7 +79,30 @@ class LLMService:
         ]
         if history:
             messages.extend(history)
-        messages.append({"role": "user", "content": user_content})
+
+        # Build the user message — multimodal when vision attachments exist.
+        if attachments and self._config.supports_vision:
+            content_parts: list[dict[str, Any]] = [
+                {"type": "text", "text": user_content},
+            ]
+            for att in attachments:
+                image_bytes = Path(att["file_path"]).read_bytes()
+                b64 = base64.b64encode(image_bytes).decode("ascii")
+                content_parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{att['content_type']};base64,{b64}",
+                        },
+                    }
+                )
+            messages.append({"role": "user", "content": content_parts})
+            logger.debug(
+                "Built multimodal message with {} image(s)", len(attachments)
+            )
+        else:
+            messages.append({"role": "user", "content": user_content})
+
         return messages
 
     # ------------------------------------------------------------------
@@ -94,6 +122,7 @@ class LLMService:
         Yields:
             Dicts with a ``type`` key:
             - ``{"type": "token", "content": "..."}``
+            - ``{"type": "thinking", "content": "..."}``  (reasoning models)
             - ``{"type": "tool_call", "id": "...", "function": {...}}``
             - ``{"type": "done"}``
         """
@@ -110,8 +139,13 @@ class LLMService:
             payload["tools"] = tools
 
         # Accumulator for tool calls that arrive across multiple chunks.
-        # Keyed by index (int) → {"id": str, "name": str, "arguments": str}
+        # Keyed by index (int) -> {"id": str, "name": str, "arguments": str}
         tool_calls_acc: dict[int, dict[str, str]] = {}
+
+        # Inline <think> tag parser for models that embed reasoning in content.
+        think_parser: ThinkTagParser | None = (
+            ThinkTagParser() if self._config.supports_thinking else None
+        )
 
         async with self._client.stream("POST", url, json=payload) as resp:
             resp.raise_for_status()
@@ -124,6 +158,13 @@ class LLMService:
                 data_str = line[len("data: "):]
 
                 if data_str == "[DONE]":
+                    # Flush thinking parser leftovers.
+                    if think_parser:
+                        for kind, text in think_parser.flush():
+                            yield {
+                                "type": "thinking" if kind == "thinking" else "token",
+                                "content": text,
+                            }
                     # Flush any accumulated tool calls before finishing.
                     for _idx in sorted(tool_calls_acc):
                         tc = tool_calls_acc[_idx]
@@ -150,10 +191,23 @@ class LLMService:
 
                 delta = choices[0].get("delta", {})
 
-                # --- content token ---
+                # --- explicit reasoning_content (Ollama/OpenAI extension) ---
+                if self._config.supports_thinking:
+                    reasoning = delta.get("reasoning_content")
+                    if reasoning:
+                        yield {"type": "thinking", "content": reasoning}
+
+                # --- content token (may contain inline <think> tags) ---
                 content = delta.get("content")
                 if content:
-                    yield {"type": "token", "content": content}
+                    if think_parser:
+                        for kind, text in think_parser.feed(content):
+                            yield {
+                                "type": "thinking" if kind == "thinking" else "token",
+                                "content": text,
+                            }
+                    else:
+                        yield {"type": "token", "content": content}
 
                 # --- tool calls (streamed in pieces) ---
                 for tc_delta in delta.get("tool_calls", []):
@@ -176,6 +230,12 @@ class LLMService:
                         tool_calls_acc[idx]["arguments"] += func["arguments"]
 
         # If stream ended without [DONE], flush anyway.
+        if think_parser:
+            for kind, text in think_parser.flush():
+                yield {
+                    "type": "thinking" if kind == "thinking" else "token",
+                    "content": text,
+                }
         for _idx in sorted(tool_calls_acc):
             tc = tool_calls_acc[_idx]
             yield {

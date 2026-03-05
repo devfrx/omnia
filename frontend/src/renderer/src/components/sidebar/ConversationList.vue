@@ -85,13 +85,8 @@ function cancelRename(): void {
     </button>
 
     <!-- Conversation items -->
-    <div
-      v-for="conv in conversations"
-      :key="conv.id"
-      class="conv-item"
-      :class="{ 'conv-item--active': conv.id === activeId }"
-      @click="emit('select', conv.id)"
-    >
+    <div v-for="conv in conversations" :key="conv.id" class="conv-item"
+      :class="{ 'conv-item--active': conv.id === activeId }" @click="emit('select', conv.id)">
       <!-- Normal display -->
       <template v-if="renamingId !== conv.id">
         <span class="conv-item__title">{{ conv.title ?? 'Nuova conversazione' }}</span>
@@ -103,48 +98,28 @@ function cancelRename(): void {
 
       <!-- Inline rename -->
       <template v-else>
-        <input
-          v-model="renameValue"
-          class="conv-item__rename-input"
-          autofocus
-          @keydown.enter.stop="confirmRename(conv.id)"
-          @keydown.escape.stop="cancelRename"
-          @click.stop
-        />
+        <input v-model="renameValue" class="conv-item__rename-input" autofocus
+          @keydown.enter.stop="confirmRename(conv.id)" @keydown.escape.stop="cancelRename" @click.stop />
       </template>
 
       <!-- Action buttons -->
       <div class="conv-item__actions" @click.stop>
-        <button
-          v-if="renamingId !== conv.id"
-          class="conv-item__action"
-          aria-label="Rinomina conversazione"
-          title="Rinomina"
-          @click="startRename(conv)"
-        >
+        <button v-if="renamingId !== conv.id" class="conv-item__action" aria-label="Rinomina conversazione"
+          title="Rinomina" @click="startRename(conv)">
           <!-- Pencil icon -->
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
           </svg>
         </button>
-        <button
-          v-if="renamingId === conv.id"
-          class="conv-item__action"
-          aria-label="Conferma"
-          title="Conferma"
-          @click="confirmRename(conv.id)"
-        >
+        <button v-if="renamingId === conv.id" class="conv-item__action" aria-label="Conferma" title="Conferma"
+          @click="confirmRename(conv.id)">
           <!-- Check icon -->
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </button>
-        <button
-          class="conv-item__action conv-item__action--danger"
-          aria-label="Elimina conversazione"
-          title="Elimina"
-          @click="emit('delete', conv.id)"
-        >
+        <button class="conv-item__action conv-item__action--danger" aria-label="Elimina conversazione" title="Elimina"
+          @click="emit('delete', conv.id)">
           <!-- Trash icon -->
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6" />
@@ -182,12 +157,12 @@ function cancelRename(): void {
   padding: 8px 12px;
   margin-bottom: 6px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-secondary);
   font-size: 0.82rem;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background var(--transition-normal), color var(--transition-normal);
 }
 
 .conv-list__new:hover {
@@ -201,10 +176,10 @@ function cancelRename(): void {
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   position: relative;
-  transition: background 0.15s;
+  transition: background var(--transition-fast);
 }
 
 .conv-item:hover {
@@ -212,7 +187,7 @@ function cancelRename(): void {
 }
 
 .conv-item--active {
-  background: rgba(88, 166, 255, 0.1);
+  background: var(--accent-dim);
   border-left: 2px solid var(--accent);
 }
 
@@ -241,9 +216,9 @@ function cancelRename(): void {
 .conv-item__rename-input {
   width: 100%;
   padding: 4px 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--accent);
-  border-radius: 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 0.84rem;
   outline: none;
@@ -271,11 +246,11 @@ function cancelRename(): void {
   width: 22px;
   height: 22px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .conv-item__action:hover {
@@ -284,8 +259,8 @@ function cancelRename(): void {
 }
 
 .conv-item__action--danger:hover {
-  background: rgba(248, 81, 73, 0.2);
-  color: #f85149;
+  background: var(--danger-hover);
+  color: var(--danger);
 }
 
 /* ------------------------------------------------ Empty state */

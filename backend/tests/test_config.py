@@ -5,8 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from backend.core.config import (
+    DEFAULT_MODEL,
+    KNOWN_MODELS,
     PROJECT_ROOT,
     OmniaConfig,
+    LLMConfig,
     load_config,
 )
 
@@ -41,11 +44,11 @@ def test_llm_provider(config: OmniaConfig) -> None:
 
 
 def test_llm_base_url(config: OmniaConfig) -> None:
-    assert config.llm.base_url == "http://localhost:1234"
+    assert config.llm.base_url == "http://localhost:11434"
 
 
 def test_llm_model(config: OmniaConfig) -> None:
-    assert config.llm.model == "qwen2.5-14b-instruct"
+    assert config.llm.model == "qwen3.5:9b"
 
 
 def test_llm_temperature(config: OmniaConfig) -> None:
@@ -101,3 +104,34 @@ def test_load_config_missing_file_uses_defaults() -> None:
     assert isinstance(cfg, OmniaConfig)
     # Defaults should still be valid
     assert cfg.server.port == 8000
+
+
+def test_known_model_auto_capabilities() -> None:
+    """Capabilities are auto-detected from KNOWN_MODELS when not explicitly set."""
+    # qwen3.5:9b has vision=True, thinking=False
+    llm = LLMConfig(model="qwen3.5:9b")
+    assert llm.supports_vision is True
+    assert llm.supports_thinking is False
+
+    # qwq has vision=False, thinking=True
+    llm = LLMConfig(model="qwq")
+    assert llm.supports_vision is False
+    assert llm.supports_thinking is True
+
+
+def test_explicit_capabilities_override_known_models() -> None:
+    """Explicitly set capabilities are not overridden by KNOWN_MODELS."""
+    # qwq normally has thinking=True, but user explicitly sets False
+    llm = LLMConfig(model="qwq", supports_thinking=False)
+    assert llm.supports_thinking is False
+
+    # Unknown model with explicit capabilities
+    llm = LLMConfig(model="some-unknown-model", supports_vision=True)
+    assert llm.supports_vision is True
+
+
+def test_default_model_matches_constant() -> None:
+    """The DEFAULT_MODEL constant is used as the LLMConfig default."""
+    llm = LLMConfig()
+    assert llm.model == DEFAULT_MODEL
+    assert DEFAULT_MODEL in KNOWN_MODELS

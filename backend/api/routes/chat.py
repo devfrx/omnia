@@ -3,17 +3,29 @@
 from __future__ import annotations
 
 import json
+import shutil
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from loguru import logger
 from sqlalchemy import func as sa_func
 from sqlmodel import select
 
+from backend.core.config import PROJECT_ROOT
 from backend.core.context import AppContext
-from backend.db.models import Conversation, Message
+from backend.db.models import Attachment, Conversation, Message
 from backend.services.llm_service import LLMService
 
 router = APIRouter()
@@ -75,6 +87,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                 continue
 
             conv_id_raw: str | None = data.get("conversation_id")
+            attachment_ids: list[str] = data.get("attachments", [])
 
             async with session_factory() as session:
                 # --- resolve or create conversation -----------------------
@@ -84,6 +97,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                     if conv is None:
                         conv = Conversation(id=conv_id)
                         session.add(conv)
+                        await session.flush()
                 else:
                     conv = Conversation()
                     session.add(conv)
@@ -99,6 +113,28 @@ async def ws_chat(websocket: WebSocket) -> None:
                 session.add(user_msg)
                 await session.flush()
 
+                # --- link uploaded attachments to the user message --------
+                attachment_info: list[dict[str, str]] = []
+                for att_id_str in attachment_ids:
+                    try:
+                        att_id = uuid.UUID(att_id_str)
+                    except ValueError:
+                        logger.warning("Invalid attachment id: {}", att_id_str)
+                        continue
+                    att = await session.get(Attachment, att_id)
+                    if att is None:
+                        logger.warning("Attachment {} not found", att_id_str)
+                        continue
+                    att.message_id = user_msg.id
+                    attachment_info.append(
+                        {
+                            "file_path": str(PROJECT_ROOT / att.file_path),
+                            "content_type": att.content_type,
+                        }
+                    )
+                if attachment_info:
+                    await session.flush()
+
                 # --- fetch history for context ----------------------------
                 stmt = (
                     select(Message)
@@ -113,14 +149,20 @@ async def ws_chat(websocket: WebSocket) -> None:
 
                 # --- call LLM (streaming) ---------------------------------
                 messages = llm.build_messages(
-                    user_content, history=history[:-1]  # history already has user msg
+                    user_content,
+                    history=history[:-1],  # history already has user msg
+                    attachments=attachment_info or None,
                 )
 
                 full_content = ""
+                thinking_content = ""
                 try:
                     async for event in llm.chat(messages):
                         if event["type"] == "token":
                             full_content += event["content"]
+                            await websocket.send_json(event)
+                        elif event["type"] == "thinking":
+                            thinking_content += event["content"]
                             await websocket.send_json(event)
                         elif event["type"] == "tool_call":
                             await websocket.send_json(event)
@@ -135,19 +177,30 @@ async def ws_chat(websocket: WebSocket) -> None:
                     continue
 
                 # --- save assistant message --------------------------------
-                asst_msg = Message(
-                    conversation_id=conv_id,
-                    role="assistant",
-                    content=full_content,
-                )
-                session.add(asst_msg)
+                try:
+                    asst_msg = Message(
+                        conversation_id=conv_id,
+                        role="assistant",
+                        content=full_content,
+                        thinking_content=thinking_content or None,
+                    )
+                    session.add(asst_msg)
 
-                # --- update conversation timestamp -------------------------
-                conv.updated_at = _utcnow()
-                if conv.title is None and full_content:
-                    conv.title = user_content[:100]
+                    # --- update conversation timestamp -------------------------
+                    conv.updated_at = _utcnow()
+                    if conv.title is None and full_content:
+                        conv.title = user_content[:100]
 
-                await session.commit()
+                    await session.commit()
+                except Exception:
+                    logger.exception("DB commit error after streaming")
+                    await session.rollback()
+                    # Generate a fallback message id so the client can finalise.
+                    asst_msg_id = uuid.uuid4()
+                    await websocket.send_json(
+                        {"type": "error", "content": "Failed to save response"}
+                    )
+                    continue
 
                 await websocket.send_json(
                     {
@@ -222,6 +275,26 @@ async def get_conversation(
         results = await session.exec(msg_stmt)
         messages = results.all()
 
+        # Pre-fetch attachments for all messages in one query.
+        msg_ids = [m.id for m in messages]
+        att_map: dict[uuid.UUID, list[dict[str, str]]] = {}
+        if msg_ids:
+            att_stmt = select(Attachment).where(
+                Attachment.message_id.in_(msg_ids)  # type: ignore[union-attr]
+            )
+            att_results = await session.exec(att_stmt)
+            for att in att_results.all():
+                att_map.setdefault(att.message_id, []).append(
+                    {
+                        "file_id": str(att.id),
+                        "url": f"/uploads/{att.file_path.split('data/uploads/', 1)[-1]}"
+                        if "data/uploads/" in att.file_path
+                        else f"/uploads/{att.file_path}",
+                        "filename": att.filename,
+                        "content_type": att.content_type,
+                    }
+                )
+
         return {
             "id": str(conv.id),
             "title": conv.title,
@@ -232,9 +305,11 @@ async def get_conversation(
                     "id": str(m.id),
                     "role": m.role,
                     "content": m.content,
+                    "thinking_content": m.thinking_content,
                     "tool_calls": m.tool_calls,
                     "tool_call_id": m.tool_call_id,
                     "created_at": m.created_at.isoformat(),
+                    "attachments": att_map.get(m.id, []) or None,
                 }
                 for m in messages
             ],
@@ -257,11 +332,30 @@ async def delete_conversation(
             Message.conversation_id == conversation_id
         )
         results = await session.exec(msg_stmt)
-        for msg in results.all():
+        msg_list = results.all()
+
+        # Delete attachment DB records for those messages.
+        msg_ids = [m.id for m in msg_list]
+        if msg_ids:
+            att_stmt = select(Attachment).where(
+                Attachment.message_id.in_(msg_ids)  # type: ignore[union-attr]
+            )
+            att_results = await session.exec(att_stmt)
+            for att in att_results.all():
+                await session.delete(att)
+
+        for msg in msg_list:
             await session.delete(msg)
 
         await session.delete(conv)
         await session.commit()
+
+        # Clean up uploaded files for this conversation.
+        upload_dir = PROJECT_ROOT / "data" / "uploads" / str(conversation_id)
+        if upload_dir.exists():
+            shutil.rmtree(upload_dir, ignore_errors=True)
+            logger.debug("Removed upload dir {}", upload_dir)
+
         return {"status": "deleted"}
 
 
@@ -292,3 +386,81 @@ async def update_conversation_title(
             "title": conv.title,
             "updated_at": conv.updated_at.isoformat(),
         }
+
+
+# ---------------------------------------------------------------------------
+# REST — file upload for vision models
+# ---------------------------------------------------------------------------
+
+# Allowed MIME types for image uploads.
+_ALLOWED_IMAGE_TYPES: set[str] = {
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+}
+
+
+@router.post("/chat/upload")
+async def upload_image(
+    request: Request,
+    conversation_id: str = Form(..., description="Target conversation UUID"),
+    file: UploadFile = File(..., description="Image file (jpg/png/gif/webp)"),
+) -> dict[str, Any]:
+    """Upload an image for use with vision-capable models.
+
+    Saves the file to ``data/uploads/{conversation_id}/`` and creates a
+    pending :class:`Attachment` record (``message_id`` is set later when the
+    WebSocket message referencing this file is sent).
+
+    Returns:
+        A dict with ``file_id``, ``url``, ``filename``, and ``content_type``.
+
+    Raises:
+        HTTPException 400: If the file type is not an allowed image format.
+    """
+    if file.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported file type: {file.content_type}. "
+                f"Allowed: {', '.join(sorted(_ALLOWED_IMAGE_TYPES))}"
+            ),
+        )
+
+    file_id = uuid.uuid4()
+    ext = Path(file.filename).suffix.lstrip(".") if file.filename else "bin"
+    relative_path = f"data/uploads/{conversation_id}/{file_id}.{ext}"
+    abs_path = PROJECT_ROOT / relative_path
+
+    # Ensure the upload directory exists.
+    abs_path.parent.mkdir(parents=True, exist_ok=True)
+
+    content = await file.read()
+    abs_path.write_bytes(content)
+
+    # Persist an attachment record (message_id linked later via WS handler).
+    ctx = _ctx(request)
+    async with ctx.db() as session:
+        attachment = Attachment(
+            id=file_id,
+            filename=file.filename or f"{file_id}.{ext}",
+            content_type=file.content_type or "application/octet-stream",
+            file_path=relative_path,
+        )
+        session.add(attachment)
+        await session.commit()
+
+    logger.info(
+        "Uploaded {} ({}) for conversation {}",
+        file.filename,
+        file.content_type,
+        conversation_id,
+    )
+
+    return {
+        "file_id": str(file_id),
+        "url": f"/uploads/{conversation_id}/{file_id}.{ext}",
+        "filename": file.filename,
+        "content_type": file.content_type,
+    }

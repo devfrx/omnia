@@ -54,6 +54,11 @@ if (-not (Test-Path ".venv")) {
     uv venv .venv
 }
 uv pip install --python .venv\Scripts\python.exe -e ".[dev]"
+
+# Add project root to Python path so 'from backend.X' imports resolve.
+$siteDir = & .venv\Scripts\python.exe -c "import sysconfig; print(sysconfig.get_path('purelib'))"
+$Root | Out-File -FilePath "$siteDir\omnia_root.pth" -Encoding ASCII -NoNewline
+
 Pop-Location
 Write-Host "  ✓ Backend dependencies installed" -ForegroundColor Green
 
@@ -94,8 +99,8 @@ if (-not $SkipModels -and -not $SkipOllama) {
         Start-Sleep -Seconds 3
     }
     
-    ollama pull qwen2.5:14b
-    Write-Host "  ✓ Qwen 2.5 14B downloaded" -ForegroundColor Green
+    ollama pull qwen3.5:9b
+    Write-Host "  ✓ Qwen 3.5 9B downloaded" -ForegroundColor Green
 } else {
     Write-Host ""
     Write-Host "[5/6] Skipping model download" -ForegroundColor DarkGray

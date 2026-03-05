@@ -66,6 +66,7 @@ refactor(backend): extract tool registry from plugin manager
 3. Create and manage feature/fix branches
 4. Advise on merge strategy (rebase vs merge)
 5. Keep commits atomic (one logical change per commit)
+6. Do not use GitKraken
 
 ## Output Format
 

@@ -24,7 +24,7 @@ export class WebSocketManager {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private intentionalClose = false
 
-  constructor(url: string = 'ws://localhost:8000/ws/chat') {
+  constructor(url: string = 'ws://localhost:8000/api/ws/chat') {
     this.url = url
   }
 

@@ -1,0 +1,163 @@
+/*
+ * ═══════════════════════════════════════════════════════════════
+ *  O.M.N.I.A. — Centralized Design Tokens & Theme
+ *  Jarvis-inspired warm gold aesthetic
+ * ═══════════════════════════════════════════════════════════════
+ */
+
+/* ── Backgrounds ───────────────────────────────────────────── */
+:root {
+  --bg-primary: #0c0e12;                       /* Deep dark, slightly warm */
+  --bg-secondary: #13161c;                     /* Panel / sidebar */
+  --bg-tertiary: #1a1e26;                      /* Elevated surfaces (cards, tooltips) */
+  --bg-input: rgba(255, 255, 255, 0.03);       /* Input fields */
+}
+
+/* ── Typography ────────────────────────────────────────────── */
+:root {
+  --text-primary: #e8e4de;                     /* Warm off-white */
+  --text-secondary: #8a8578;                   /* Muted warm gray */
+  --text-muted: #5c584f;                       /* Very subtle */
+}
+
+/* ── Accent — Warm Gold ────────────────────────────────────── */
+:root {
+  --accent: #c9a84c;                           /* Primary gold accent */
+  --accent-hover: #d4b65e;                     /* Lighter gold on hover */
+  --accent-dim: rgba(201, 168, 76, 0.12);     /* Subtle gold fill */
+  --accent-border: rgba(201, 168, 76, 0.25);  /* Gold border */
+  --accent-glow: rgba(201, 168, 76, 0.08);    /* Subtle glow */
+}
+
+/* ── Semantic Colors ───────────────────────────────────────── */
+:root {
+  --danger: #c45c5c;                           /* Muted red — destructive actions */
+  --danger-hover: rgba(196, 92, 92, 0.2);
+  --success: #5c9a6e;                          /* Muted green — positive status */
+  --success-glow: rgba(92, 154, 110, 0.5);
+}
+
+/* ── Borders ───────────────────────────────────────────────── */
+:root {
+  --border: rgba(255, 255, 255, 0.06);        /* Very subtle borders */
+  --border-hover: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Shadows ───────────────────────────────────────────────── */
+:root {
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(201, 168, 76, 0.06);
+}
+
+/* ── Radii ─────────────────────────────────────────────────── */
+:root {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* ── Motion ────────────────────────────────────────────────── */
+:root {
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+/* ── Font Stacks ───────────────────────────────────────────── */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+}
+
+/* ── Layout Tokens ─────────────────────────────────────────── */
+:root {
+  --titlebar-height: 34px;
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 42px;
+}
+
+/* ── Legacy compat (consumed by electron-vite boilerplate) ── */
+:root {
+  --color-background-mute: #1a1e26;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ *  Global Reset
+ * ═══════════════════════════════════════════════════════════════
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  list-style: none;
+}
+
+html,
+body {
+  height: 100%;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ *  Scrollbar — Slim & Gold-tinted
+ * ═══════════════════════════════════════════════════════════════
+ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.18);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 168, 76, 0.35);
+}
+
+/* Hide scrollbar corner */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ *  Selection — Gold highlight
+ * ═══════════════════════════════════════════════════════════════
+ */
+
+::selection {
+  background: rgba(201, 168, 76, 0.3);
+  color: var(--text-primary);
+}

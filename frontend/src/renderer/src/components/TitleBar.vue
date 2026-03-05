@@ -56,37 +56,27 @@ onUnmounted(() => {
 
     <!-- Window controls (no-drag so buttons are clickable) -->
     <div class="titlebar__controls">
-      <button
-        class="titlebar__btn titlebar__btn--minimize"
-        aria-label="Minimize"
-        @click="handleMinimize"
-      >
+      <button class="titlebar__btn titlebar__btn--minimize" aria-label="Minimize" @click="handleMinimize">
         <!-- Minimize icon: horizontal line -->
         <svg width="10" height="1" viewBox="0 0 10 1">
           <rect width="10" height="1" fill="currentColor" />
         </svg>
       </button>
 
-      <button
-        class="titlebar__btn titlebar__btn--maximize"
-        :aria-label="isMaximized ? 'Restore' : 'Maximize'"
-        @click="handleMaximize"
-      >
+      <button class="titlebar__btn titlebar__btn--maximize" :aria-label="isMaximized ? 'Restore' : 'Maximize'"
+        @click="handleMaximize">
         <!-- Maximize / Restore icon -->
         <svg v-if="!isMaximized" width="10" height="10" viewBox="0 0 10 10">
           <rect x="0.5" y="0.5" width="9" height="9" rx="0" fill="none" stroke="currentColor" stroke-width="1" />
         </svg>
         <svg v-else width="10" height="10" viewBox="0 0 10 10">
           <rect x="2.5" y="0.5" width="7" height="7" rx="0" fill="none" stroke="currentColor" stroke-width="1" />
-          <rect x="0.5" y="2.5" width="7" height="7" rx="0" fill="var(--bg-secondary)" stroke="currentColor" stroke-width="1" />
+          <rect x="0.5" y="2.5" width="7" height="7" rx="0" fill="var(--bg-secondary)" stroke="currentColor"
+            stroke-width="1" />
         </svg>
       </button>
 
-      <button
-        class="titlebar__btn titlebar__btn--close"
-        aria-label="Close"
-        @click="handleClose"
-      >
+      <button class="titlebar__btn titlebar__btn--close" aria-label="Close" @click="handleClose">
         <!-- Close icon: X -->
         <svg width="10" height="10" viewBox="0 0 10 10">
           <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2" />
@@ -105,6 +95,8 @@ onUnmounted(() => {
   min-height: var(--titlebar-height, 34px);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
   user-select: none;
 }
 
@@ -121,8 +113,8 @@ onUnmounted(() => {
 .titlebar__title {
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 1.5px;
-  color: var(--text-secondary);
+  letter-spacing: 2px;
+  color: var(--text-muted);
 }
 
 /* Control button group */
@@ -142,7 +134,7 @@ onUnmounted(() => {
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .titlebar__btn:hover {
@@ -155,12 +147,12 @@ onUnmounted(() => {
 }
 
 .titlebar__btn--close:hover {
-  background: #e81123;
+  background: var(--danger);
   color: #ffffff;
 }
 
 .titlebar__btn--close:active {
-  background: #bf0f1d;
+  background: rgba(180, 60, 60, 0.9);
   color: #ffffff;
 }
 </style>

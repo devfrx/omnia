@@ -36,8 +36,8 @@ if (-not $FrontendOnly) {
     
     $backendJob = Start-Job -ScriptBlock {
         param($root)
-        Set-Location "$root\backend"
-        & ".venv\Scripts\python.exe" -m uvicorn core.app:create_app --factory --reload --host 0.0.0.0 --port 8000
+        Set-Location $root
+        & "backend\.venv\Scripts\python.exe" -m uvicorn backend.core.app:create_app --factory --reload --reload-dir backend --host 0.0.0.0 --port 8000
     } -ArgumentList $Root
     
     Write-Host "  ✓ Backend starting on :8000 (Job: $($backendJob.Id))" -ForegroundColor Green

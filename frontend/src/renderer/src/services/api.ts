@@ -9,11 +9,27 @@ import type {
   ConversationDetail,
   ConversationSummary,
   DeleteConversationResponse,
+  FileAttachment,
   RenameConversationResponse
 } from '../types/chat'
 
 /** Base URL for all REST calls. */
 const BASE_URL = 'http://localhost:8000/api'
+
+/** Backend host root (without /api), used to resolve relative asset URLs. */
+export const BACKEND_HOST = 'http://localhost:8000'
+
+/**
+ * Resolve a backend-relative path (e.g. `/uploads/...`) to an absolute URL.
+ * Passes through URLs that are already absolute or blob/data URIs.
+ */
+export function resolveBackendUrl(path: string): string {
+  if (!path) return path
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
+    return path
+  }
+  return `${BACKEND_HOST}${path.startsWith('/') ? '' : '/'}${path}`
+}
 
 /**
  * Generic fetch wrapper with JSON parsing and error handling.
@@ -79,6 +95,33 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(config)
     }),
+
+  // -- File uploads ---------------------------------------------------------
+
+  /**
+   * Upload a file attachment for a conversation.
+   *
+   * @param file           - The `File` object to upload.
+   * @param conversationId - Target conversation ID.
+   * @returns The created {@link FileAttachment} metadata.
+   */
+  uploadFile: async (file: File, conversationId: string): Promise<FileAttachment> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('conversation_id', conversationId)
+    const response = await fetch(`${BASE_URL}/chat/upload`, {
+      method: 'POST',
+      body: formData
+    })
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      throw new Error(`Upload failed ${response.status}: ${body}`)
+    }
+    const data: FileAttachment = await response.json()
+    // Resolve relative URL to absolute backend URL so images load in Electron.
+    data.url = resolveBackendUrl(data.url)
+    return data
+  },
 
   // -- Plugins --------------------------------------------------------------
 

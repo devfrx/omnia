@@ -53,7 +53,7 @@ npm run dev     # electron-vite dev with HMR
 
 # Ollama
 ollama serve
-ollama pull qwen2.5:14b
+ollama pull qwen3.5:9b
 ```
 
 ## Output Format

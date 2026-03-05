@@ -4,27 +4,71 @@
  *
  * Renders partial markdown as it streams in, styled identically to an
  * assistant {@link MessageBubble} but with a blinking cursor appended.
+ * Includes a collapsible "Ragionamento" section for thinking tokens.
  * The parent controls visibility (`v-if="isStreaming"` outside).
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { renderMarkdown } from '../../composables/useMarkdown'
 
 const props = defineProps<{
   /** Accumulated tokens so far (`currentStreamContent` from the store). */
   content: string
+  /** Accumulated thinking tokens (`currentThinkingContent` from the store). */
+  thinkingContent: string
 }>()
+
+/** Whether the thinking section is collapsed. */
+const thinkingCollapsed = ref(false)
+
+/** Auto-expand while thinking tokens are arriving. */
+watch(
+  () => props.thinkingContent,
+  (val, old) => {
+    if (val.length > (old?.length ?? 0)) {
+      thinkingCollapsed.value = false
+    }
+  }
+)
 
 /** Rendered HTML of the partial markdown content. */
 const htmlContent = computed(() => renderMarkdown(props.content))
+
+/** Rendered HTML of the thinking content. */
+const thinkingHtml = computed(() => renderMarkdown(props.thinkingContent))
 </script>
 
 <template>
   <div class="bubble-row row--assistant">
     <div class="streaming-bubble">
+      <!-- Thinking section -->
+      <div v-if="thinkingContent" class="thinking-section">
+        <button class="thinking-section__toggle" @click="thinkingCollapsed = !thinkingCollapsed">
+          <svg class="thinking-section__icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+            <line x1="9" y1="21" x2="15" y2="21" />
+            <line x1="10" y1="24" x2="14" y2="24" />
+          </svg>
+          <span class="thinking-section__label">Ragionamento</span>
+          <svg class="thinking-section__chevron" :class="{ 'thinking-section__chevron--collapsed': thinkingCollapsed }"
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        <div v-show="!thinkingCollapsed" class="thinking-section__body">
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div class="thinking-section__content" v-html="thinkingHtml" />
+          <span v-if="!content" class="streaming-bubble__cursor" />
+        </div>
+      </div>
+
+      <!-- Main content -->
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-if="content" class="streaming-bubble__content" v-html="htmlContent" />
-      <span class="streaming-bubble__cursor" />
+      <span v-if="content || !thinkingContent" class="streaming-bubble__cursor" />
     </div>
   </div>
 </template>
@@ -41,13 +85,78 @@ const htmlContent = computed(() => renderMarkdown(props.content))
   padding: 10px 14px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 12px 12px 12px 4px;
-  box-shadow: 0 0 16px rgba(88, 166, 255, 0.1);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+  box-shadow: 0 0 16px var(--accent-glow);
   color: var(--text-primary);
   line-height: 1.55;
   font-size: 0.9rem;
   word-break: break-word;
   position: relative;
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+/* ----- Thinking section */
+.thinking-section {
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.thinking-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: color var(--transition-normal);
+}
+
+.thinking-section__toggle:hover {
+  color: var(--text-primary);
+}
+
+.thinking-section__icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.thinking-section__label {
+  font-style: italic;
+  flex: 1;
+  text-align: left;
+}
+
+.thinking-section__chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.thinking-section__chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+.thinking-section__body {
+  padding: 4px 10px 8px;
+  font-style: italic;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.thinking-section__content :deep(p) {
+  margin: 0 0 0.4em;
+}
+
+.thinking-section__content :deep(p:last-child) {
+  margin-bottom: 0;
 }
 
 /* ----- markdown content (re-uses same deep selectors as MessageBubble) */
@@ -66,17 +175,17 @@ const htmlContent = computed(() => renderMarkdown(props.content))
 
 .streaming-bubble__content :deep(.code-block) {
   background: rgba(0, 0, 0, 0.35);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   overflow-x: auto;
   margin: 6px 0;
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.84rem;
   line-height: 1.5;
 }
 
 .streaming-bubble__content :deep(code) {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.85em;
   background: rgba(255, 255, 255, 0.06);
   padding: 1px 5px;
@@ -100,12 +209,26 @@ const htmlContent = computed(() => renderMarkdown(props.content))
 }
 
 @keyframes blink {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
+  }
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 24px rgba(201, 168, 76, 0.14);
   }
 }
 </style>

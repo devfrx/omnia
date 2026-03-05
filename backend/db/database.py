@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession as SQLModelAsyncSession
 
@@ -24,10 +27,18 @@ def create_engine_and_session(
         A tuple of ``(AsyncEngine, async_sessionmaker)`` where sessions
         are SQLModel-aware (supporting ``.exec()``).
     """
+    engine_kwargs: dict[str, Any] = {
+        "echo": False,
+    }
+
+    # In-memory SQLite requires StaticPool so all sessions share the same DB.
+    if db_url in ("sqlite+aiosqlite://", "sqlite+aiosqlite:///:memory:"):
+        engine_kwargs["poolclass"] = StaticPool
+        engine_kwargs["connect_args"] = {"check_same_thread": False}
+
     engine = create_async_engine(
         db_url,
-        echo=False,
-        future=True,
+        **engine_kwargs,
     )
     session_factory = async_sessionmaker(
         engine,

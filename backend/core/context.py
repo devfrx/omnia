@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from backend.core.config import OmniaConfig
 from backend.core.event_bus import EventBus
@@ -25,7 +25,7 @@ class AppContext:
 
     config: OmniaConfig
     event_bus: EventBus
-    db: AsyncSession | None = None
+    db: async_sessionmaker | None = None
 
     # TODO: Replace ``Any`` with concrete types once services are implemented.
     plugin_manager: Any = None  # TODO: type as PluginManager

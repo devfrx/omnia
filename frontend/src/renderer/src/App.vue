@@ -17,28 +17,7 @@ import AppSidebar from './components/sidebar/AppSidebar.vue'
 </template>
 
 <style>
-:root {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --accent: #58a6ff;
-  --border: rgba(255, 255, 255, 0.1);
-  --titlebar-height: 34px;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  overflow: hidden;
-}
+/* Theme tokens & global reset are loaded via main.css → styles/theme.css */
 
 #omnia-app {
   width: 100vw;

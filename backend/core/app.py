@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from backend.core.config import OmniaConfig, load_config
+from backend.core.config import OmniaConfig, PROJECT_ROOT, load_config
 from backend.core.context import AppContext, create_context
 from backend.db.database import create_engine_and_session, init_db
 from backend.services.llm_service import LLMService
@@ -33,6 +35,11 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         db_url = "sqlite+aiosqlite://"  # in-memory
     else:
         db_url = config.database.url
+        # Ensure the directory for the SQLite file exists.
+        if "sqlite" in db_url and ":///" in db_url:
+            db_path = db_url.split(":///", 1)[-1]
+            if db_path:
+                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
     engine, session_factory = create_engine_and_session(db_url)
     await init_db(engine)
@@ -95,5 +102,14 @@ def create_app(testing: bool = False) -> FastAPI:
     from backend.api.routes import router as api_router  # noqa: E402
 
     app.include_router(api_router)
+
+    # -- Static files (uploaded images) ------------------------------------
+    uploads_dir = PROJECT_ROOT / "data" / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        "/uploads",
+        StaticFiles(directory=str(uploads_dir)),
+        name="uploads",
+    )
 
     return app

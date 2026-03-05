@@ -21,7 +21,7 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 
 | Componente | Tecnologia |
 |---|---|
-| LLM locale | LM Studio / Ollama (OpenAI-compatible) + Qwen 2.5 14B Instruct (~10GB VRAM) |
+| LLM locale | LM Studio / Ollama (OpenAI-compatible) + Qwen 3.5 9B (~6GB VRAM, vision nativo) + Thinking (QwQ, DeepSeek R1) |
 | STT | faster-whisper large-v3 (~1.5GB VRAM) |
 | TTS | Piper TTS (primario, CPU) + XTTS v2 (opzionale, voice cloning) |
 | Backend | Python — FastAPI + uvicorn (ASGI) |
@@ -50,7 +50,7 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 │                      ▼      FASTAPI BACKEND              │
 │  ┌─────────┐ ┌─────────┐                                │
 │  │ STT Svc │ │ LLM Svc │──→ Ollama (:11434)             │
-│  │(whisper)│ │(Qwen14B)│←── streaming tokens             │
+│  │(whisper)│ │(Qwen9B) │←── streaming tokens             │
 │  └────┬────┘ └────┬────┘                                │
 │       │ text      │ tool calls                           │
 │       ▼           ▼                                      │
@@ -71,12 +71,13 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 
 | Componente | VRAM | RAM |
 |---|---|---|
-| Qwen 2.5 14B Q4_K_M (Ollama) | ~10 GB | ~1 GB |
+| Qwen 3.5 9B (Ollama, vision nativo) | ~6 GB | ~1 GB |
+| Thinking models (swap: QwQ, DeepSeek R1) | ~6-10 GB (shared) | ~1 GB |
 | faster-whisper large-v3 | ~1.5 GB | ~0.5 GB |
 | Piper TTS | 0 | ~0.1 GB |
 | FastAPI + Plugin | 0 | ~0.5 GB |
 | Electron + Vue | 0 | ~0.3 GB |
-| **Totale** | **~11.5 / 16 GB** | **~2.4 / 32 GB** |
+| **Totale** | **~7.5 / 16 GB** | **~2.4 / 32 GB** |
 
 ## Roadmap
 
@@ -88,22 +89,33 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 - [x] Git init + .gitignore
 
 ### Fase 1 — Core Backend + Chat Testuale
-- [ ] Config system (Pydantic Settings + YAML)
-- [ ] AppContext (DI container)
-- [ ] Event Bus asincrono
-- [ ] FastAPI app factory
-- [ ] Ollama + Qwen 2.5 14B setup
-- [ ] LLM Service con streaming
-- [ ] WebSocket chat endpoint
-- [ ] REST chat history
-- [ ] Database (SQLite + SQLModel)
+- [x] Config system (Pydantic Settings + YAML)
+- [x] AppContext (DI container)
+- [x] Event Bus asincrono
+- [x] FastAPI app factory
+- [x] Ollama + Qwen 3.5 9B setup (vision nativo)
+- [x] LLM Service con streaming
+- [x] WebSocket chat endpoint
+- [x] REST chat history
+- [x] Database (SQLite + SQLModel)
 
 ### Fase 2 — Frontend Base + Chat UI
-- [ ] Electron window frameless + custom title bar
-- [ ] WebSocket manager
-- [ ] LLM stream composable
-- [ ] Pinia chat store
-- [ ] Chat UI components (ChatWindow, MessageBubble, InputBar)
+- [x] Electron window frameless + custom title bar
+- [x] WebSocket manager
+- [x] LLM stream composable
+- [x] Pinia chat store
+- [x] Chat UI components (ChatView, MessageBubble, ChatInput, StreamingIndicator)
+
+### Fase 1.5 — Supporto Multimodale + Thinking
+
+- [x] Thinking model support (QwQ, DeepSeek R1) — parsing `<think>` tags + reasoning_content delta
+- [x] Thinking token streaming via WebSocket (`type: "thinking"`)
+- [x] Frontend thinking display (collapsible reasoning block)
+- [x] Vision model support (LLaVA, Qwen2-VL) — multimodal content format
+- [x] Image upload endpoint (POST /chat/upload)
+- [x] Image attachment UI (paste, drag-drop, file picker)
+- [x] Image display in message bubbles
+- [x] Attachment DB model + file storage
 
 ### Fase 3 — Plugin System
 - [ ] BasePlugin ABC
@@ -148,6 +160,7 @@ OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per 
 | Fase | Test |
 |---|---|
 | 1-2 | "Ciao OMNIA" → risposta streammata in italiano |
+| 1.5 | Immagine + "Cosa vedi?" → descrizione; Thinking model → blocco ragionamento collassabile |
 | 3 | "Quanta RAM uso?" → tool call → risposta naturale |
 | 4 | Voce: "Che ore sono?" → risposta vocale |
 | 5 | "Apri Notepad" → si apre automaticamente |

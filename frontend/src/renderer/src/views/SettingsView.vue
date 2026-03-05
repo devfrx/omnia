@@ -12,7 +12,7 @@
 <style scoped>
 .settings-view {
   padding: 2rem;
-  color: #e0e0e0;
+  color: var(--text-primary);
 }
 
 .placeholder {

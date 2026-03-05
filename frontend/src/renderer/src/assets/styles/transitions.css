@@ -1,0 +1,113 @@
+/*
+ * ═══════════════════════════════════════════════════════════════
+ *  O.M.N.I.A. — Reusable Transitions & Animations
+ * ═══════════════════════════════════════════════════════════════
+ */
+
+/* ── Fade In ───────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn var(--transition-normal) both;
+}
+
+/* ── Slide In (from below) ─────────────────────────────────── */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn var(--transition-normal) both;
+}
+
+/* ── Slide In Left ─────────────────────────────────────────── */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-left {
+  animation: slideInLeft var(--transition-normal) both;
+}
+
+/* ── Pulse Glow — Subtle gold pulse for active elements ───── */
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(201, 168, 76, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(201, 168, 76, 0.2);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+/* ── Blink — Cursor / caret ────────────────────────────────── */
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/*
+ * ── Vue transition helpers ─────────────────────────────────
+ *    Use with <Transition name="v-fade"> etc.
+ */
+
+.v-fade-enter-active,
+.v-fade-leave-active {
+  transition: opacity var(--transition-normal);
+}
+
+.v-fade-enter-from,
+.v-fade-leave-to {
+  opacity: 0;
+}
+
+.v-slide-enter-active,
+.v-slide-leave-active {
+  transition:
+    opacity var(--transition-normal),
+    transform var(--transition-normal);
+}
+
+.v-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.v-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}

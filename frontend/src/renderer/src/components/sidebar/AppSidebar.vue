@@ -38,7 +38,14 @@ onMounted(() => {
 
 /** Select an existing conversation and navigate to /chat. */
 async function onSelect(id: string): Promise<void> {
-  await chatStore.loadConversation(id)
+  try {
+    await chatStore.loadConversation(id)
+  } catch (err) {
+    // Graceful degradation — log the failure and stay on the current view
+    // rather than leaving the UI in an inconsistent state.
+    console.error(`[AppSidebar] Failed to load conversation ${id}:`, err)
+    return
+  }
   if (router.currentRoute.value.name !== 'chat') {
     await router.push({ name: 'chat' })
   }
@@ -67,16 +74,8 @@ async function onRename(id: string, title: string): Promise<void> {
   <aside class="sidebar" :class="{ 'sidebar--collapsed': !isOpen }">
     <!-- Toggle button (always visible) -->
     <button class="sidebar__toggle" aria-label="Toggle sidebar" @click="toggle">
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
         <line x1="3" y1="6" x2="21" y2="6" />
         <line x1="3" y1="12" x2="21" y2="12" />
         <line x1="3" y1="18" x2="21" y2="18" />
@@ -96,7 +95,8 @@ async function onRename(id: string, title: string): Promise<void> {
         <router-link to="/settings" class="sidebar__link" active-class="sidebar__link--active">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" />
           </svg>
           <span>Impostazioni</span>
         </router-link>
@@ -105,34 +105,28 @@ async function onRename(id: string, title: string): Promise<void> {
       <div class="sidebar__divider" />
 
       <!-- Conversation list -->
-      <ConversationList
-        :conversations="chatStore.conversations"
-        :active-id="chatStore.currentConversation?.id ?? null"
-        @select="onSelect"
-        @create="onCreate"
-        @delete="onDelete"
-        @rename="onRename"
-      />
+      <ConversationList :conversations="chatStore.conversations" :active-id="chatStore.currentConversation?.id ?? null"
+        @select="onSelect" @create="onCreate" @delete="onDelete" @rename="onRename" />
     </div>
   </aside>
 </template>
 
 <style scoped>
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  transition: width 0.25s ease, min-width 0.25s ease;
+  box-shadow: 1px 0 8px rgba(0, 0, 0, 0.3);
+  transition: width var(--transition-normal), min-width var(--transition-normal);
   overflow: hidden;
 }
 
 .sidebar--collapsed {
-  width: 42px;
-  min-width: 42px;
+  width: var(--sidebar-collapsed);
+  min-width: var(--sidebar-collapsed);
 }
 
 /* ------------------------------------------------- Toggle */
@@ -147,7 +141,7 @@ async function onRename(id: string, title: string): Promise<void> {
   color: var(--text-secondary);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
 .sidebar__toggle:hover {
@@ -176,11 +170,11 @@ async function onRename(id: string, title: string): Promise<void> {
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 0.84rem;
   color: var(--text-secondary);
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .sidebar__link:hover {
@@ -190,7 +184,7 @@ async function onRename(id: string, title: string): Promise<void> {
 
 .sidebar__link--active {
   color: var(--accent);
-  background: rgba(88, 166, 255, 0.08);
+  background: var(--accent-dim);
 }
 
 /* ------------------------------------------------- Divider */
