@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from backend.api.routes import chat
+from backend.api.routes import chat, config, plugins
 
 router = APIRouter(prefix="/api")
 
 router.include_router(chat.router)
+router.include_router(config.router)
+router.include_router(plugins.router)
 
 
 @router.get("/health")

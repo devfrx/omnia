@@ -28,7 +28,8 @@ import type {
   WsErrorMessage,
   WsSendPayload,
   WsThinkingMessage,
-  WsTokenMessage
+  WsTokenMessage,
+  WsToolCallMessage
 } from '../types/chat'
 
 /** Connection status reported by the composable. */
@@ -99,6 +100,13 @@ export function useChat(): UseChatReturn {
     store.finalizeStream(msg.conversation_id, msg.message_id)
   }
 
+  const onToolCall = (data: unknown): void => {
+    const msg = data as WsToolCallMessage
+    console.debug('[useChat] Tool call received:', msg)
+    // Tool execution is handled server-side in a future phase.
+    // For now, just log it so the event is not silently dropped.
+  }
+
   const onWsError = (data: unknown): void => {
     // Only handle server-side error frames (JSON objects with content),
     // skip native WebSocket error Events.
@@ -119,6 +127,7 @@ export function useChat(): UseChatReturn {
   wsManager.on('token', onToken)
   wsManager.on('thinking', onThinking)
   wsManager.on('done', onDone)
+  wsManager.on('tool_call', onToolCall)
   wsManager.on('error', onWsError) // also catches server-side error frames
 
   connectionStatus.value = 'connecting'
@@ -142,6 +151,7 @@ export function useChat(): UseChatReturn {
     wsManager.off('token', onToken)
     wsManager.off('thinking', onThinking)
     wsManager.off('done', onDone)
+    wsManager.off('tool_call', onToolCall)
     wsManager.off('error', onWsError)
     wsManager.disconnect()
   })

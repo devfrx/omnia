@@ -141,7 +141,11 @@ export const useChatStore = defineStore('chat', () => {
 
   /** Delete a conversation on the backend and remove it from local state. */
   async function deleteConversation(id: string): Promise<void> {
-    await api.deleteConversation(id)
+    // Only call the backend if the conversation was persisted (has messages).
+    const summary = conversations.value.find((c) => c.id === id)
+    if (summary && summary.message_count > 0) {
+      await api.deleteConversation(id)
+    }
     conversations.value = conversations.value.filter((c) => c.id !== id)
     if (currentConversation.value?.id === id) {
       currentConversation.value = null
@@ -150,19 +154,31 @@ export const useChatStore = defineStore('chat', () => {
 
   /** Rename a conversation on the backend and update local state. */
   async function renameConversation(id: string, title: string): Promise<void> {
-    const result = await api.renameConversation(id, title)
+    // Only call the backend if the conversation was persisted (has messages).
+    const summary = conversations.value.find((c) => c.id === id)
+    if (summary && summary.message_count > 0) {
+      const result = await api.renameConversation(id, title)
 
-    // Update sidebar entry
-    const entry = conversations.value.find((c) => c.id === id)
-    if (entry) {
-      entry.title = result.title
-      entry.updated_at = result.updated_at
-    }
+      // Update sidebar entry
+      const entry = conversations.value.find((c) => c.id === id)
+      if (entry) {
+        entry.title = result.title
+        entry.updated_at = result.updated_at
+      }
 
-    // Update active conversation if it matches
-    if (currentConversation.value?.id === id) {
-      currentConversation.value.title = result.title
-      currentConversation.value.updated_at = result.updated_at
+      // Update active conversation if it matches
+      if (currentConversation.value?.id === id) {
+        currentConversation.value.title = result.title
+        currentConversation.value.updated_at = result.updated_at
+      }
+    } else {
+      // Local-only conversation: update state directly.
+      if (summary) {
+        summary.title = title
+      }
+      if (currentConversation.value?.id === id) {
+        currentConversation.value.title = title
+      }
     }
   }
 

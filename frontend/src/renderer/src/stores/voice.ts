@@ -6,11 +6,13 @@ export const useVoiceStore = defineStore('voice', () => {
   const isProcessing = ref(false)
   const isSpeaking = ref(false)
   const transcript = ref('')
+  const audioLevel = ref(0)
 
   return {
     isListening,
     isProcessing,
     isSpeaking,
-    transcript
+    transcript,
+    audioLevel
   }
 })
