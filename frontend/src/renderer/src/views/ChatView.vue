@@ -6,16 +6,17 @@
  * Auto-scrolls on new messages.  Creates a blank conversation on
  * mount when none is active.
  */
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import ChatInput from '../components/chat/ChatInput.vue'
 import MessageBubble from '../components/chat/MessageBubble.vue'
 import StreamingIndicator from '../components/chat/StreamingIndicator.vue'
-import { useChat } from '../composables/useChat'
+import { ChatApiKey } from '../composables/useChat'
 import { useChatStore } from '../stores/chat'
 
 const chatStore = useChatStore()
-const { sendMessage: send, isConnected, stopGeneration } = useChat()
+const chatApi = inject(ChatApiKey)!
+const { sendMessage: send, isConnected, stopGeneration } = chatApi
 
 /** Template ref for the scrollable message container. */
 const messagesContainer = ref<HTMLElement | null>(null)
@@ -54,6 +55,13 @@ async function handleSend(content: string, attachments: File[]): Promise<void> {
   scrollToBottom(true)
 }
 
+/** Navigate to the conversation that is currently streaming. */
+async function goToStreamingConversation(): Promise<void> {
+  if (chatStore.streamingConversationId) {
+    await chatStore.loadConversation(chatStore.streamingConversationId)
+  }
+}
+
 // Auto-scroll whenever the message list or streaming content changes.
 watch(
   () => [chatStore.messages.length, chatStore.currentStreamContent, chatStore.currentThinkingContent],
@@ -79,7 +87,7 @@ onUnmounted(() => {
     <!-- Messages area -->
     <div ref="messagesContainer" class="chat-view__messages">
       <!-- Empty state -->
-      <div v-if="chatStore.messages.length === 0 && !chatStore.isStreaming" class="chat-view__empty">
+      <div v-if="chatStore.messages.length === 0 && !chatStore.isStreamingCurrentConversation" class="chat-view__empty">
         <div class="chat-view__empty-icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
             stroke-linecap="round" stroke-linejoin="round">
@@ -94,8 +102,24 @@ onUnmounted(() => {
       <!-- Message list -->
       <MessageBubble v-for="msg in chatStore.messages" :key="msg.id" :message="msg" />
 
+      <!-- Streaming in another conversation banner -->
+      <div v-if="chatStore.isStreaming && !chatStore.isStreamingCurrentConversation"
+        class="chat-view__streaming-elsewhere">
+        <div class="chat-view__streaming-elsewhere-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+        </div>
+        <span>Generazione in corso in un'altra conversazione…</span>
+        <button class="chat-view__streaming-elsewhere-btn" @click="goToStreamingConversation">
+          Vai alla conversazione
+        </button>
+      </div>
+
       <!-- Streaming response -->
-      <StreamingIndicator v-if="chatStore.isStreaming" :content="chatStore.currentStreamContent"
+      <StreamingIndicator v-if="chatStore.isStreamingCurrentConversation" :content="chatStore.currentStreamContent"
         :thinking-content="chatStore.currentThinkingContent" />
 
       <!-- Scroll to bottom button -->
@@ -111,7 +135,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Input -->
-    <ChatInput :disabled="false" :is-connected="isConnected" :is-streaming="chatStore.isStreaming"
+    <ChatInput :disabled="false" :is-connected="isConnected" :is-streaming="chatStore.isStreamingCurrentConversation"
       @send="handleSend" @stop="stopGeneration" />
   </div>
 </template>
@@ -221,12 +245,80 @@ onUnmounted(() => {
   transform: translateX(-50%) translateY(8px);
 }
 
+/* ------------------------------------------ Streaming-elsewhere banner */
+.chat-view__streaming-elsewhere {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin: 8px 0;
+  background: rgba(201, 168, 76, 0.06);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  animation: bannerFadeIn 0.3s ease;
+}
+
+.chat-view__streaming-elsewhere-icon {
+  color: var(--accent);
+  opacity: 0.7;
+  animation: bannerPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.chat-view__streaming-elsewhere-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.25);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.chat-view__streaming-elsewhere-btn:hover {
+  background: rgba(201, 168, 76, 0.18);
+  border-color: rgba(201, 168, 76, 0.4);
+}
+
+@keyframes bannerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bannerPulse {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
 /* ------------------------------------------ Empty state animation */
 @keyframes emptyBreathing {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
     opacity: 0.6;
   }
+
   50% {
     transform: translateY(-4px);
     opacity: 0.9;

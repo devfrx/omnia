@@ -1,7 +1,15 @@
 <script setup lang="ts">
 // O.M.N.I.A. — Root App Component
+import { provide } from 'vue'
+
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
+import { useChat, ChatApiKey } from './composables/useChat'
+
+// Initialise the WebSocket connection at the app level so it survives
+// route changes (e.g. navigating to Settings while streaming).
+const chatApi = useChat()
+provide(ChatApiKey, chatApi)
 </script>
 
 <template>

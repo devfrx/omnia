@@ -64,6 +64,11 @@ export const useChatStore = defineStore('chat', () => {
     () => currentConversation.value?.messages ?? []
   )
 
+  /** True only when the currently viewed conversation is the one being streamed. */
+  const isStreamingCurrentConversation = computed<boolean>(
+    () => isStreaming.value && streamingConversationId.value === currentConversation.value?.id
+  )
+
   // -----------------------------------------------------------------------
   // REST actions
   // -----------------------------------------------------------------------
@@ -76,7 +81,9 @@ export const useChatStore = defineStore('chat', () => {
     // does not know about yet (created while backend was down).
     const remoteIds = new Set(remote.map((c) => c.id))
     const localOnly = conversations.value.filter(
-      (c) => !remoteIds.has(c.id) && c.message_count === 0
+      (c) => !remoteIds.has(c.id) && (
+        c.message_count === 0 || c.id === streamingConversationId.value
+      )
     )
 
     // Try to persist orphan local-only conversations to the backend.
@@ -409,6 +416,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // computed
     messages,
+    isStreamingCurrentConversation,
 
     // REST actions
     loadConversations,

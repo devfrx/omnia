@@ -292,6 +292,11 @@ async def ws_chat(websocket: WebSocket) -> None:
                 if attachment_info:
                     await session.flush()
 
+                # Commit conversation + user message so they are visible to
+                # other sessions (REST endpoints) immediately.  The session
+                # uses expire_on_commit=False so `conv` stays usable.
+                await session.commit()
+
                 # --- fetch history for context ----------------------------
                 stmt = (
                     select(Message)

@@ -17,6 +17,8 @@ const props = defineProps<{
   conversations: ConversationSummary[]
   /** ID of the currently active conversation (null = none). */
   activeId: string | null
+  /** ID of the conversation currently being streamed (null = none). */
+  streamingId: string | null
 }>()
 
 const emit = defineEmits<{
@@ -203,7 +205,10 @@ function timeAgo(iso: string): string {
           @click="emit('select', conv.id)">
           <!-- Normal display -->
           <template v-if="renamingId !== conv.id">
-            <span class="conv-item__title">{{ conv.title ?? 'Nuova conversazione' }}</span>
+            <span class="conv-item__title">
+              <span v-if="conv.id === streamingId" class="conv-item__streaming-dot" aria-label="Generazione in corso" />
+              {{ conv.title ?? 'Nuova conversazione' }}
+            </span>
             <span class="conv-item__meta">
               <span>{{ conv.message_count }} msg</span>
               <span class="conv-item__time">{{ timeAgo(conv.updated_at) }}</span>
@@ -361,6 +366,34 @@ function timeAgo(iso: string): string {
 
 .conv-item__time {
   margin-left: auto;
+}
+
+/* ------------------------------------------------ Streaming indicator */
+.conv-item__streaming-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  animation: streamingPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(201, 168, 76, 0.4);
+}
+
+@keyframes streamingPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px rgba(201, 168, 76, 0.4);
+  }
+
+  50% {
+    opacity: 0.4;
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.6);
+  }
 }
 
 /* ------------------------------------------------ Inline rename */

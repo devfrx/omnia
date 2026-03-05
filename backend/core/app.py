@@ -19,6 +19,7 @@ from backend.services.conversation_file_manager import ConversationFileManager
 from backend.services.llm_service import LLMService
 from backend.core.plugin_manager import PluginManager
 from backend.core.tool_registry import ToolRegistry
+from backend.api.middleware.exception_handler import UnhandledExceptionMiddleware
 from backend.api.middleware.rate_limit import setup_rate_limiting
 
 __version__ = "0.1.0"
@@ -141,6 +142,10 @@ def create_app(testing: bool = False) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Safety net: catch unhandled exceptions inside the CORS boundary so
+    # error responses always carry Access-Control-Allow-Origin headers.
+    app.add_middleware(UnhandledExceptionMiddleware)
 
     # Rate limiting (slowapi).
     setup_rate_limiting(app, config.server.rate_limit)

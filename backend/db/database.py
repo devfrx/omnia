@@ -49,6 +49,21 @@ def create_engine_and_session(
         db_url,
         **engine_kwargs,
     )
+
+    # Enable WAL journal mode and busy timeout for file-based SQLite.
+    # WAL allows concurrent reads during writes and busy_timeout prevents
+    # immediate "database is locked" errors under concurrent access.
+    if is_sqlite and db_url not in ("sqlite+aiosqlite://", "sqlite+aiosqlite:///:memory:"):
+        from sqlalchemy import event
+
+        @event.listens_for(engine.sync_engine, "connect")
+        def _set_sqlite_pragmas(dbapi_conn, _connection_record):
+            cursor = dbapi_conn.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA busy_timeout=5000")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.close()
+
     session_factory = async_sessionmaker(
         engine,
         class_=SQLModelAsyncSession,

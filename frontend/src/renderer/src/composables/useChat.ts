@@ -17,6 +17,7 @@
  *   message to the store then sends it over the socket.
  */
 
+import type { InjectionKey } from 'vue'
 import { computed, onScopeDispose, ref, type Ref } from 'vue'
 
 import { api } from '../services/api'
@@ -48,6 +49,9 @@ export interface UseChatReturn {
   /** Reactive flag — `true` while a cancel request is pending. */
   isCancelling: Ref<boolean>
 }
+
+/** Injection key for the global chat API provided by App.vue. */
+export const ChatApiKey: InjectionKey<UseChatReturn> = Symbol('chatApi')
 
 /**
  * Wire up WebSocket events to the chat store.

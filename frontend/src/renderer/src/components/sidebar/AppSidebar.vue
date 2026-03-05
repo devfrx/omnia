@@ -117,7 +117,8 @@ async function onOpenFile(id: string): Promise<void> {
 
       <!-- Conversation list -->
       <ConversationList :conversations="chatStore.conversations" :active-id="chatStore.currentConversation?.id ?? null"
-        @select="onSelect" @create="onCreate" @delete="onDelete" @rename="onRename" @open-file="onOpenFile" />
+        :streaming-id="chatStore.streamingConversationId" @select="onSelect" @create="onCreate" @delete="onDelete"
+        @rename="onRename" @open-file="onOpenFile" />
     </div>
   </aside>
 </template>
