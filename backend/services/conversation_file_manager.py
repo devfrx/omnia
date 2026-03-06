@@ -141,6 +141,28 @@ class ConversationFileManager:
         await asyncio.to_thread(_remove)
         logger.debug("Deleted conversation file {}.json", conversation_id)
 
+    async def delete_all(self, user_id: str | None = None) -> int:
+        """Remove all JSON conversation files.
+
+        Args:
+            user_id: Optional user id for per-user subdirectory sharding.
+
+        Returns:
+            Number of files deleted.
+        """
+        directory = self._resolve_dir(user_id)
+
+        def _remove_all() -> int:
+            count = 0
+            for path in directory.glob("*.json"):
+                path.unlink()
+                count += 1
+            return count
+
+        deleted = await asyncio.to_thread(_remove_all)
+        logger.info("Deleted {} conversation files", deleted)
+        return deleted
+
     async def load(
         self,
         conversation_id: str,

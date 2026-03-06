@@ -4,6 +4,7 @@ import { provide } from 'vue'
 
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
+import ModalContainer from './components/ModalContainer.vue'
 import { useChat, ChatApiKey } from './composables/useChat'
 
 // Initialise the WebSocket connection at the app level so it survives
@@ -21,6 +22,7 @@ provide(ChatApiKey, chatApi)
         <router-view />
       </main>
     </div>
+    <ModalContainer />
   </div>
 </template>
 

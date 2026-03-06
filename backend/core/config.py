@@ -13,7 +13,7 @@ from typing import Any
 
 import yaml
 from loguru import logger
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ---------------------------------------------------------------------------
@@ -71,11 +71,25 @@ class ServerConfig(BaseSettings):
         ]
     )
 
-    @field_validator("cors_origins", mode="after")
-    @classmethod
-    def _sanitize_cors_origins(cls, v: list[str]) -> list[str]:
-        """Strip dangerous origin values ('null' and '*') in production."""
-        return [o for o in v if o not in ("null", "*")]
+    @model_validator(mode="after")
+    def _sanitize_cors_origins(self) -> ServerConfig:
+        """Strip wildcard origins in production; allow 'null' in development.
+
+        Electron's ``file://`` protocol sends ``Origin: null``, so we must
+        allow it during development.  In production the Electron app should
+        use a custom protocol with a proper origin.
+        """
+        if self.environment != "development":
+            self.cors_origins = [
+                o for o in self.cors_origins if o not in ("null", "*")
+            ]
+        else:
+            # Still block wildcard "*" even in dev — too permissive.
+            self.cors_origins = [
+                o for o in self.cors_origins if o != "*"
+            ]
+        return self
+
     max_upload_size_mb: int = 50
     """Maximum upload file size in megabytes."""
     ws_max_connections_per_ip: int = 5

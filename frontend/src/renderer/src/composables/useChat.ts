@@ -148,10 +148,19 @@ export function useChat(): UseChatReturn {
   const onToolConfirmationRequired = (data: unknown): void => {
     if (store.streamGeneration !== activeGeneration) return
     const msg = data as WsToolConfirmationRequiredMessage
+
+    // Auto-approve safe tools — only show dialog for medium+ risk.
+    if (msg.risk_level === 'safe') {
+      respondToConfirmation(msg.execution_id, true)
+      return
+    }
+
     store.addPendingConfirmation({
       executionId: msg.execution_id,
       toolName: msg.tool_name,
-      args: msg.args
+      args: msg.args,
+      riskLevel: msg.risk_level,
+      description: msg.description
     })
   }
 

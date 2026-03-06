@@ -14,11 +14,13 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useChatStore } from '../../stores/chat'
+import { useModal } from '../../composables/useModal'
 import { api } from '../../services/api'
 import ConversationList from './ConversationList.vue'
 
 const chatStore = useChatStore()
 const router = useRouter()
+const { confirm } = useModal()
 
 /** Whether the sidebar is expanded. */
 const isOpen = ref(true)
@@ -63,6 +65,27 @@ async function onCreate(): Promise<void> {
 /** Delete a conversation. */
 async function onDelete(id: string): Promise<void> {
   await chatStore.deleteConversation(id)
+}
+
+/** Delete ALL conversations (with confirmation). */
+let deleteAllPending = false
+async function onDeleteAll(): Promise<void> {
+  if (deleteAllPending) return
+  deleteAllPending = true
+  try {
+    const confirmed = await confirm({
+      title: 'Elimina tutte le conversazioni',
+      message: 'Eliminare tutte le conversazioni? Questa azione è irreversibile.',
+      type: 'danger',
+      confirmText: 'Elimina tutto',
+    })
+    if (!confirmed) return
+    await chatStore.deleteAllConversations()
+  } catch (err) {
+    console.error('[AppSidebar] Failed to delete all conversations:', err)
+  } finally {
+    deleteAllPending = false
+  }
 }
 
 /** Rename a conversation. */
@@ -118,12 +141,16 @@ async function onOpenFile(id: string): Promise<void> {
       <!-- Conversation list -->
       <ConversationList :conversations="chatStore.conversations" :active-id="chatStore.currentConversation?.id ?? null"
         :streaming-id="chatStore.streamingConversationId" @select="onSelect" @create="onCreate" @delete="onDelete"
-        @rename="onRename" @open-file="onOpenFile" />
+        @delete-all="onDeleteAll" @rename="onRename" @open-file="onOpenFile" />
     </div>
   </aside>
 </template>
 
 <style scoped>
+/* ═══════════════════════════════════════════════════════════
+   AppSidebar — Premium dark sidebar with warm-gold accents
+   ═══════════════════════════════════════════════════════════ */
+
 .sidebar {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
@@ -131,9 +158,16 @@ async function onOpenFile(id: string): Promise<void> {
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
-  box-shadow: 1px 0 8px rgba(0, 0, 0, 0.3);
-  transition: width var(--transition-normal), min-width var(--transition-normal);
+  border-right: 1px solid var(--border);
+  box-shadow:
+    1px 0 12px rgba(0, 0, 0, 0.35),
+    inset -1px 0 0 rgba(255, 255, 255, 0.02);
+  transition:
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  position: relative;
+  z-index: 10;
 }
 
 .sidebar--collapsed {
@@ -147,18 +181,41 @@ async function onOpenFile(id: string): Promise<void> {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 36px;
+  height: 40px;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+  position: relative;
+}
+
+.sidebar__toggle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent,
+      var(--border) 20%,
+      var(--border) 80%,
+      transparent);
+  opacity: 0.6;
 }
 
 .sidebar__toggle:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.sidebar__toggle:active {
+  transform: scale(0.94);
 }
 
 /* ------------------------------------------------- Content */
@@ -167,6 +224,19 @@ async function onOpenFile(id: string): Promise<void> {
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  animation: sidebarContentReveal 0.2s ease-out;
+}
+
+@keyframes sidebarContentReveal {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ------------------------------------------------- Navigation */
@@ -174,35 +244,65 @@ async function onOpenFile(id: string): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 4px 8px;
+  padding: 8px 10px 4px;
 }
 
 .sidebar__link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--text-secondary);
   text-decoration: none;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  position: relative;
+}
+
+.sidebar__link svg {
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .sidebar__link:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
+}
+
+.sidebar__link:hover svg {
+  opacity: 1;
+}
+
+.sidebar__link:active {
+  transform: scale(0.98);
 }
 
 .sidebar__link--active {
   color: var(--accent);
   background: var(--accent-dim);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.sidebar__link--active svg {
+  opacity: 1;
 }
 
 /* ------------------------------------------------- Divider */
 .sidebar__divider {
   height: 1px;
-  margin: 4px 12px;
-  background: var(--border);
+  margin: 6px 14px;
+  background: linear-gradient(90deg,
+      transparent,
+      var(--border) 15%,
+      var(--border) 85%,
+      transparent);
 }
 </style>

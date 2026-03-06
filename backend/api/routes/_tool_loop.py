@@ -129,6 +129,7 @@ async def run_tool_loop(
                     content="Duplicate call — see prior result.",
                     tool_call_id=tc["id"],
                 ))
+                await session.flush()  # Ensure dedup response persisted immediately
                 continue
             seen.add(dedup_key)
 
@@ -144,11 +145,14 @@ async def run_tool_loop(
                 approved = await _request_confirmation(
                     websocket, tool_name, args, exec_id,
                     confirmation_timeout_s,
+                    risk_level=tool_def.risk_level,
+                    description=tool_def.description,
                 )
                 if not approved:
                     _save_rejected_tool_msg(
                         session, conv_id, tc["id"],
                     )
+                    await session.flush()  # Persist rejection immediately
                     await websocket.send_json({
                         "type": "tool_execution_done",
                         "tool_name": tool_name,
@@ -349,6 +353,8 @@ async def _request_confirmation(
     args: dict[str, Any],
     execution_id: str,
     timeout_s: int,
+    risk_level: str = "medium",
+    description: str = "",
 ) -> bool:
     """Send a confirmation request and wait for the user's response.
 
@@ -362,6 +368,8 @@ async def _request_confirmation(
         args: Arguments the tool will be called with.
         execution_id: Unique execution ID for correlation.
         timeout_s: Maximum seconds to wait.
+        risk_level: Risk level of the tool (e.g. ``"low"``, ``"medium"``, ``"high"``).
+        description: Human-readable description of the tool action.
 
     Returns:
         ``True`` if the user approved, ``False`` on rejection or timeout.
@@ -371,6 +379,8 @@ async def _request_confirmation(
         "tool_name": tool_name,
         "args": args,
         "execution_id": execution_id,
+        "risk_level": risk_level,
+        "description": description,
     })
 
     deadline = asyncio.get_event_loop().time() + timeout_s

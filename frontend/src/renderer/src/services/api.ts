@@ -9,6 +9,7 @@ import type {
   ConversationDetail,
   ConversationExport,
   ConversationSummary,
+  DeleteAllConversationsResponse,
   DeleteConversationResponse,
   FileAttachment,
   RenameConversationResponse
@@ -100,6 +101,10 @@ export const api = {
   /** Delete a conversation and all its messages. */
   deleteConversation: (id: string): Promise<DeleteConversationResponse> =>
     request<DeleteConversationResponse>(`/chat/conversations/${id}`, { method: 'DELETE' }),
+
+  /** Delete ALL conversations, messages, and files. */
+  deleteAllConversations: (): Promise<DeleteAllConversationsResponse> =>
+    request<DeleteAllConversationsResponse>('/chat/conversations', { method: 'DELETE' }),
 
   /** Rename a conversation. */
   renameConversation: (id: string, title: string): Promise<RenameConversationResponse> =>

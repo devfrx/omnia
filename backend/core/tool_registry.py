@@ -42,6 +42,26 @@ _UNIX_PATH_RE: re.Pattern[str] = re.compile(
 )
 
 
+def _sanitise_dict(obj: dict[str, Any]) -> dict[str, Any]:
+    """Recursively sanitise string values in a dictionary."""
+    cleaned: dict[str, Any] = {}
+    for key, value in obj.items():
+        if isinstance(value, str):
+            cleaned[key] = _sanitise_content(value)
+        elif isinstance(value, dict):
+            cleaned[key] = _sanitise_dict(value)
+        elif isinstance(value, list):
+            cleaned[key] = [
+                _sanitise_content(v) if isinstance(v, str)
+                else _sanitise_dict(v) if isinstance(v, dict)
+                else v
+                for v in value
+            ]
+        else:
+            cleaned[key] = value
+    return cleaned
+
+
 def _sanitise_content(text: str) -> str:
     """Strip tracebacks and internal filesystem paths from *text*.
 
@@ -340,6 +360,36 @@ class ToolRegistry:
             execution_id=execution_id,
         )
 
+        # --- validate args against JSON Schema ---
+        try:
+            import jsonschema as _jsonschema
+        except ImportError:
+            _jsonschema = None  # type: ignore[assignment]
+
+        if _jsonschema is not None:
+            try:
+                _jsonschema.validate(instance=args, schema=tool_def.parameters)
+            except _jsonschema.ValidationError as ve:
+                self._logger.warning(
+                    "Tool '{}' args validation failed: {}",
+                    tool_name, ve.message,
+                )
+                await self._event_bus.emit(
+                    OmniaEvent.TOOL_EXECUTION_FAILED,
+                    tool_name=tool_name,
+                    execution_id=execution_id,
+                    error=f"Invalid arguments: {ve.message}",
+                )
+                return ToolResult.error(
+                    f"Tool '{tool_name}' argument validation failed: {ve.message}"
+                )
+            except _jsonschema.SchemaError:
+                # Schema itself is malformed — log but don't block execution
+                self._logger.warning(
+                    "Tool '{}' has invalid JSON schema — skipping validation",
+                    tool_name,
+                )
+
         start = time.perf_counter()
         timeout_s = tool_def.timeout_ms / 1000.0
 
@@ -392,6 +442,8 @@ class ToolRegistry:
                     result.content[:MAX_TOOL_RESULT_LENGTH]
                 )
                 result.truncated = True
+        elif isinstance(result.content, dict):
+            result.content = _sanitise_dict(result.content)
 
         # --- emit success / failure ---
         if result.success:

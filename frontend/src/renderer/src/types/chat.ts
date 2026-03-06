@@ -83,6 +83,12 @@ export interface DeleteConversationResponse {
   status: 'deleted'
 }
 
+/** Response from `DELETE /api/chat/conversations` (delete all). */
+export interface DeleteAllConversationsResponse {
+  status: 'deleted'
+  deleted_files: number
+}
+
 /** Response from `POST /api/chat/conversations/{id}/title`. */
 export interface RenameConversationResponse {
   id: string
@@ -154,6 +160,8 @@ export interface WsToolConfirmationRequiredMessage {
   tool_name: string
   args: Record<string, unknown>
   execution_id: string
+  risk_level: 'safe' | 'medium' | 'dangerous' | 'forbidden'
+  description: string
 }
 
 /** Payload the client sends to approve/reject a tool confirmation. */
@@ -193,6 +201,8 @@ export interface ConfirmationRequest {
   executionId: string
   toolName: string
   args: Record<string, unknown>
+  riskLevel: 'safe' | 'medium' | 'dangerous' | 'forbidden'
+  description: string
 }
 
 /** Discriminated union of all server→client WebSocket frames. */

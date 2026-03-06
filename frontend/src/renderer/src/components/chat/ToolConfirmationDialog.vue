@@ -44,7 +44,10 @@ function formatArgs(args: Record<string, unknown>): string {
 }
 
 onMounted(() => {
-    nextTick(() => dialogRoot.value?.focus())
+    nextTick(() => {
+        const firstBtn = dialogRoot.value?.querySelector('.confirm-card__btn--reject') as HTMLElement | null
+        firstBtn?.focus()
+    })
 })
 </script>
 
@@ -57,6 +60,17 @@ onMounted(() => {
                 <div class="confirm-card__tool">
                     <span class="confirm-card__badge">{{ confirmation.toolName }}</span>
                 </div>
+
+                <div class="confirm-card__risk">
+                    <span class="confirm-card__risk-badge"
+                        :class="`confirm-card__risk-badge--${confirmation.riskLevel}`">
+                        {{ confirmation.riskLevel }}
+                    </span>
+                </div>
+
+                <p v-if="confirmation.description" class="confirm-card__desc">
+                    {{ confirmation.description }}
+                </p>
 
                 <div class="confirm-card__args-wrap">
                     <span class="confirm-card__args-label">Argomenti:</span>
@@ -124,6 +138,45 @@ onMounted(() => {
     padding: 3px 10px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--accent-border);
+}
+
+.confirm-card__risk {
+    margin-bottom: 12px;
+}
+
+.confirm-card__risk-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.confirm-card__risk-badge--medium {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.confirm-card__risk-badge--dangerous {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.confirm-card__risk-badge--forbidden {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.confirm-card__desc {
+    margin: 0 0 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
 }
 
 .confirm-card__args-wrap {

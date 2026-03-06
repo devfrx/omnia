@@ -50,6 +50,7 @@ _MAGIC_BYTES: dict[str, list[bytes]] = {
 
 # Active WebSocket connections per IP (for rate limiting).
 _ws_connections: dict[str, int] = defaultdict(int)
+_ws_lock = asyncio.Lock()
 
 
 # ---------------------------------------------------------------------------
@@ -196,18 +197,18 @@ async def ws_chat(websocket: WebSocket) -> None:
     client_ip = (
         websocket.client.host if websocket.client else "unknown"
     )
-    if _ws_connections.get(client_ip, 0) >= max_ws:
-        await websocket.close(
-            code=1008, reason="Too many connections",
-        )
-        logger.warning(
-            "WS rejected for {} — {} active connections",
-            client_ip, _ws_connections[client_ip],
-        )
-        return
-
-    await websocket.accept()
-    _ws_connections[client_ip] += 1
+    async with _ws_lock:
+        if _ws_connections.get(client_ip, 0) >= max_ws:
+            await websocket.close(
+                code=1008, reason="Too many connections",
+            )
+            logger.warning(
+                "WS rejected for {} — {} active connections",
+                client_ip, _ws_connections[client_ip],
+            )
+            return
+        await websocket.accept()
+        _ws_connections[client_ip] += 1
 
     llm: LLMService = ctx.llm_service  # type: ignore[assignment]
     session_factory = ctx.db
@@ -563,11 +564,12 @@ async def ws_chat(websocket: WebSocket) -> None:
     except Exception:
         logger.exception("WebSocket unexpected error")
     finally:
-        _ws_connections[client_ip] = max(
-            0, _ws_connections[client_ip] - 1,
-        )
-        if _ws_connections[client_ip] <= 0:
-            _ws_connections.pop(client_ip, None)
+        async with _ws_lock:
+            _ws_connections[client_ip] = max(
+                0, _ws_connections[client_ip] - 1,
+            )
+            if _ws_connections[client_ip] <= 0:
+                _ws_connections.pop(client_ip, None)
 
 
 # ---------------------------------------------------------------------------
@@ -664,6 +666,39 @@ async def get_conversation(
                 for m in messages
             ],
         }
+
+
+@router.delete("/chat/conversations")
+async def delete_all_conversations(request: Request) -> dict[str, Any]:
+    """Delete ALL conversations, messages, attachments, and associated files."""
+    ctx = _ctx(request)
+    async with ctx.db() as session:
+        # Bulk-delete all attachments.
+        await session.execute(sa.delete(Attachment))
+        # Bulk-delete all messages.
+        await session.execute(sa.delete(Message))
+        # Bulk-delete all conversations.
+        await session.execute(sa.delete(Conversation))
+        await session.commit()
+
+    # Remove all JSON conversation files.
+    file_manager: ConversationFileManager | None = ctx.conversation_file_manager
+    deleted_files = 0
+    if file_manager:
+        deleted_files = await file_manager.delete_all()
+
+    # Remove all upload directories.
+    uploads_base = PROJECT_ROOT / "data" / "uploads"
+    if uploads_base.exists():
+        removed_dirs = 0
+        for child in uploads_base.iterdir():
+            if child.is_dir():
+                await asyncio.to_thread(shutil.rmtree, child, True)
+                removed_dirs += 1
+        logger.debug("Removed {} upload directories", removed_dirs)
+
+    logger.info("Deleted all conversations ({} files)", deleted_files)
+    return {"status": "deleted", "deleted_files": deleted_files}
 
 
 @router.delete("/chat/conversations/{conversation_id}")

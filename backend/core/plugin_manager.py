@@ -80,11 +80,21 @@ class PluginManager:
         """
         enabled = list(self._ctx.config.plugins.enabled)
 
-        # Dynamic discovery (dev-only)
-        if (
-            os.environ.get("OMNIA_PLUGIN_DISCOVERY") == "dynamic"
-        ):
-            self._discover_plugins()
+        # Dynamic discovery — DEVELOPMENT ONLY.
+        # Disabled in production to prevent code injection via plugins dir.
+        if os.environ.get("OMNIA_PLUGIN_DISCOVERY") == "dynamic":
+            if self._ctx.config.server.environment != "development":
+                self._logger.error(
+                    "Dynamic plugin discovery is disabled outside "
+                    "development environment (current: '{}')",
+                    self._ctx.config.server.environment,
+                )
+            else:
+                self._logger.warning(
+                    "Dynamic plugin discovery enabled — "
+                    "only use in development!"
+                )
+                self._discover_plugins()
 
         # Filter unknown plugins
         valid: list[str] = []

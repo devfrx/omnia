@@ -246,6 +246,19 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /** Delete ALL conversations on the backend and clear local state. */
+  async function deleteAllConversations(): Promise<void> {
+    // Cancel any active stream.
+    if (isStreaming.value) {
+      cancelStream()
+    }
+
+    await api.deleteAllConversations()
+
+    conversations.value = []
+    currentConversation.value = null
+  }
+
   /** Rename a conversation on the backend and update local state. */
   async function renameConversation(id: string, title: string): Promise<void> {
     try {
@@ -480,6 +493,7 @@ export const useChatStore = defineStore('chat', () => {
     loadConversation,
     createConversation,
     deleteConversation,
+    deleteAllConversations,
     renameConversation,
     exportConversation,
     importConversation,

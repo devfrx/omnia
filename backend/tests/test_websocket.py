@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from collections.abc import AsyncIterator
 from typing import Any
@@ -20,6 +21,7 @@ from starlette.testclient import TestClient
 async def _mock_chat_generator(
     messages: list[dict[str, Any]],
     tools: list[dict[str, Any]] | None = None,
+    cancel_event: asyncio.Event | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Yield a few tokens then done — stands in for ``LLMService.chat``."""
     yield {"type": "token", "content": "Hello"}

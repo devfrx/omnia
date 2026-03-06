@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import threading
 import uuid
 from collections.abc import AsyncIterator
@@ -22,6 +23,7 @@ from backend.services.llm_service import LLMService
 async def _mock_chat_generator(
     messages: list[dict[str, Any]],
     tools: list[dict[str, Any]] | None = None,
+    cancel_event: asyncio.Event | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     yield {"type": "token", "content": "Hello"}
     yield {"type": "token", "content": " world"}

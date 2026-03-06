@@ -44,11 +44,11 @@ def test_llm_provider(config: OmniaConfig) -> None:
 
 
 def test_llm_base_url(config: OmniaConfig) -> None:
-    assert config.llm.base_url == "http://localhost:11434"
+    assert config.llm.base_url == "http://localhost:1234"
 
 
 def test_llm_model(config: OmniaConfig) -> None:
-    assert config.llm.model == "qwen3.5:9b"
+    assert config.llm.model == "mistralai/ministral-3-14b-reasoning"
 
 
 def test_llm_temperature(config: OmniaConfig) -> None:
@@ -56,7 +56,7 @@ def test_llm_temperature(config: OmniaConfig) -> None:
 
 
 def test_llm_max_tokens(config: OmniaConfig) -> None:
-    assert config.llm.max_tokens == 4096
+    assert config.llm.max_tokens == 30311
 
 
 def test_system_prompt_file_is_absolute(config: OmniaConfig) -> None:
