@@ -91,7 +91,7 @@ const md: MarkdownIt = new MarkdownIt({
     }
 
     const langLabel = normalizedLang ? capitalizeFirst(normalizedLang) : 'Codice'
-    const langClass = normalizedLang || 'plaintext'
+    const langClass = (normalizedLang || 'plaintext').replace(/[^a-zA-Z0-9_-]/g, '')
     const dataCode = encodeBase64(str)
 
     return `<div class="code-block-wrapper">` +

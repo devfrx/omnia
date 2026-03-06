@@ -77,6 +77,16 @@ def _manager(request: Request) -> LMStudioManagerProtocol:
 # ---------------------------------------------------------------------------
 
 
+@router.get("/models/operation")
+async def get_current_operation(request: Request) -> dict:
+    """Return the status of the current model operation."""
+    mgr = _manager(request)
+    op = mgr.current_operation
+    if op is None:
+        return {"status": "idle"}
+    return op
+
+
 @router.get("/models")
 async def list_models(request: Request) -> list[dict[str, Any]]:
     """List all models via LM Studio v1 API."""
@@ -95,6 +105,10 @@ async def list_models(request: Request) -> list[dict[str, Any]]:
 async def load_model(body: LoadModelRequest, request: Request) -> dict:
     """Load a model into LM Studio."""
     mgr = _manager(request)
+    if mgr.is_busy:
+        raise HTTPException(
+            409, "Another model operation is already in progress",
+        )
     try:
         return await mgr.load_model(
             body.model,
@@ -104,6 +118,8 @@ async def load_model(body: LoadModelRequest, request: Request) -> dict:
             num_experts=body.num_experts,
             offload_kv_cache_to_gpu=body.offload_kv_cache_to_gpu,
         )
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc))
     except httpx.HTTPError as exc:
         logger.error("Load model failed: {}", exc)
         raise HTTPException(503, "LM Studio is unreachable")
@@ -113,8 +129,14 @@ async def load_model(body: LoadModelRequest, request: Request) -> dict:
 async def unload_model(body: UnloadModelRequest, request: Request) -> dict:
     """Unload a model from LM Studio."""
     mgr = _manager(request)
+    if mgr.is_busy:
+        raise HTTPException(
+            409, "Another model operation is already in progress",
+        )
     try:
         return await mgr.unload_model(body.instance_id)
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc))
     except httpx.HTTPError as exc:
         logger.error("Unload model failed: {}", exc)
         raise HTTPException(503, "LM Studio is unreachable")

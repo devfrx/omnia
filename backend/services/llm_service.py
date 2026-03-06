@@ -10,6 +10,8 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
+from collections import OrderedDict
+
 import httpx
 from loguru import logger
 
@@ -39,7 +41,12 @@ def normalize_history(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
         role = msg.get("role", "user")
         content = msg.get("content", "")
 
-        if role in ("user", "system"):
+        # Skip system messages — the system prompt is always added fresh
+        # by build_messages() to avoid duplication.
+        if role == "system":
+            continue
+
+        if role == "user":
             normalized.append({"role": role, "content": content})
         elif role == "assistant":
             tc = msg.get("tool_calls")
@@ -82,6 +89,8 @@ class LLMService:
         )
         self._is_ollama = ":11434" in config.base_url
         self._system_prompt: str | None = None
+        self._response_ids: OrderedDict[str, str] = OrderedDict()
+        self._response_ids_max = 500
 
     # ------------------------------------------------------------------
     # System prompt
@@ -112,6 +121,72 @@ class LLMService:
     # ------------------------------------------------------------------
     # Message building
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _fold_system_into_user(
+        messages: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Move the system prompt out of \"system\" role into user content.
+
+        LM Studio's OAI-compat endpoint suppresses ``reasoning_content``
+        when a ``system`` role message is present.  This helper folds the
+        system prompt into the first user message so that reasoning models
+        can still produce reasoning tokens.
+
+        Non-system messages are passed through unchanged.
+        """
+        system_parts: list[str] = []
+        rest: list[dict[str, Any]] = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                system_parts.append(msg["content"])
+            else:
+                rest.append(msg)
+
+        if not system_parts:
+            return rest
+
+        system_block = "\n\n".join(system_parts)
+
+        # Find the first user message and prepend the system prompt.
+        for i, msg in enumerate(rest):
+            if msg.get("role") == "user":
+                content = msg["content"]
+                if isinstance(content, str):
+                    rest[i] = {
+                        **msg,
+                        "content": (
+                            f"[System Instructions]\n{system_block}"
+                            f"\n[/System Instructions]\n\n{content}"
+                        ),
+                    }
+                else:
+                    # Multimodal content (list of parts) — prepend text part.
+                    rest[i] = {
+                        **msg,
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    f"[System Instructions]\n{system_block}"
+                                    "\n[/System Instructions]\n\n"
+                                ),
+                            },
+                            *content,
+                        ],
+                    }
+                break
+        else:
+            # No user message found — prepend as a user message.
+            rest.insert(0, {
+                "role": "user",
+                "content": (
+                    f"[System Instructions]\n{system_block}"
+                    "\n[/System Instructions]"
+                ),
+            })
+
+        return rest
 
     def build_messages(
         self,
@@ -189,7 +264,15 @@ class LLMService:
         return messages
 
     # ------------------------------------------------------------------
-    # Streaming chat
+    # Response-ID tracking (LM Studio native API)
+    # ------------------------------------------------------------------
+
+    def get_response_id(self, conversation_id: str) -> str | None:
+        """Return the cached LM Studio response_id for a conversation."""
+        return self._response_ids.get(conversation_id)
+
+    # ------------------------------------------------------------------
+    # Streaming chat — public dispatcher
     # ------------------------------------------------------------------
 
     async def chat(
@@ -197,8 +280,290 @@ class LLMService:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        *,
+        user_content: str | None = None,
+        conversation_id: str | None = None,
+        attachments: list[dict[str, str]] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
-        """Stream a chat completion via SSE.
+        """Stream a chat completion, choosing the best backend.
+
+        Uses LM Studio's native ``/api/v1/chat`` when possible (no
+        tools, not Ollama, user_content provided).  Falls back to the
+        OpenAI-compatible ``/v1/chat/completions`` otherwise.
+
+        Args:
+            messages: Full message list (used by OAI-compat path).
+            tools: Optional tool definitions for function calling.
+            cancel_event: Optional cancellation event.
+            user_content: Raw user message (enables native API path).
+            conversation_id: Conversation UUID string for response_id
+                tracking.
+            attachments: Optional image attachment dicts with
+                ``file_path`` / ``content_type`` / ``_bytes`` keys.
+
+        Yields:
+            Dicts with a ``type`` key — same contract for both paths.
+        """
+        use_native = (
+            not self._is_ollama
+            and tools is None
+            and user_content is not None
+        )
+        if use_native:
+            async for event in self._chat_lmstudio_native(
+                user_content=user_content,
+                cancel_event=cancel_event,
+                conversation_id=conversation_id,
+                attachments=attachments,
+            ):
+                yield event
+        else:
+            async for event in self._chat_openai_compat(
+                messages, tools=tools, cancel_event=cancel_event,
+            ):
+                yield event
+
+    # ------------------------------------------------------------------
+    # LM Studio native API streaming
+    # ------------------------------------------------------------------
+
+    async def _chat_lmstudio_native(
+        self,
+        user_content: str,
+        cancel_event: asyncio.Event | None = None,
+        conversation_id: str | None = None,
+        attachments: list[dict[str, str]] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Stream via LM Studio native REST API ``/api/v1/chat``.
+
+        This endpoint natively separates reasoning from content via
+        dedicated SSE event types (``reasoning.delta`` /
+        ``message.delta``), so no ``ThinkTagParser`` is needed.
+
+        Args:
+            user_content: The raw user message text.
+            cancel_event: Optional cancellation event.
+            conversation_id: Conversation UUID string for multi-turn
+                response_id tracking.
+            attachments: Optional image attachment dicts.
+
+        Yields:
+            ``{"type": "thinking"|"token"|"done", ...}``
+        """
+        url = f"{self._config.base_url}/api/v1/chat"
+
+        # Build the input field — multimodal array or plain string.
+        input_field: str | list[dict[str, Any]]
+        if attachments and self._config.supports_vision:
+            parts: list[dict[str, Any]] = [
+                {"type": "message", "content": user_content},
+            ]
+            for att in attachments:
+                if "_bytes" in att:
+                    image_bytes = att["_bytes"]
+                else:
+                    image_bytes = await asyncio.to_thread(
+                        Path(att["file_path"]).read_bytes,
+                    )
+                b64 = base64.b64encode(image_bytes).decode("ascii")
+                mime = att["content_type"]
+                parts.append({
+                    "type": "image",
+                    "data_url": f"data:{mime};base64,{b64}",
+                })
+            input_field = parts
+        else:
+            input_field = user_content
+
+        payload: dict[str, Any] = {
+            "model": self._config.model,
+            "input": input_field,
+            "system_prompt": self._load_system_prompt(),
+            "stream": True,
+            "temperature": self._config.temperature,
+            "max_output_tokens": self._config.max_tokens,
+            "store": True,
+        }
+
+        # Multi-turn: include previous response_id if available.
+        if conversation_id:
+            prev_id = self._response_ids.get(conversation_id)
+            if prev_id:
+                payload["previous_response_id"] = prev_id
+
+        _stream_timeout = httpx.Timeout(
+            connect=self._config.connect_timeout,
+            read=max(self._config.timeout, 600.0),
+            write=10.0,
+            pool=10.0,
+        )
+
+        # Try with explicit reasoning parameter first; some models
+        # reject it, so fall back to a request without it.
+        if self._config.supports_thinking:
+            payload["reasoning"] = "on"
+
+        logger.debug(
+            "LM Studio native chat — model={}, reasoning={}",
+            self._config.model,
+            payload.get("reasoning", "off"),
+        )
+
+        try:
+            async for event in self._stream_lmstudio_native_sse(
+                url, payload, _stream_timeout, cancel_event, conversation_id,
+            ):
+                yield event
+                if event.get("type") == "done":
+                    return
+        except httpx.HTTPStatusError as exc:
+            if not (
+                self._config.supports_thinking
+                and exc.response.status_code == 400
+                and "reasoning" in payload
+            ):
+                raise
+            logger.warning(
+                "Model rejected 'reasoning' param — retrying without it",
+            )
+            payload.pop("reasoning", None)
+            async for event in self._stream_lmstudio_native_sse(
+                url, payload, _stream_timeout, cancel_event, conversation_id,
+            ):
+                yield event
+                if event.get("type") == "done":
+                    return
+
+        # Stream ended without chat.end — cancelled or connection lost.
+        cancelled = (
+            cancel_event is not None and cancel_event.is_set()
+        )
+        yield {
+            "type": "done",
+            "finish_reason": "cancelled" if cancelled else "stop",
+        }
+
+    # ------------------------------------------------------------------
+    # LM Studio native SSE helper
+    # ------------------------------------------------------------------
+
+    async def _stream_lmstudio_native_sse(
+        self,
+        url: str,
+        payload: dict[str, Any],
+        timeout: httpx.Timeout,
+        cancel_event: asyncio.Event | None,
+        conversation_id: str | None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Low-level SSE reader for the LM Studio native API.
+
+        Yields event dicts (``thinking``, ``token``, ``done``, ``error``).
+        Raises ``httpx.HTTPStatusError`` on HTTP errors so the caller
+        can decide to retry.
+        """
+        async with self._client.stream(
+            "POST", url, json=payload, timeout=timeout,
+        ) as resp:
+            resp.raise_for_status()
+
+            async for raw_line in resp.aiter_lines():
+                if cancel_event and cancel_event.is_set():
+                    logger.debug("LM Studio native stream cancelled")
+                    break
+
+                line = raw_line.strip()
+                if not line or not line.startswith("data: "):
+                    continue
+
+                data_str = line[len("data: "):]
+                try:
+                    data = json.loads(data_str)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "Skipping malformed native SSE: {}",
+                        data_str[:200],
+                    )
+                    continue
+
+                evt_type = data.get("type", "")
+
+                if evt_type == "reasoning.delta":
+                    chunk = data.get("content", "")
+                    if chunk:
+                        yield {
+                            "type": "thinking",
+                            "content": chunk,
+                        }
+                elif evt_type == "message.delta":
+                    chunk = data.get("content", "")
+                    if chunk:
+                        yield {
+                            "type": "token",
+                            "content": chunk,
+                        }
+                elif evt_type == "chat.end":
+                    result = data.get("result", {})
+                    resp_id = result.get("response_id")
+                    if resp_id and conversation_id:
+                        self._response_ids[conversation_id] = (
+                            resp_id
+                        )
+                        self._response_ids.move_to_end(
+                            conversation_id,
+                        )
+                        if len(self._response_ids) > (
+                            self._response_ids_max
+                        ):
+                            self._response_ids.popitem(
+                                last=False,
+                            )
+                        logger.debug(
+                            "Stored response_id {} for conv {}",
+                            resp_id, conversation_id,
+                        )
+                    yield {
+                        "type": "done",
+                        "finish_reason": "stop",
+                        "response_id": resp_id,
+                    }
+                    return
+                elif evt_type == "error":
+                    err_obj = data.get("error", {})
+                    err_msg = err_obj.get(
+                        "message", "Unknown error",
+                    )
+                    err_type = err_obj.get("type", "unknown")
+                    logger.error(
+                        "LM Studio native API error ({}): {}",
+                        err_type, err_msg,
+                    )
+                    if conversation_id:
+                        self._response_ids.pop(
+                            conversation_id, None,
+                        )
+                    yield {
+                        "type": "error",
+                        "content": err_msg,
+                    }
+                    yield {
+                        "type": "done",
+                        "finish_reason": "error",
+                    }
+                    return
+                # Ignore: chat.start, reasoning.start/end,
+                # message.start/end, prompt_processing.*, model_load.*
+
+    # ------------------------------------------------------------------
+    # OpenAI-compatible streaming
+    # ------------------------------------------------------------------
+
+    async def _chat_openai_compat(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        cancel_event: asyncio.Event | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Stream a chat completion via the OAI-compatible endpoint.
 
         Sends a POST to ``{base_url}/v1/chat/completions`` with
         ``stream=True`` and yields parsed event dicts.
@@ -207,22 +572,29 @@ class LLMService:
             messages: The full list of messages for the API.
             tools: Optional tool definitions for function calling.
             cancel_event: Optional event that, when set, signals the
-                stream to stop early. The generator will flush any
-                pending state and yield a done event with
-                ``finish_reason="cancelled"``.
+                stream to stop early.
 
         Yields:
             Dicts with a ``type`` key:
             - ``{"type": "token", "content": "..."}``
-            - ``{"type": "thinking", "content": "..."}``  (reasoning models)
+            - ``{"type": "thinking", "content": "..."}``
             - ``{"type": "tool_call", "id": "...", "function": {...}}``
-            - ``{"type": "done", "finish_reason": "stop" | "cancelled"}``
+            - ``{"type": "done", "finish_reason": "stop"|"cancelled"}``
         """
         url = f"{self._config.base_url}/v1/chat/completions"
 
+        # LM Studio suppresses reasoning_content when a 'system' role
+        # message is present in the messages array.  Work around this
+        # by folding the system prompt into the first user message.
+        actual_messages = (
+            self._fold_system_into_user(messages)
+            if self._config.supports_thinking and not self._is_ollama
+            else messages
+        )
+
         payload: dict[str, Any] = {
             "model": self._config.model,
-            "messages": messages,
+            "messages": actual_messages,
             "temperature": self._config.temperature,
             "max_tokens": self._config.max_tokens,
             "stream": True,
@@ -247,7 +619,21 @@ class LLMService:
             ThinkTagParser() if self._config.supports_thinking else None
         )
 
-        async with self._client.stream("POST", url, json=payload) as resp:
+        # Use a generous read timeout for the streaming request.
+        # Reasoning models may think for several minutes before
+        # producing the first token; the default client timeout
+        # would fire prematurely.  Cancellation is handled via
+        # cancel_event + task.cancel() on the caller side.
+        _stream_timeout = httpx.Timeout(
+            connect=self._config.connect_timeout,
+            read=max(self._config.timeout, 600.0),
+            write=10.0,
+            pool=10.0,
+        )
+
+        async with self._client.stream(
+            "POST", url, json=payload, timeout=_stream_timeout,
+        ) as resp:
             resp.raise_for_status()
 
             async for raw_line in resp.aiter_lines():
@@ -305,11 +691,10 @@ class LLMService:
 
                 delta = choices[0].get("delta", {})
 
-                # --- explicit reasoning_content (Ollama/OpenAI extension) ---
-                if self._config.supports_thinking:
-                    reasoning = delta.get("reasoning_content")
-                    if reasoning:
-                        yield {"type": "thinking", "content": reasoning}
+                # --- explicit reasoning_content (LM Studio / Ollama extension) ---
+                reasoning = delta.get("reasoning_content")
+                if reasoning:
+                    yield {"type": "thinking", "content": reasoning}
 
                 # --- content token (may contain inline <think> tags) ---
                 content = delta.get("content")

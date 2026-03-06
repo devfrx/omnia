@@ -2,8 +2,36 @@
 
 from __future__ import annotations
 
+import asyncio
+from datetime import datetime, timezone
+
 import httpx
 from loguru import logger
+
+
+class ModelOperation:
+    """Tracks a single model operation (load/unload) in progress."""
+
+    __slots__ = ("type", "model", "status", "progress", "error", "started_at")
+
+    def __init__(self, op_type: str, model: str) -> None:
+        self.type = op_type
+        self.model = model
+        self.status = "in_progress"
+        self.progress: float = -1.0  # indeterminate
+        self.error: str | None = None
+        self.started_at = datetime.now(timezone.utc).isoformat()
+
+    def to_dict(self) -> dict:
+        """Return a serialisable snapshot of this operation."""
+        return {
+            "type": self.type,
+            "model": self.model,
+            "status": self.status,
+            "progress": self.progress,
+            "error": self.error,
+            "started_at": self.started_at,
+        }
 
 
 class LMStudioManager:
@@ -28,6 +56,34 @@ class LMStudioManager:
             headers=headers,
             timeout=httpx.Timeout(connect=5.0, read=10.0, write=5.0, pool=5.0),
         )
+        self._operation_lock = asyncio.Lock()
+        self._current_operation: ModelOperation | None = None
+
+    # -- Operation tracking -------------------------------------------------
+
+    @property
+    def current_operation(self) -> dict | None:
+        """Return the current model operation status or None."""
+        if self._current_operation is None:
+            return None
+        return self._current_operation.to_dict()
+
+    @property
+    def is_busy(self) -> bool:
+        """Return True if a model operation is in progress."""
+        return self._operation_lock.locked()
+
+    def _schedule_clear(self, operation: ModelOperation) -> None:
+        """Schedule clearing *operation* after a delay.
+
+        Only clears if the tracked operation hasn't been replaced
+        by a newer one in the meantime.
+        """
+        def _do_clear() -> None:
+            if self._current_operation is operation:
+                self._current_operation = None
+
+        asyncio.get_running_loop().call_later(3.0, _do_clear)
 
     # -- Models -------------------------------------------------------------
 
@@ -55,7 +111,7 @@ class LMStudioManager:
         num_experts: int | None = None,
         offload_kv_cache_to_gpu: bool | None = None,
     ) -> dict:
-        """Load a model into LM Studio.
+        """Load a model into LM Studio (mutually exclusive).
 
         Args:
             model: The model key to load.
@@ -67,50 +123,99 @@ class LMStudioManager:
 
         Returns:
             The JSON response from ``POST /api/v1/models/load``.
-        """
-        payload: dict = {"model": model, "echo_load_config": True}
-        if context_length is not None:
-            payload["context_length"] = context_length
-        if flash_attention is not None:
-            payload["flash_attention"] = flash_attention
-        if eval_batch_size is not None:
-            payload["eval_batch_size"] = eval_batch_size
-        if num_experts is not None:
-            payload["num_experts"] = num_experts
-        if offload_kv_cache_to_gpu is not None:
-            payload["offload_kv_cache_to_gpu"] = offload_kv_cache_to_gpu
 
-        try:
-            resp = await self._client.post(
-                "/api/v1/models/load",
-                json=payload,
-                timeout=httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0),
+        Raises:
+            RuntimeError: If another model operation is in progress.
+        """
+        if self._operation_lock.locked():
+            raise RuntimeError(
+                "Another model operation is in progress"
             )
-            resp.raise_for_status()
-            return resp.json()
-        except httpx.HTTPError as exc:
-            logger.error("LM Studio load_model({}) failed: {}", model, exc)
-            raise
+        async with self._operation_lock:
+            self._current_operation = ModelOperation("load", model)
+            try:
+                payload: dict = {
+                    "model": model, "echo_load_config": True,
+                }
+                if context_length is not None:
+                    payload["context_length"] = context_length
+                if flash_attention is not None:
+                    payload["flash_attention"] = flash_attention
+                if eval_batch_size is not None:
+                    payload["eval_batch_size"] = eval_batch_size
+                if num_experts is not None:
+                    payload["num_experts"] = num_experts
+                if offload_kv_cache_to_gpu is not None:
+                    payload["offload_kv_cache_to_gpu"] = (
+                        offload_kv_cache_to_gpu
+                    )
+
+                resp = await self._client.post(
+                    "/api/v1/models/load",
+                    json=payload,
+                    timeout=httpx.Timeout(
+                        connect=5.0, read=120.0,
+                        write=5.0, pool=5.0,
+                    ),
+                )
+                resp.raise_for_status()
+                result = resp.json()
+                self._current_operation.status = "completed"
+                self._current_operation.progress = 1.0
+                return result
+            except Exception as exc:
+                if self._current_operation:
+                    self._current_operation.status = "failed"
+                    self._current_operation.error = str(exc)
+                logger.error(
+                    "LM Studio load_model({}) failed: {}",
+                    model, exc,
+                )
+                raise
+            finally:
+                self._schedule_clear(self._current_operation)
 
     async def unload_model(self, instance_id: str) -> dict:
-        """Unload a model from LM Studio.
+        """Unload a model from LM Studio (mutually exclusive).
 
         Args:
             instance_id: The instance ID of the loaded model.
 
         Returns:
             The JSON response from ``POST /api/v1/models/unload``.
+
+        Raises:
+            RuntimeError: If another model operation is in progress.
         """
-        try:
-            resp = await self._client.post(
-                "/api/v1/models/unload",
-                json={"instance_id": instance_id},
+        if self._operation_lock.locked():
+            raise RuntimeError(
+                "Another model operation is in progress"
             )
-            resp.raise_for_status()
-            return resp.json()
-        except httpx.HTTPError as exc:
-            logger.error("LM Studio unload_model({}) failed: {}", instance_id, exc)
-            raise
+        async with self._operation_lock:
+            self._current_operation = ModelOperation(
+                "unload", instance_id,
+            )
+            try:
+                resp = await self._client.post(
+                    "/api/v1/models/unload",
+                    json={"instance_id": instance_id},
+                )
+                resp.raise_for_status()
+                result = resp.json()
+                self._current_operation.status = "completed"
+                self._current_operation.progress = 1.0
+                return result
+            except Exception as exc:
+                if self._current_operation:
+                    self._current_operation.status = "failed"
+                    self._current_operation.error = str(exc)
+                logger.error(
+                    "LM Studio unload_model({}) failed: {}",
+                    instance_id, exc,
+                )
+                raise
+            finally:
+                self._schedule_clear(self._current_operation)
 
     async def download_model(
         self,

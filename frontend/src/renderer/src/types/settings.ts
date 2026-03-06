@@ -92,3 +92,19 @@ export interface ModelsStatusResponse {
   total_model_count: number
   loaded_models: string[]
 }
+
+/** Model operation status from GET /api/models/operation. */
+export type ModelOperationStatus = 'idle' | 'in_progress' | 'completed' | 'failed'
+
+/** Model operation type. */
+export type ModelOperationType = 'load' | 'unload' | 'switch'
+
+/** Current model operation response from backend. */
+export interface ModelOperationResponse {
+  status: ModelOperationStatus
+  type?: ModelOperationType
+  model?: string
+  progress?: number
+  error?: string | null
+  started_at?: string
+}

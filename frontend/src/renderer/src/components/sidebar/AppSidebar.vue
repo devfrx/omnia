@@ -106,51 +106,68 @@ async function onOpenFile(id: string): Promise<void> {
 
 <template>
   <aside class="sidebar" :class="{ 'sidebar--collapsed': !isOpen }">
-    <!-- Toggle button (always visible) -->
-    <button class="sidebar__toggle" aria-label="Toggle sidebar" @click="toggle">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-      </svg>
-    </button>
+    <!-- Dot-grid texture overlay (CSS-only depth layer) -->
+    <div class="sidebar__texture" aria-hidden="true" />
 
-    <!-- Content (hidden when collapsed) -->
-    <div v-show="isOpen" class="sidebar__content">
-      <!-- Navigation -->
-      <nav class="sidebar__nav">
-        <router-link to="/chat" class="sidebar__link" active-class="sidebar__link--active">
+    <!-- Animated sweep line along the top edge -->
+    <span class="sidebar__top-line" aria-hidden="true" />
+
+    <!-- Primary navigation — icons always visible, labels hidden when collapsed -->
+    <nav class="sidebar__nav" aria-label="Navigazione principale">
+      <router-link to="/chat" class="sidebar__link" active-class="sidebar__link--active" title="Chat">
+        <span class="sidebar__link-bar" aria-hidden="true" />
+        <span class="sidebar__link-icon" aria-hidden="true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          <span>Chat</span>
-        </router-link>
-        <router-link to="/settings" class="sidebar__link" active-class="sidebar__link--active">
+        </span>
+        <span class="sidebar__link-label">Chat</span>
+      </router-link>
+
+      <router-link to="/settings" class="sidebar__link" active-class="sidebar__link--active" title="Impostazioni">
+        <span class="sidebar__link-bar" aria-hidden="true" />
+        <span class="sidebar__link-icon" aria-hidden="true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3" />
             <path
               d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" />
           </svg>
-          <span>Impostazioni</span>
-        </router-link>
-      </nav>
+        </span>
+        <span class="sidebar__link-label">Impostazioni</span>
+      </router-link>
+    </nav>
 
-      <div class="sidebar__divider" />
+    <!-- Conversations section — only shown when expanded -->
+    <div v-show="isOpen" class="sidebar__conversations">
+      <!-- Section divider with micro uppercase label -->
+      <div class="sidebar__section-label">
+        <span>Conversazioni</span>
+      </div>
 
-      <!-- Conversation list -->
+      <!-- Virtualised conversation list -->
       <ConversationList :conversations="chatStore.conversations" :active-id="chatStore.currentConversation?.id ?? null"
         :streaming-id="chatStore.streamingConversationId" @select="onSelect" @create="onCreate" @delete="onDelete"
         @delete-all="onDeleteAll" @rename="onRename" @open-file="onOpenFile" />
     </div>
+
+    <!-- Toggle button — bottom of sidebar, circular chevron -->
+    <button class="sidebar__toggle" :aria-label="isOpen ? 'Chiudi sidebar' : 'Apri sidebar'" :aria-expanded="isOpen"
+      @click="toggle">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline v-if="isOpen" points="15 18 9 12 15 6" />
+        <polyline v-else points="9 18 15 12 9 6" />
+      </svg>
+    </button>
   </aside>
 </template>
 
 <style scoped>
 /* ═══════════════════════════════════════════════════════════
-   AppSidebar — Premium dark sidebar with warm-gold accents
+   AppSidebar — Collapsible navigation sidebar
    ═══════════════════════════════════════════════════════════ */
 
+/* ------------------------------------------------- Root */
 .sidebar {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
@@ -160,11 +177,11 @@ async function onOpenFile(id: string): Promise<void> {
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   box-shadow:
-    1px 0 12px rgba(0, 0, 0, 0.35),
+    1px 0 16px rgba(0, 0, 0, 0.5),
     inset -1px 0 0 rgba(255, 255, 255, 0.02);
   transition:
-    width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
   z-index: 10;
@@ -175,62 +192,196 @@ async function onOpenFile(id: string): Promise<void> {
   min-width: var(--sidebar-collapsed);
 }
 
-/* ------------------------------------------------- Toggle */
-.sidebar__toggle {
+/* ------------------------------------------------- Dot-grid texture overlay
+   Repeating radial dots at 18px spacing, faded at top/bottom edges */
+.sidebar__texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px);
+  background-size: 18px 18px;
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 12%,
+      rgba(0, 0, 0, 0.4) 88%,
+      transparent 100%);
+  mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 12%,
+      rgba(0, 0, 0, 0.4) 88%,
+      transparent 100%);
+}
+
+/* ------------------------------------------------- Animated top border sweep
+   A soft gold highlight that scans left → right → left slowly */
+.sidebar__top-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      transparent 10%,
+      var(--accent) 50%,
+      transparent 90%,
+      transparent 100%);
+  background-size: 300% 100%;
+  background-position: -100% 0;
+  opacity: 0.6;
+  animation: topLineSweep 8s ease-in-out infinite;
+}
+
+@keyframes topLineSweep {
+  0% {
+    background-position: -100% 0;
+  }
+
+  50% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* ------------------------------------------------- Navigation */
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 8px 8px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  transition: padding var(--transition-normal);
+}
+
+.sidebar--collapsed .sidebar__nav {
+  padding: 4px 4px 8px;
+}
+
+/* Pill-style nav link */
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+/* Center icons when collapsed */
+.sidebar--collapsed .sidebar__link {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+/* Hide the gold left-bar indicator when collapsed — too narrow to look good */
+.sidebar--collapsed .sidebar__link-bar {
+  opacity: 0;
+}
+
+/* Gold left-bar indicator — transparent by default */
+.sidebar__link-bar {
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: transparent;
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.sidebar__link-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 40px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
   flex-shrink: 0;
-  transition:
-    color var(--transition-fast),
-    background var(--transition-fast),
-    transform var(--transition-fast);
-  position: relative;
-}
-
-.sidebar__toggle::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  background: linear-gradient(90deg,
-      transparent,
-      var(--border) 20%,
-      var(--border) 80%,
-      transparent);
   opacity: 0.6;
+  transition: opacity var(--transition-fast), filter var(--transition-fast);
 }
 
-.sidebar__toggle:hover {
+/* Text label — collapses out with width + opacity */
+.sidebar__link-label {
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 160px;
+  opacity: 1;
+  transition:
+    opacity var(--transition-normal),
+    max-width var(--transition-normal);
+}
+
+.sidebar--collapsed .sidebar__link-label {
+  opacity: 0;
+  max-width: 0;
+  pointer-events: none;
+}
+
+.sidebar__link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+.sidebar__link:hover .sidebar__link-icon {
+  opacity: 1;
+}
+
+.sidebar__link:active {
+  transform: scale(0.97);
+}
+
+/* Active state — gold left bar + gold gradient indicator */
+.sidebar__link--active {
   color: var(--accent);
-  background: var(--accent-glow);
+  background: var(--accent-dim);
 }
 
-.sidebar__toggle:active {
-  transform: scale(0.94);
+.sidebar__link--active .sidebar__link-bar {
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.35);
 }
 
-/* ------------------------------------------------- Content */
-.sidebar__content {
+.sidebar__link--active .sidebar__link-icon {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.3));
+}
+
+/* ------------------------------------------------- Conversations section */
+.sidebar__conversations {
   display: flex;
   flex-direction: column;
   flex: 1;
-  overflow: hidden;
-  animation: sidebarContentReveal 0.2s ease-out;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+  animation: contentReveal 0.22s ease-out;
 }
 
-@keyframes sidebarContentReveal {
+@keyframes contentReveal {
   from {
     opacity: 0;
-    transform: translateX(-6px);
+    transform: translateX(-5px);
   }
 
   to {
@@ -239,70 +390,89 @@ async function onOpenFile(id: string): Promise<void> {
   }
 }
 
-/* ------------------------------------------------- Navigation */
-.sidebar__nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px 4px;
-}
-
-.sidebar__link {
+/* ------------------------------------------------- Section label
+   Micro uppercase text + trailing fade line */
+.sidebar__section-label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.82rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast),
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast);
-  position: relative;
-}
-
-.sidebar__link svg {
-  opacity: 0.7;
-  transition: opacity var(--transition-fast);
+  gap: 8px;
+  padding: 8px 14px 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
-.sidebar__link:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-primary);
-}
-
-.sidebar__link:hover svg {
-  opacity: 1;
-}
-
-.sidebar__link:active {
-  transform: scale(0.98);
-}
-
-.sidebar__link--active {
-  color: var(--accent);
-  background: var(--accent-dim);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-
-.sidebar__link--active svg {
-  opacity: 1;
-}
-
-/* ------------------------------------------------- Divider */
-.sidebar__divider {
+.sidebar__section-label::after {
+  content: '';
+  flex: 1;
   height: 1px;
-  margin: 6px 14px;
-  background: linear-gradient(90deg,
-      transparent,
-      var(--border) 15%,
-      var(--border) 85%,
-      transparent);
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+}
+
+/* ------------------------------------------------- Toggle button (bottom-center, circular) */
+.sidebar__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 8px auto 12px;
+  position: relative;
+  z-index: 1;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.sidebar__toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-glow);
+  box-shadow: 0 0 14px rgba(201, 168, 76, 0.12);
+}
+
+.sidebar__toggle:active {
+  transform: scale(0.88);
+}
+
+.sidebar__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------- Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar__top-line {
+    animation: none;
+    background: var(--accent-border);
+    background-size: 100% 100%;
+    opacity: 0.35;
+  }
+
+  .sidebar__conversations {
+    animation: none;
+  }
+
+  .sidebar,
+  .sidebar__nav,
+  .sidebar__link,
+  .sidebar__link-bar,
+  .sidebar__link-icon,
+  .sidebar__link-label,
+  .sidebar__toggle {
+    transition: none;
+  }
 }
 </style>

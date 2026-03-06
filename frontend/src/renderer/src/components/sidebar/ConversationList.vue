@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ConversationList.vue — Virtualised list of conversation summaries.
  *
@@ -186,45 +186,51 @@ function timeAgo(iso: string): string {
 
 <template>
   <div class="conv-list">
-    <!-- New conversation -->
+    <!-- New conversation — prominent button with circle-plus badge -->
     <button class="conv-list__new" aria-label="Nuova chat" @click="emit('create')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      Nuova chat
+      <span class="conv-list__new-icon" aria-hidden="true">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </span>
+      <span class="conv-list__new-label">Nuova chat</span>
     </button>
 
-    <!-- Delete all conversations -->
+    <!-- Delete all — minimal text-link style -->
     <button v-if="conversations.length > 0" class="conv-list__delete-all" aria-label="Elimina tutte le conversazioni"
       @click="emit('delete-all')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6l-1 14H6L5 6" />
-        <path d="M10 11v6" />
-        <path d="M14 11v6" />
-        <path d="M9 6V4h6v2" />
-      </svg>
       Elimina tutte
     </button>
 
-    <!-- Virtual-scrolled conversation items -->
+    <!-- Virtual-scrolled conversation list -->
     <div ref="scrollContainer" class="conv-list__scroller" role="listbox" aria-label="Conversazioni" tabindex="0"
       @scroll="onScroll" @keydown="handleListKeydown">
-      <div class="conv-list__spacer" :style="{ height: totalHeight + 'px' }">
+      <div class="conv-list__spacer" :style="{ height: totalHeight + 'px' }" role="presentation">
         <div v-for="{ conv, index, offset } in visibleItems" :key="conv.id" class="conv-item" :class="{
           'conv-item--active': conv.id === activeId,
+          'conv-item--streaming': conv.id === streamingId,
           'conv-item--focused': index === focusedIndex
         }" role="option" :aria-selected="conv.id === activeId" :style="{ transform: `translateY(${offset}px)` }"
           @click="emit('select', conv.id)">
+          <!-- Left accent bar (always present, styled per state) -->
+          <span class="conv-item__bar" aria-hidden="true" />
+
           <!-- Normal display -->
           <template v-if="renamingId !== conv.id">
             <span class="conv-item__title">
-              <span v-if="conv.id === streamingId" class="conv-item__streaming-dot" aria-label="Generazione in corso" />
+              <span v-if="conv.id === streamingId" class="conv-item__streaming-dot" role="img"
+                aria-label="Generazione in corso" />
               {{ conv.title ?? 'Nuova conversazione' }}
             </span>
             <span class="conv-item__meta">
-              <span>{{ conv.message_count }} msg</span>
+              <span class="conv-item__meta-badge">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  aria-hidden="true">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{{ conv.message_count }}</span>
+              </span>
               <span class="conv-item__time">{{ timeAgo(conv.updated_at) }}</span>
             </span>
           </template>
@@ -235,29 +241,29 @@ function timeAgo(iso: string): string {
               @keydown.enter.stop="confirmRename(conv.id)" @keydown.escape.stop="cancelRename" @click.stop />
           </template>
 
-          <!-- Action buttons -->
+          <!-- Action buttons (slide-in on hover) -->
           <div class="conv-item__actions" @click.stop>
             <button v-if="renamingId !== conv.id" class="conv-item__action" aria-label="Apri cartella"
               title="Apri nel file manager" @click="emit('open-file', conv.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
             </button>
             <button v-if="renamingId !== conv.id" class="conv-item__action" aria-label="Rinomina conversazione"
               title="Rinomina" @click="startRename(conv)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
               </svg>
             </button>
-            <button v-if="renamingId === conv.id" class="conv-item__action" aria-label="Conferma" title="Conferma"
-              @click="confirmRename(conv.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button v-if="renamingId === conv.id" class="conv-item__action conv-item__action--confirm"
+              aria-label="Conferma" title="Conferma" @click="confirmRename(conv.id)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </button>
             <button class="conv-item__action conv-item__action--danger" aria-label="Elimina conversazione"
-              title="Elimina" @click="emit('delete', conv.id)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              title="Elimina" :disabled="conv.id === streamingId" @click="emit('delete', conv.id)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6l-1 14H6L5 6" />
                 <path d="M10 11v6" />
@@ -270,40 +276,188 @@ function timeAgo(iso: string): string {
       </div>
     </div>
 
-    <!-- Empty state -->
-    <p v-if="conversations.length === 0" class="conv-list__empty">
-      Nessuna conversazione
-    </p>
+    <!-- Empty state with staggered fade-in -->
+    <div v-if="conversations.length === 0" class="conv-list__empty">
+      <span class="conv-list__empty-icon" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      </span>
+      <span class="conv-list__empty-text">Nessuna conversazione</span>
+      <span class="conv-list__empty-sub">Crea una nuova chat per iniziare</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* ═══════════════════════════════════════════════════════════
-   ConversationList — Premium conversation browser
+   ConversationList — Redesigned conversation browser
    ═══════════════════════════════════════════════════════════ */
 
+/* ------------------------------------------------- Root */
 .conv-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: 2px;
+  padding: 4px 8px 8px;
   flex: 1;
   min-height: 0;
+  position: relative;
 }
 
-/* ------------------------------------------------ Scroller */
+/* ================================================ New chat button
+   Wider, prominent, gold text, circle-plus badge, animated border */
+.conv-list__new {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 2px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg,
+      rgba(201, 168, 76, 0.07) 0%,
+      rgba(201, 168, 76, 0.02) 100%);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition:
+    background var(--transition-normal),
+    border-color var(--transition-normal),
+    color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    transform var(--transition-fast);
+}
+
+/* Pulsing gold border glow overlay */
+.conv-list__new::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--accent);
+  opacity: 0;
+  animation: newBtnBorderPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes newBtnBorderPulse {
+
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Circle container for the plus icon */
+.conv-list__new-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-border);
+  background: var(--accent-dim);
+  flex-shrink: 0;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.conv-list__new-label {
+  flex: 1;
+}
+
+.conv-list__new:hover {
+  background: linear-gradient(135deg,
+      rgba(201, 168, 76, 0.14) 0%,
+      rgba(201, 168, 76, 0.06) 100%);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-glow);
+  color: var(--accent-hover);
+}
+
+.conv-list__new:hover .conv-list__new-icon {
+  background: rgba(201, 168, 76, 0.2);
+  border-color: var(--accent);
+  transform: rotate(90deg);
+}
+
+.conv-list__new:active {
+  transform: scale(0.97);
+}
+
+.conv-list__new:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ================================================ Delete all — minimal text-link style */
+.conv-list__delete-all {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  padding: 2px 2px;
+  margin-bottom: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition:
+    color var(--transition-fast),
+    opacity var(--transition-fast),
+    text-decoration var(--transition-fast);
+}
+
+.conv-list__delete-all:hover {
+  color: var(--danger);
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.conv-list__delete-all:active {
+  opacity: 0.75;
+}
+
+.conv-list__delete-all:focus-visible {
+  outline: 1px solid var(--danger);
+  outline-offset: 3px;
+  border-radius: 2px;
+  opacity: 1;
+}
+
+/* ------------------------------------------------- Scroller */
 .conv-list__scroller {
   flex: 1;
   overflow-y: auto;
   position: relative;
   outline: none;
-  /* Refined thin scrollbar */
+  /* Slim gold-tinted scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(201, 168, 76, 0.15) transparent;
+  scrollbar-color: var(--accent-dim) transparent;
 }
 
 .conv-list__scroller::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 
 .conv-list__scroller::-webkit-scrollbar-track {
@@ -311,12 +465,12 @@ function timeAgo(iso: string): string {
 }
 
 .conv-list__scroller::-webkit-scrollbar-thumb {
-  background: rgba(201, 168, 76, 0.15);
-  border-radius: 4px;
+  background: var(--accent-dim);
+  border-radius: 3px;
 }
 
 .conv-list__scroller::-webkit-scrollbar-thumb:hover {
-  background: rgba(201, 168, 76, 0.3);
+  background: var(--accent-border);
 }
 
 .conv-list__scroller:focus-visible {
@@ -330,154 +484,98 @@ function timeAgo(iso: string): string {
   width: 100%;
 }
 
-/* ================================================ New chat button */
-.conv-list__new {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 14px;
-  margin-bottom: 4px;
-  border: 1px solid var(--accent-border);
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg,
-      rgba(201, 168, 76, 0.06) 0%,
-      rgba(201, 168, 76, 0.02) 100%);
-  color: var(--accent);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition:
-    background var(--transition-normal),
-    border-color var(--transition-normal),
-    box-shadow var(--transition-normal),
-    transform var(--transition-fast);
-  flex-shrink: 0;
-}
-
-.conv-list__new svg {
-  transition: transform var(--transition-fast);
-}
-
-.conv-list__new:hover {
-  background: linear-gradient(135deg,
-      rgba(201, 168, 76, 0.14) 0%,
-      rgba(201, 168, 76, 0.06) 100%);
-  border-color: var(--accent);
-  box-shadow: 0 0 16px rgba(201, 168, 76, 0.1);
-  color: var(--accent-hover);
-}
-
-.conv-list__new:hover svg {
-  transform: rotate(90deg);
-}
-
-.conv-list__new:active {
-  transform: scale(0.97);
-}
-
-.conv-list__new:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* ============================================ Delete all button */
-.conv-list__delete-all {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 12px;
-  margin-bottom: 6px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition:
-    background var(--transition-normal),
-    color var(--transition-normal),
-    box-shadow var(--transition-normal),
-    opacity var(--transition-normal);
-  flex-shrink: 0;
-  opacity: 0.5;
-}
-
-.conv-list__delete-all svg {
-  opacity: 0.5;
-  transition: opacity var(--transition-fast);
-}
-
-.conv-list__delete-all:hover {
-  color: var(--danger);
-  background: var(--danger-hover);
-  opacity: 1;
-}
-
-.conv-list__delete-all:hover svg {
-  opacity: 1;
-}
-
-.conv-list__delete-all:active {
-  transform: scale(0.97);
-}
-
-.conv-list__delete-all:focus-visible {
-  outline: 2px solid var(--danger);
-  outline-offset: 2px;
-  opacity: 1;
-}
-
-/* ================================================ Conversation item */
+/* ================================================ Conversation item
+   No hard borders — left bar accent for active/hover state */
 .conv-item {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 8px 10px 8px 12px;
+  gap: 3px;
+  padding: 8px 8px 8px 14px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   position: absolute;
-  left: 2px;
-  right: 2px;
+  left: 0;
+  right: 0;
   height: 52px;
-  border-left: 2px solid transparent;
   transition:
     background var(--transition-fast),
-    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+/* ------------------------------------------------- Left accent bar */
+.conv-item__bar {
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: transparent;
+  transition:
+    background var(--transition-fast),
     box-shadow var(--transition-fast),
-    transform var(--transition-fast);
+    top var(--transition-fast),
+    bottom var(--transition-fast);
 }
 
 .conv-item:hover {
   background: rgba(255, 255, 255, 0.03);
-  border-left-color: rgba(201, 168, 76, 0.2);
-  box-shadow: 0 0 12px rgba(201, 168, 76, 0.03);
 }
 
+.conv-item:hover .conv-item__bar {
+  background: var(--accent-border);
+}
+
+/* Active state — gold tint background + solid gradient bar */
 .conv-item--active {
   background: var(--accent-dim);
-  border-left-color: var(--accent);
-  box-shadow:
-    0 0 16px rgba(201, 168, 76, 0.06),
-    inset 0 0 12px rgba(201, 168, 76, 0.03);
+}
+
+.conv-item--active .conv-item__bar {
+  top: 8%;
+  bottom: 8%;
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
 }
 
 .conv-item--active:hover {
-  background: rgba(201, 168, 76, 0.15);
-  border-left-color: var(--accent-hover);
+  background: rgba(201, 168, 76, 0.14);
 }
 
+/* Streaming state — pulsing bar + subtle text glow */
+.conv-item--streaming .conv-item__bar {
+  top: 8%;
+  bottom: 8%;
+  background: var(--accent);
+  animation: streamingBarPulse 1.8s ease-in-out infinite;
+}
+
+.conv-item--streaming .conv-item__title {
+  text-shadow: 0 0 12px rgba(201, 168, 76, 0.28);
+}
+
+@keyframes streamingBarPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(201, 168, 76, 0.4);
+  }
+
+  50% {
+    opacity: 0.35;
+    box-shadow: 0 0 4px rgba(201, 168, 76, 0.1);
+  }
+}
+
+/* Keyboard-focused item */
 .conv-item--focused {
   outline: 1px solid var(--accent-border);
   outline-offset: -1px;
 }
 
-/* ------------------------------------------------ Title */
+/* ------------------------------------------------- Title */
 .conv-item__title {
   font-size: 0.82rem;
   font-weight: 500;
@@ -485,7 +583,8 @@ function timeAgo(iso: string): string {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 48px;
+  /* Reserve space for slide-in action buttons */
+  padding-right: 52px;
   line-height: 1.3;
   transition: color var(--transition-fast);
 }
@@ -494,59 +593,66 @@ function timeAgo(iso: string): string {
   color: var(--accent-hover);
 }
 
-/* ------------------------------------------------ Meta */
+/* ------------------------------------------------- Metadata row */
 .conv-item__meta {
   display: flex;
-  gap: 8px;
-  font-size: 0.68rem;
-  font-weight: 400;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.67rem;
   color: var(--text-muted);
   letter-spacing: 0.01em;
-  line-height: 1.3;
+  line-height: 1.2;
+  padding-right: 52px;
 }
 
 .conv-item--active .conv-item__meta {
   color: var(--text-secondary);
 }
 
+/* Small icon+count badge for message count */
+.conv-item__meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.75;
+}
+
 .conv-item__time {
   margin-left: auto;
 }
 
-/* ================================================ Streaming indicator */
+/* ------------------------------------------------- Inline streaming dot */
 .conv-item__streaming-dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--accent);
-  margin-right: 6px;
+  margin-right: 5px;
   vertical-align: middle;
   flex-shrink: 0;
-  animation: streamPulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  box-shadow: 0 0 8px rgba(201, 168, 76, 0.5);
+  animation: dotPulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  box-shadow: 0 0 6px rgba(201, 168, 76, 0.5);
 }
 
-@keyframes streamPulse {
+@keyframes dotPulse {
 
   0%,
   100% {
     opacity: 1;
     transform: scale(1);
-    box-shadow: 0 0 8px rgba(201, 168, 76, 0.5);
   }
 
   50% {
-    opacity: 0.35;
-    transform: scale(0.75);
-    box-shadow: 0 0 16px rgba(201, 168, 76, 0.7);
+    opacity: 0.3;
+    transform: scale(0.7);
   }
 }
 
-/* ================================================ Inline rename */
+/* ================================================ Inline rename input */
 .conv-item__rename-input {
   width: 100%;
-  padding: 5px 8px;
+  padding: 4px 8px;
   background: var(--bg-primary);
   border: 1px solid var(--accent-border);
   border-radius: var(--radius-sm);
@@ -561,37 +667,51 @@ function timeAgo(iso: string): string {
 
 .conv-item__rename-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.15);
+  /* Use token: --accent-dim = rgba(201,168,76,0.12) */
+  box-shadow: 0 0 0 2px var(--accent-dim);
 }
 
-/* ================================================ Action buttons */
+/* ================================================ Action buttons
+   Hidden by default, slide in from the right on item hover */
 .conv-item__actions {
   position: absolute;
   top: 50%;
-  right: 6px;
-  transform: translateY(-50%);
+  right: 4px;
+  transform: translateY(-50%) translateX(8px);
   display: flex;
   gap: 1px;
   opacity: 0;
   background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 2px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
   transition:
     opacity var(--transition-fast),
     transform var(--transition-fast);
 }
 
+/* Reveal on hover (slide-in effect) */
 .conv-item:hover .conv-item__actions {
   opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
+}
+
+/* Reveal on keyboard focus */
+.conv-item--focused .conv-item__actions {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
 }
 
 .conv-item__action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: none;
   border-radius: 4px;
   background: transparent;
@@ -604,12 +724,12 @@ function timeAgo(iso: string): string {
 }
 
 .conv-item__action:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-hover);
   color: var(--text-primary);
 }
 
 .conv-item__action:active {
-  transform: scale(0.88);
+  transform: scale(0.85);
 }
 
 .conv-item__action:focus-visible {
@@ -617,18 +737,95 @@ function timeAgo(iso: string): string {
   outline-offset: 0;
 }
 
-.conv-item__action--danger:hover {
-  background: var(--danger-hover);
-  color: var(--danger);
+.conv-item__action--confirm:hover {
+  color: var(--success);
 }
 
-/* ================================================ Empty state */
+.conv-item__action--danger:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* ================================================ Empty state
+   Staggered fade-in for icon → title → subtitle */
 .conv-list__empty {
-  text-align: center;
-  font-size: 0.78rem;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 2.5rem 1rem;
+  pointer-events: none;
+}
+
+.conv-list__empty-icon {
   color: var(--text-muted);
-  margin-top: 3rem;
+  opacity: 0;
+  animation: emptyFadeUp 0.5s ease-out 0.1s forwards;
+}
+
+.conv-list__empty-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
   letter-spacing: 0.02em;
-  opacity: 0.7;
+  opacity: 0;
+  animation: emptyFadeUp 0.5s ease-out 0.25s forwards;
+}
+
+.conv-list__empty-sub {
+  font-size: 0.69rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+  opacity: 0;
+  animation: emptyFadeUp 0.5s ease-out 0.4s forwards;
+}
+
+@keyframes emptyFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ================================================ Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Disable all decorative animations */
+  .conv-list__new::before,
+  .conv-item__streaming-dot,
+  .conv-item--streaming .conv-item__bar {
+    animation: none;
+  }
+
+  .conv-item__streaming-dot {
+    opacity: 1;
+  }
+
+  /* Make empty state items immediately visible */
+  .conv-list__empty-icon,
+  .conv-list__empty-text,
+  .conv-list__empty-sub {
+    animation: none;
+    opacity: 1;
+  }
+
+  /* Disable transitions */
+  .conv-item,
+  .conv-item__bar,
+  .conv-item__title,
+  .conv-item__actions,
+  .conv-list__new,
+  .conv-list__new-icon,
+  .conv-list__delete-all {
+    transition: none;
+  }
 }
 </style>

@@ -123,8 +123,7 @@ onUnmounted(() => {
 /* ------------------------------------------------------------------ Row */
 .bubble-row {
   display: flex;
-  margin-bottom: 12px;
-  animation: slideIn 0.3s ease-out both;
+  margin-bottom: 16px;
 }
 
 .row--user {
@@ -136,45 +135,52 @@ onUnmounted(() => {
   justify-content: flex-start;
 }
 
-/* ------------------------------------------------------------- Bubble */
+/* ------------------------------------------------------------- Bubble base */
 .bubble {
-  max-width: 75%;
   padding: 10px 14px;
-  border-radius: var(--radius-lg);
-  line-height: 1.55;
+  line-height: 1.6;
   font-size: 0.9rem;
   position: relative;
   word-break: break-word;
 }
 
+/* ------------------------------------------------------------- User bubble */
 .bubble--user {
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-border);
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
+  max-width: 65%;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.10), rgba(201, 168, 76, 0.05));
+  border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 16px 16px var(--radius-sm) 16px;
   color: var(--text-primary);
+  animation: slideInUser 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* --------------------------------------------------------- Assistant bubble */
 .bubble--assistant {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
-  box-shadow: var(--shadow-glow);
+  max-width: 82%;
+  background: transparent;
+  border: none;
+  border-left: 3px solid rgba(201, 168, 76, 0.18);
+  border-radius: 0;
+  padding: 12px 14px 12px 16px;
   color: var(--text-primary);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  animation: slideInAssistant 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: border-left-color var(--transition-fast);
 }
 
 .bubble--assistant:hover {
-  border-color: var(--border-hover);
-  transform: scale(1.002);
+  border-left-color: var(--accent-border);
 }
 
+/* ------------------------------------------------------------- Tool bubble */
 .bubble--tool {
-  background: rgba(55, 65, 81, 0.5);
+  max-width: 78%;
+  background: rgba(30, 34, 42, 0.6);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--text-secondary);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  animation: slideInAssistant 0.35s ease-out both;
 }
 
 /* -------------------------------------------------------- Attachments */
@@ -192,7 +198,7 @@ onUnmounted(() => {
   overflow: hidden;
   cursor: pointer;
   border: 1px solid var(--border);
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transition-fast);
 }
 
 .bubble__attachment:hover {
@@ -205,15 +211,15 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-/* ----- Thinking section — now rendered by ThinkingSection.vue */
-
 /* --------------------------------------------------------- Content */
 .bubble__content {
   overflow-wrap: break-word;
+  user-select: text;
+  cursor: text;
 }
 
 .bubble__content :deep(p) {
-  margin: 0 0 0.4em;
+  margin: 0 0 0.45em;
 }
 
 .bubble__content :deep(p:last-child) {
@@ -243,11 +249,24 @@ onUnmounted(() => {
 /* --------------------------------------------------------- Timestamp */
 .bubble__time {
   display: block;
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  opacity: 0.6;
-  margin-top: 4px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.bubble:hover .bubble__time {
+  opacity: 1;
+}
+
+.row--user .bubble__time {
   text-align: right;
+}
+
+.row--assistant .bubble__time,
+.row--tool .bubble__time {
+  text-align: left;
 }
 
 /* ------------------------------------------------- Image overlay */
@@ -258,8 +277,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   animation: fadeIn 0.2s ease;
 }
 
@@ -267,21 +287,22 @@ onUnmounted(() => {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--text-primary);
-  transition: background var(--transition-normal);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .image-overlay__close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .image-overlay__img {
@@ -289,21 +310,36 @@ onUnmounted(() => {
   max-height: 90vh;
   object-fit: contain;
   border-radius: var(--radius-md);
-  animation: overlayZoomIn 0.3s ease-out both;
+  box-shadow: var(--shadow-md);
+  animation: overlayZoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* --------------------------------------------------------- Animation */
-@keyframes slideIn {
+/* ------------------------------------------------------------- Keyframes */
+@keyframes slideInUser {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateX(14px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
+
+@keyframes slideInAssistant {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
 
 @keyframes fadeIn {
   from {
@@ -324,6 +360,31 @@ onUnmounted(() => {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* ------------------------------------------------- Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  .bubble--user,
+  .bubble--assistant,
+  .bubble--tool {
+    animation: none;
+  }
+
+  .image-overlay {
+    animation: none;
+  }
+
+  .image-overlay__img {
+    animation: none;
+  }
+
+  .bubble__time,
+  .bubble--assistant,
+  .bubble__attachment,
+  .image-overlay__close {
+    transition: none;
   }
 }
 </style>

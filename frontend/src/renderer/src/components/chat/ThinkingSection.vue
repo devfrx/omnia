@@ -162,8 +162,8 @@ if (props.autoExpand) {
     display: grid;
     grid-template-rows: 1fr;
     transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.3s ease;
+        padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease;
     padding: 6px 12px 10px;
     font-style: italic;
     color: var(--text-secondary);
@@ -179,7 +179,7 @@ if (props.autoExpand) {
     opacity: 0;
 }
 
-.thinking-section__body > .thinking-section__inner {
+.thinking-section__body>.thinking-section__inner {
     overflow: hidden;
     min-height: 0;
     position: relative;
@@ -191,6 +191,11 @@ if (props.autoExpand) {
     margin: 0 12px;
 }
 
+.thinking-section__content {
+    user-select: text;
+    cursor: text;
+}
+
 .thinking-section__content :deep(p) {
     margin: 0 0 0.4em;
 }
@@ -200,21 +205,28 @@ if (props.autoExpand) {
 }
 
 @keyframes thinkingBorderPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         border-left-color: var(--accent-border);
     }
+
     50% {
         border-left-color: var(--accent);
     }
 }
 
 @keyframes thinkingTextPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 0.8;
     }
+
     40% {
         opacity: 0.35;
     }
+
     60% {
         opacity: 0.35;
     }

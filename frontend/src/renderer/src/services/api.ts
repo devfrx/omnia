@@ -20,6 +20,7 @@ import type {
   LMStudioModel,
   ModelDownloadResponse,
   ModelLoadResponse,
+  ModelOperationResponse,
   ModelUnloadResponse,
   ModelsStatusResponse
 } from '../types/settings'
@@ -158,6 +159,10 @@ export const api = {
   /** Get quick LM Studio connection status + model summary. */
   getModelsStatus: (): Promise<ModelsStatusResponse> =>
     request<ModelsStatusResponse>('/models/status'),
+
+  /** Get current model operation status. */
+  getModelOperation: (): Promise<ModelOperationResponse> =>
+    request<ModelOperationResponse>('/models/operation'),
 
   /** Retrieve the current server configuration. */
   getConfig: (): Promise<Record<string, unknown>> =>

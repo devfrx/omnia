@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { api } from '../services/api'
-import type { DownloadStatusResponse, LMStudioModel } from '../types/settings'
+import type { DownloadStatusResponse, LMStudioModel, ModelOperationResponse } from '../types/settings'
 
 export interface OmniaSettings {
   llm: {
@@ -68,6 +68,15 @@ export const useSettingsStore = defineStore('settings', () => {
   /** Track active polling timeouts for cleanup. */
   const pollTimeouts = ref<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
+  /** Current model operation (load/unload/switch) tracked from backend. */
+  const currentOperation = ref<ModelOperationResponse | null>(null)
+
+  /** Timer for polling operation status. */
+  const operationPollTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+  /** Synchronous guard to prevent concurrent resumeOperationTracking calls. */
+  let _isResumingOperation = false
+
   /** The model that is currently active (has `is_active === true`). */
   const activeModel = computed(() => models.value.find((m) => m.is_active) ?? null)
 
@@ -76,6 +85,20 @@ export const useSettingsStore = defineStore('settings', () => {
 
   /** Models that are available but not loaded. */
   const unloadedModels = computed(() => models.value.filter((m) => !m.loaded))
+
+  /** Whether ANY model operation is in progress (global lock). */
+  const isAnyOperationInProgress = computed(() =>
+    currentOperation.value !== null &&
+    currentOperation.value.status === 'in_progress'
+  )
+
+  /** Description of the current operation for UI display. */
+  const operationDescription = computed(() => {
+    const op = currentOperation.value
+    if (!op || op.status === 'idle') return null
+    const typeLabel = op.type === 'load' ? 'Caricamento' : op.type === 'unload' ? 'Rimozione dalla memoria' : 'Cambio modello'
+    return `${typeLabel}: ${op.model ?? '...'}`
+  })
 
   /** Whether any model is currently being loaded. */
   const isLoadingModel = computed(() => loadingModelKeys.value.size > 0)
@@ -107,7 +130,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
   /** Fetch the list of available models from the backend. */
   async function loadModels(): Promise<void> {
-    isLoadingModels.value = true
+    if (models.value.length === 0) {
+      isLoadingModels.value = true
+    }
     try {
       models.value = await api.getModels()
       await checkConnection()
@@ -116,15 +141,93 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
+  /** Check backend for active operation and resume polling if needed. */
+  async function resumeOperationTracking(): Promise<void> {
+    if (operationPollTimer.value !== null || _isResumingOperation) return
+    _isResumingOperation = true
+    try {
+      const op = await api.getModelOperation()
+      if (op.status === 'in_progress') {
+        currentOperation.value = op
+        if (op.model && op.type !== 'unload') {
+          loadingModelKeys.value = new Set([...loadingModelKeys.value, op.model])
+        }
+        if (op.model && op.type === 'unload') {
+          unloadingInstanceIds.value = new Set([...unloadingInstanceIds.value, op.model])
+        }
+        startOperationPolling()
+      }
+    } catch {
+      // Backend unreachable
+    } finally {
+      _isResumingOperation = false
+    }
+  }
+
+  /** Start polling the backend for operation status. */
+  function startOperationPolling(): void {
+    stopOperationPolling()
+    const clientType = currentOperation.value?.type ?? null
+    const poll = async (): Promise<void> => {
+      try {
+        const op = await api.getModelOperation()
+        // Preserve client-side 'switch' type — backend only knows 'load'
+        if (clientType === 'switch' && op.type === 'load') {
+          op.type = 'switch'
+        }
+        currentOperation.value = op
+        if (op.status === 'in_progress') {
+          operationPollTimer.value = setTimeout(poll, 500)
+        } else {
+          // Operation finished — refresh models and clear after a delay
+          if (op.status === 'completed') await loadModels()
+          operationPollTimer.value = setTimeout(() => {
+            currentOperation.value = null
+            stopOperationPolling()
+          }, 2000)
+        }
+      } catch {
+        currentOperation.value = null
+        stopOperationPolling()
+      }
+    }
+    poll()
+  }
+
+  /** Stop operation status polling. */
+  function stopOperationPolling(): void {
+    if (operationPollTimer.value !== null) {
+      clearTimeout(operationPollTimer.value)
+      operationPollTimer.value = null
+    }
+  }
+
   /** Load a model into LM Studio. */
   async function loadModel(
     modelKey: string,
     config?: { context_length?: number; flash_attention?: boolean }
   ): Promise<void> {
+    if (isAnyOperationInProgress.value) throw new Error('Un\'altra operazione è in corso')
     loadingModelKeys.value = new Set([...loadingModelKeys.value, modelKey])
+    currentOperation.value = { status: 'in_progress', type: 'load', model: modelKey }
+    startOperationPolling()
     try {
       await api.loadModel(modelKey, config)
       await loadModels()
+      // If the loaded model is not active, switch to it so selectors stay in sync
+      const justLoaded = models.value.find((m) => m.name === modelKey)
+      if (justLoaded && !justLoaded.is_active) {
+        try {
+          await api.updateConfig({ llm: { model: modelKey } })
+          settings.value.llm.model = modelKey
+        } catch {
+          // 409 is expected if backend is still busy — model is loaded regardless
+        }
+      }
+    } catch (err) {
+      currentOperation.value = null
+      stopOperationPolling()
+      throw err
     } finally {
       const next = new Set(loadingModelKeys.value)
       next.delete(modelKey)
@@ -134,10 +237,17 @@ export const useSettingsStore = defineStore('settings', () => {
 
   /** Unload a model instance from LM Studio. */
   async function unloadModel(instanceId: string): Promise<void> {
+    if (isAnyOperationInProgress.value) throw new Error('Un\'altra operazione è in corso')
     unloadingInstanceIds.value = new Set([...unloadingInstanceIds.value, instanceId])
+    currentOperation.value = { status: 'in_progress', type: 'unload', model: instanceId }
+    startOperationPolling()
     try {
       await api.unloadModel(instanceId)
       await loadModels()
+    } catch (err) {
+      currentOperation.value = null
+      stopOperationPolling()
+      throw err
     } finally {
       const next = new Set(unloadingInstanceIds.value)
       next.delete(instanceId)
@@ -192,15 +302,23 @@ export const useSettingsStore = defineStore('settings', () => {
       clearTimeout(tid)
     }
     pollTimeouts.value.clear()
+    stopOperationPolling()
   }
 
   /** Switch the active LLM model. The backend loads it automatically. */
   async function switchModel(modelName: string): Promise<void> {
+    if (isAnyOperationInProgress.value) throw new Error('Un\'altra operazione è in corso')
     loadingModelKeys.value = new Set([...loadingModelKeys.value, modelName])
+    currentOperation.value = { status: 'in_progress', type: 'switch', model: modelName }
+    startOperationPolling()
     try {
       await api.updateConfig({ llm: { model: modelName } })
       await loadModels()
       settings.value.llm.model = modelName
+    } catch (err) {
+      currentOperation.value = null
+      stopOperationPolling()
+      throw err
     } finally {
       const next = new Set(loadingModelKeys.value)
       next.delete(modelName)
@@ -230,6 +348,12 @@ export const useSettingsStore = defineStore('settings', () => {
     unloadModel,
     downloadModel,
     switchModel,
-    stopAllPolling
+    stopAllPolling,
+    currentOperation,
+    isAnyOperationInProgress,
+    operationDescription,
+    startOperationPolling,
+    stopOperationPolling,
+    resumeOperationTracking
   }
 })

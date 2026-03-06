@@ -115,6 +115,7 @@ onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
   window.addEventListener('resize', handleResize)
   settingsStore.loadModels()
+  settingsStore.resumeOperationTracking()
 })
 
 onBeforeUnmount(() => {
@@ -128,10 +129,14 @@ onBeforeUnmount(() => {
     <!-- Trigger button -->
     <button class="model-selector__trigger" aria-haspopup="listbox" :aria-expanded="isOpen" @click="toggle"
       @keydown="handleKeydown">
-      <span class="model-selector__status-dot" :class="settingsStore.lmStudioConnected
-        ? 'model-selector__status-dot--connected'
-        : 'model-selector__status-dot--disconnected'"
-        :title="settingsStore.lmStudioConnected ? 'LM Studio connesso' : 'LM Studio disconnesso'" />
+      <!-- Warning icon only when LM Studio is disconnected -->
+      <svg v-if="!settingsStore.lmStudioConnected" class="model-selector__warn-icon" title="LM Studio disconnesso"
+        width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
       <span class="model-selector__label">
         {{
           settingsStore.activeModel
@@ -139,6 +144,7 @@ onBeforeUnmount(() => {
             : settingsStore.settings.llm.model
         }}
       </span>
+      <span v-if="settingsStore.isAnyOperationInProgress" class="model-selector__trigger-spinner" />
       <svg class="model-selector__chevron" :class="{ 'model-selector__chevron--open': isOpen }" width="10" height="10"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
         stroke-linejoin="round">
@@ -152,6 +158,16 @@ onBeforeUnmount(() => {
         <!-- Error -->
         <div v-if="errorMessage" class="model-selector__error">
           {{ errorMessage }}
+        </div>
+
+        <!-- Global operation in progress -->
+        <div v-if="settingsStore.isAnyOperationInProgress" class="model-selector__operation">
+          <div class="model-selector__operation-bar">
+            <div class="model-selector__operation-bar-fill" />
+          </div>
+          <span class="model-selector__operation-text">
+            {{ settingsStore.operationDescription }}
+          </span>
         </div>
 
         <!-- Loading state -->
@@ -173,7 +189,8 @@ onBeforeUnmount(() => {
               'model-selector__item--loaded': model.loaded,
               'model-selector__item--switching': switchingModel === model.name,
               'model-selector__item--busy': isModelBusy(model)
-            }" :disabled="switchingModel !== null" @click="selectModel(model.name)">
+            }" :disabled="switchingModel !== null || settingsStore.isAnyOperationInProgress"
+              @click="selectModel(model.name)">
               <!-- Left accent bar for loaded models -->
               <span v-if="model.loaded" class="model-selector__accent-bar" />
 
@@ -230,7 +247,8 @@ onBeforeUnmount(() => {
                 <!-- Load / Unload button -->
                 <button class="model-selector__load-btn"
                   :class="{ 'model-selector__load-btn--busy': isModelBusy(model) }"
-                  :title="model.loaded ? 'Scarica dalla memoria' : 'Carica in memoria'" :disabled="isModelBusy(model)"
+                  :title="model.loaded ? 'Scarica dalla memoria' : 'Carica in memoria'"
+                  :disabled="isModelBusy(model) || settingsStore.isAnyOperationInProgress"
                   @click="toggleModelLoad(model, $event)">
                   <!-- Loading spinner -->
                   <span v-if="isModelBusy(model)" class="model-selector__btn-spinner" />
@@ -300,38 +318,13 @@ onBeforeUnmount(() => {
   border-color: var(--border-hover);
 }
 
-.model-selector__status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.model-selector__warn-icon {
   flex-shrink: 0;
+  color: var(--danger);
+  animation: msWarnBlink 2s ease-in-out infinite;
 }
 
-.model-selector__status-dot--connected {
-  background: var(--success);
-  box-shadow: 0 0 4px var(--success-glow);
-  animation: msStatusPulse 3s ease-in-out infinite;
-}
-
-@keyframes msStatusPulse {
-
-  0%,
-  100% {
-    box-shadow: 0 0 4px var(--success-glow);
-  }
-
-  50% {
-    box-shadow: 0 0 8px var(--success-glow), 0 0 2px var(--success);
-  }
-}
-
-.model-selector__status-dot--disconnected {
-  background: var(--danger);
-  box-shadow: 0 0 4px rgba(196, 92, 92, 0.5);
-  animation: msDisconnectBlink 2s ease-in-out infinite;
-}
-
-@keyframes msDisconnectBlink {
+@keyframes msWarnBlink {
 
   0%,
   100% {
@@ -464,6 +457,16 @@ onBeforeUnmount(() => {
   width: 10px;
   height: 10px;
   border-width: 1.5px;
+}
+
+.model-selector__trigger-spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: ms-spin 0.6s linear infinite;
+  flex-shrink: 0;
 }
 
 @keyframes ms-spin {
@@ -742,5 +745,44 @@ onBeforeUnmount(() => {
 
 .model-selector__load-progress-text {
   display: none;
+}
+
+/* ── Global operation progress ────────────────────────────────────── */
+.model-selector__operation {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.model-selector__operation-bar {
+  height: 3px;
+  background: var(--bg-primary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.model-selector__operation-bar-fill {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: 2px;
+  animation: msOpProgress 1.2s ease-in-out infinite;
+}
+
+@keyframes msOpProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.model-selector__operation-text {
+  font-size: 0.7rem;
+  color: var(--accent);
+  text-align: center;
 }
 </style>

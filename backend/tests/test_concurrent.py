@@ -24,6 +24,10 @@ async def _mock_chat_generator(
     messages: list[dict[str, Any]],
     tools: list[dict[str, Any]] | None = None,
     cancel_event: asyncio.Event | None = None,
+    *,
+    user_content: str | None = None,
+    conversation_id: str | None = None,
+    attachments: list[dict[str, str]] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     yield {"type": "token", "content": "Hello"}
     yield {"type": "token", "content": " world"}

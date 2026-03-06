@@ -352,7 +352,12 @@ async def ws_chat(websocket: WebSocket) -> None:
                     """Consume LLM stream, accumulate content and relay to WS."""
                     nonlocal full_content, thinking_content, finish_reason
                     async for event in llm.chat(
-                        messages, tools=tools, cancel_event=cancel_event,
+                        messages,
+                        tools=tools,
+                        cancel_event=cancel_event,
+                        user_content=user_content,
+                        conversation_id=str(conv_id),
+                        attachments=attachment_info or None,
                     ):
                         etype = event["type"]
                         if etype == "token":
@@ -372,7 +377,13 @@ async def ws_chat(websocket: WebSocket) -> None:
                 async def _listen_for_cancel(
                     stream_task: asyncio.Task[None],
                 ) -> None:
-                    """Read WS messages while streaming; set cancel on request."""
+                    """Read WS messages while streaming; set cancel on request.
+
+                    When the client sends ``{"type": "cancel"}`` or disconnects,
+                    we set *cancel_event* **and** cancel the *stream_task* so that
+                    even a blocked ``httpx.stream()`` call (waiting for response
+                    headers from a slow reasoning model) is interrupted immediately.
+                    """
                     while not stream_task.done():
                         try:
                             raw_cancel = await asyncio.wait_for(
@@ -381,12 +392,14 @@ async def ws_chat(websocket: WebSocket) -> None:
                             cancel_data = json.loads(raw_cancel)
                             if cancel_data.get("type") == "cancel":
                                 cancel_event.set()
+                                stream_task.cancel()
                                 logger.debug("Client requested stream cancel")
                                 return
                         except asyncio.TimeoutError:
                             continue
                         except WebSocketDisconnect:
                             cancel_event.set()
+                            stream_task.cancel()
                             return
                         except Exception:
                             logger.warning(
@@ -401,6 +414,12 @@ async def ws_chat(websocket: WebSocket) -> None:
 
                 try:
                     await stream_task
+                except asyncio.CancelledError:
+                    # Task was cancelled by _listen_for_cancel (user
+                    # pressed stop or disconnected while the LLM was
+                    # still preparing its response).  Treat as cancel.
+                    logger.debug("LLM stream task cancelled")
+                    cancel_event.set()
                 except Exception:
                     logger.exception("LLM streaming error")
                     finish_reason = "error"

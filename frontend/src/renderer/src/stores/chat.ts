@@ -441,7 +441,7 @@ export const useChatStore = defineStore('chat', () => {
   /** Clear streaming state (e.g. on error or cancel). Preserves partial content as a message. */
   function cancelStream(): void {
     // If there's accumulated content, save as partial assistant message
-    if (currentStreamContent.value && currentConversation.value) {
+    if ((currentStreamContent.value || currentThinkingContent.value) && currentConversation.value) {
       const partialMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',

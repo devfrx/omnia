@@ -139,3 +139,24 @@ def test_default_model_matches_constant() -> None:
     llm = LLMConfig()
     assert llm.model == DEFAULT_MODEL
     assert DEFAULT_MODEL in KNOWN_MODELS
+
+
+def test_lmstudio_style_key_thinking_capabilities() -> None:
+    """LM Studio-style keys (e.g. 'qwen/qwq-32b') auto-detect thinking."""
+    llm = LLMConfig(model="qwen/qwq-32b")
+    assert llm.supports_thinking is True
+    assert llm.supports_vision is False
+
+
+def test_lmstudio_style_key_vision_capabilities() -> None:
+    """LM Studio-style keys (e.g. 'qwen/qwen3.5-9b') auto-detect vision."""
+    llm = LLMConfig(model="qwen/qwen3.5-9b")
+    assert llm.supports_vision is True
+    assert llm.supports_thinking is False
+
+
+def test_lmstudio_style_key_deepseek_reasoning() -> None:
+    """LM Studio DeepSeek R1 key auto-detects thinking capability."""
+    llm = LLMConfig(model="deepseek/deepseek-r1-0528-qwen3-8b")
+    assert llm.supports_thinking is True
+    assert llm.supports_vision is False

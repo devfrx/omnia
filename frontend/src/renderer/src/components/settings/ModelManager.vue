@@ -133,6 +133,7 @@ async function setActive(modelName: string): Promise<void> {
 
 onMounted(() => {
     settingsStore.loadModels()
+    settingsStore.resumeOperationTracking()
 })
 </script>
 
@@ -171,6 +172,14 @@ onMounted(() => {
             </button>
         </div>
 
+        <!-- Global operation in progress -->
+        <div v-if="settingsStore.isAnyOperationInProgress" class="mm-operation">
+            <div class="mm-operation__bar">
+                <div class="mm-operation__bar-fill" />
+            </div>
+            <span class="mm-operation__text">{{ settingsStore.operationDescription }}</span>
+        </div>
+
         <!-- ── Loading spinner ── -->
         <div v-if="settingsStore.isLoadingModels" class="mm-loading">
             <span class="mm-spinner" />
@@ -199,16 +208,18 @@ onMounted(() => {
                     </div>
                     <div class="mm-model__actions">
                         <button v-if="!model.is_active" class="mm-btn mm-btn--ghost mm-btn--sm"
-                            @click="setActive(model.name)">
+                            :disabled="settingsStore.isAnyOperationInProgress" @click="setActive(model.name)">
                             Imposta attivo
                         </button>
                         <button v-if="!model.loaded" class="mm-btn mm-btn--primary mm-btn--sm"
-                            :disabled="settingsStore.isModelLoading(model.name)" @click="openLoadDialog(model)">
+                            :disabled="settingsStore.isModelLoading(model.name) || settingsStore.isAnyOperationInProgress"
+                            @click="openLoadDialog(model)">
                             {{ settingsStore.isModelLoading(model.name) ? 'Caricamento…' : 'Carica' }}
                         </button>
                         <button v-for="inst in model.loaded_instances" :key="inst.id"
                             class="mm-btn mm-btn--danger mm-btn--sm"
-                            :disabled="settingsStore.isInstanceUnloading(inst.id)" @click="handleUnload(inst.id)">
+                            :disabled="settingsStore.isInstanceUnloading(inst.id) || settingsStore.isAnyOperationInProgress"
+                            @click="handleUnload(inst.id)">
                             {{ settingsStore.isInstanceUnloading(inst.id) ? 'Scaricamento…' : 'Scarica' }}
                         </button>
                     </div>
@@ -360,7 +371,7 @@ onMounted(() => {
                         <div class="mm-dialog__actions">
                             <button class="mm-btn mm-btn--ghost" @click="showLoadDialog = false">Annulla</button>
                             <button class="mm-btn mm-btn--primary"
-                                :disabled="loadDialogModel ? settingsStore.isModelLoading(loadDialogModel.name) : false"
+                                :disabled="(loadDialogModel ? settingsStore.isModelLoading(loadDialogModel.name) : false) || settingsStore.isAnyOperationInProgress"
                                 @click="confirmLoad">
                                 {{ loadDialogModel && settingsStore.isModelLoading(loadDialogModel.name) ?
                                     'Caricamento…' : 'Carica' }}
@@ -1048,5 +1059,48 @@ onMounted(() => {
 
 .dialog-leave-to .mm-dialog {
     transform: scale(0.95) translateY(10px);
+}
+
+/* ── Global operation banner ── */
+.mm-operation {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-sm);
+}
+
+.mm-operation__bar {
+    height: 3px;
+    background: var(--bg-primary);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.mm-operation__bar-fill {
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    border-radius: 2px;
+    animation: mmOpProgress 1.2s ease-in-out infinite;
+}
+
+@keyframes mmOpProgress {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(350%);
+    }
+}
+
+.mm-operation__text {
+    font-size: 0.75rem;
+    color: var(--accent);
+    text-align: center;
+    font-weight: 500;
 }
 </style>

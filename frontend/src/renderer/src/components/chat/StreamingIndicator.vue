@@ -50,7 +50,7 @@ const chatStore = useChatStore()
 
       <!-- Thinking section -->
       <ThinkingSection v-if="thinkingContent" :thinking-html="thinkingHtml" :initial-collapsed="true"
-        :content-length="thinkingContent.length">
+        :auto-expand="true" :content-length="thinkingContent.length">
         <span v-if="!content" class="streaming-bubble__cursor" />
       </ThinkingSection>
 
@@ -71,27 +71,32 @@ const chatStore = useChatStore()
 .bubble-row {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .streaming-bubble {
-  max-width: 75%;
-  padding: 10px 14px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
-  box-shadow: 0 0 16px var(--accent-glow);
+  max-width: 82%;
+  padding: 12px 14px 12px 16px;
+  background: transparent;
+  border: none;
+  border-left: 3px solid rgba(201, 168, 76, 0.18);
+  border-radius: 0;
   color: var(--text-primary);
   line-height: 1.55;
   font-size: 0.9rem;
   word-break: break-word;
   position: relative;
-  animation: pulseGlow 2.5s ease-in-out infinite;
+  animation: borderPulse 2.5s ease-in-out infinite;
 }
 
 /* ----- Thinking section — now rendered by ThinkingSection.vue */
 
 /* ----- markdown content */
+.streaming-bubble__content {
+  user-select: text;
+  cursor: text;
+}
+
 .streaming-bubble__content :deep(p) {
   margin: 0 0 0.4em;
 }
@@ -200,15 +205,36 @@ const chatStore = useChatStore()
   }
 }
 
-@keyframes pulseGlow {
+@keyframes borderPulse {
 
   0%,
   100% {
-    box-shadow: 0 0 16px var(--accent-glow);
+    border-left-color: rgba(201, 168, 76, 0.18);
   }
 
   50% {
-    box-shadow: 0 0 24px rgba(201, 168, 76, 0.14);
+    border-left-color: rgba(201, 168, 76, 0.45);
+  }
+}
+
+/* ------------------------------------------------- Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .streaming-bubble {
+    animation: none;
+  }
+
+  .streaming-bubble__brain-icon,
+  .streaming-bubble__thinking-label {
+    animation: none;
+  }
+
+  .streaming-bubble__cursor {
+    animation: none;
+    opacity: 1;
+  }
+
+  .content-fade-enter-active {
+    transition: none;
   }
 }
 </style>

@@ -70,6 +70,10 @@ class LLMServiceProtocol(Protocol):
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        *,
+        user_content: str | None = None,
+        conversation_id: str | None = None,
+        attachments: list[dict[str, str]] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream a chat completion, yielding event dicts."""
         ...
@@ -157,6 +161,12 @@ class ToolRegistryProtocol(Protocol):
 @runtime_checkable
 class LMStudioManagerProtocol(Protocol):
     """Protocol for the LM Studio v1 REST API manager."""
+
+    @property
+    def current_operation(self) -> dict | None: ...
+
+    @property
+    def is_busy(self) -> bool: ...
 
     async def list_models(self) -> dict: ...
 

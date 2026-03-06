@@ -218,14 +218,14 @@ function handlePaste(event: ClipboardEvent): void {
 </script>
 
 <template>
-  <div class="chat-input" :class="{ 'chat-input--drag-over': isDragOver }" @dragenter="handleDragEnter"
-    @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
-    <!-- Thumbnail preview strip -->
-    <div v-if="pendingFiles.length > 0" class="chat-input__attachments">
-      <div v-for="file in pendingFiles" :key="file.name + file.size + file.lastModified" class="chat-input__thumb">
+  <div class="ci" :class="{ 'ci--drag': isDragOver }" @dragenter="handleDragEnter" @dragover="handleDragOver"
+    @dragleave="handleDragLeave" @drop="handleDrop">
+    <!-- Thumbnail strip (only when files are pending) -->
+    <div v-if="pendingFiles.length > 0" class="ci__thumbs">
+      <div v-for="file in pendingFiles" :key="file.name + file.size + file.lastModified" class="ci__thumb">
         <img :src="getThumbnail(file)" :alt="file.name" :title="file.name" />
-        <button class="chat-input__thumb-remove" aria-label="Rimuovi allegato" @click="removeFile(file)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        <button class="ci__thumb-rm" aria-label="Rimuovi allegato" @click="removeFile(file)">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
@@ -234,39 +234,21 @@ function handlePaste(event: ClipboardEvent): void {
       </div>
     </div>
 
-    <!-- Input row -->
-    <div class="chat-input__row">
-      <div class="chat-input__status" :class="isConnected ? 'status--ok' : 'status--err'" />
+    <!-- Layer 1: Toolbar row (fixed 36px) -->
+    <div class="ci__toolbar">
+      <!-- Connection status dot -->
+      <div class="ci__dot" :class="isConnected ? 'dot--ok' : 'dot--err'" />
 
-      <!-- Attachment (paperclip) button -->
-      <button class="chat-input__attach" :disabled="disabled || !supportsVision"
-        :aria-label="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'"
-        :title="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'" @click="openFilePicker">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path
-            d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-        </svg>
-      </button>
-
-      <!-- Hidden file input -->
-      <input ref="fileInputRef" type="file" accept="image/*" multiple class="chat-input__file-input"
-        @change="handleFileSelect" />
-
-      <textarea ref="textareaRef" v-model="text" class="chat-input__textarea" placeholder="Scrivi un messaggio..."
-        rows="1" :disabled="disabled" aria-label="Scrivi un messaggio" @keydown="handleKeydown" @input="autoResize"
-        @paste="handlePaste" />
-
-      <!-- Model capability badges -->
-      <div v-if="settingsStore.activeModel" class="chat-input__caps">
-        <span v-if="supportsVision" class="chat-input__cap" title="Vision">
+      <!-- Model capability badges (only when a model is active) -->
+      <div v-if="settingsStore.activeModel" class="ci__badges">
+        <span class="ci__badge" :class="{ 'ci__badge--on': supportsVision }" title="Vision">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
             <circle cx="12" cy="12" r="3" />
           </svg>
         </span>
-        <span v-if="supportsThinking" class="chat-input__cap" title="Thinking">
+        <span class="ci__badge" :class="{ 'ci__badge--on': supportsThinking }" title="Thinking">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <path d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2h7c.1-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
@@ -274,7 +256,7 @@ function handlePaste(event: ClipboardEvent): void {
             <line x1="10" y1="22" x2="14" y2="22" />
           </svg>
         </span>
-        <span v-if="supportsToolUse" class="chat-input__cap" title="Tool Use">
+        <span class="ci__badge" :class="{ 'ci__badge--on': supportsToolUse }" title="Tool Use">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <path
@@ -283,24 +265,47 @@ function handlePaste(event: ClipboardEvent): void {
         </span>
       </div>
 
-      <ModelSelector />
+      <div class="ci__gap" />
 
-      <!-- Stop / Send button with smooth transition -->
+      <!-- Model selector pushed to the right -->
+      <ModelSelector />
+    </div>
+
+    <!-- Layer 2: Input row (grows with textarea, border lights up on focus) -->
+    <div class="ci__body">
+      <!-- Attach (paperclip) button -->
+      <button class="ci__attach" :disabled="disabled || !supportsVision"
+        :aria-label="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'"
+        :title="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'" @click="openFilePicker">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+        </svg>
+      </button>
+
+      <!-- Hidden file input -->
+      <input ref="fileInputRef" type="file" accept="image/*" multiple class="ci__file-input"
+        @change="handleFileSelect" />
+
+      <!-- Auto-growing textarea -->
+      <textarea ref="textareaRef" v-model="text" class="ci__textarea" placeholder="Scrivi un messaggio..." rows="1"
+        :disabled="disabled" aria-label="Scrivi un messaggio" @keydown="handleKeydown" @input="autoResize"
+        @paste="handlePaste" />
+
+      <!-- Send / Stop toggle with transition -->
       <Transition name="btn-swap" mode="out-in">
-        <button v-if="isStreaming" key="stop" class="chat-input__stop" aria-label="Interrompi generazione"
+        <button v-if="isStreaming" key="stop" class="ci__stop" aria-label="Interrompi generazione"
           @click="emit('stop')">
-          <!-- Stop icon: square inside a circle -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none" />
           </svg>
         </button>
-        <button v-else key="send" class="chat-input__send"
-          :disabled="(!text.trim() && pendingFiles.length === 0) || disabled" aria-label="Invia messaggio"
-          @click="submit">
-          <!-- Send arrow icon -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <button v-else key="send" class="ci__send" :disabled="(!text.trim() && pendingFiles.length === 0) || disabled"
+          aria-label="Invia messaggio" @click="submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13" />
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -312,50 +317,58 @@ function handlePaste(event: ClipboardEvent): void {
 </template>
 
 <style scoped>
-.chat-input {
+/* ============================================================
+   Root container
+   ============================================================ */
+.ci {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   border-top: 1px solid var(--border);
   background: var(--bg-primary);
-  transition: box-shadow 0.2s ease;
+  padding: 10px 16px 12px;
 }
 
-.chat-input--drag-over {
-  box-shadow: inset 0 0 0 2px var(--accent-border);
-}
-
-/* ----------------------------------------------- Attachment thumbnails */
-.chat-input__attachments {
+/* ============================================================
+   Thumbnail strip
+   ============================================================ */
+.ci__thumbs {
   display: flex;
   gap: 8px;
-  padding: 10px 16px 0;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
 }
 
-.chat-input__thumb {
+.ci__thumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.ci__thumb {
   position: relative;
-  width: 56px;
-  height: 56px;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
-.chat-input__thumb img {
+.ci__thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-.chat-input__thumb-remove {
+.ci__thumb-rm {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 18px;
-  height: 18px;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.72);
   border: none;
   color: #fff;
   display: flex;
@@ -363,47 +376,48 @@ function handlePaste(event: ClipboardEvent): void {
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s ease;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
 }
 
-.chat-input__thumb-remove:hover {
-  background: rgba(196, 92, 92, 0.8);
+.ci__thumb:hover .ci__thumb-rm {
+  opacity: 1;
 }
 
-/* ----------------------------------------------- Input row */
-.chat-input__row {
+.ci__thumb-rm:hover {
+  background: rgba(196, 92, 92, 0.85);
+}
+
+/* ============================================================
+   Toolbar row (Layer 1 — fixed 36px)
+   ============================================================ */
+.ci__toolbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  height: 36px;
 }
 
-/* ----------------------------------------------- Hidden file input */
-.chat-input__file-input {
-  display: none;
-}
-
-/* ------------------------------------------------ Connection dot */
-.chat-input__status {
-  width: 8px;
-  height: 8px;
+/* Connection status dot */
+.ci__dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-bottom: 10px;
-  transition: background 0.3s ease;
+  transition: background var(--transition-normal);
 }
 
-.status--ok {
+.dot--ok {
   background: var(--success);
-  box-shadow: 0 0 6px var(--success-glow);
-  animation: chatStatusPulse 3s ease-in-out infinite;
+  box-shadow: 0 0 5px var(--success-glow);
+  animation: dot-pulse 3s ease-in-out infinite;
 }
 
-@keyframes chatStatusPulse {
+@keyframes dot-pulse {
 
   0%,
   100% {
-    box-shadow: 0 0 6px var(--success-glow);
+    box-shadow: 0 0 5px var(--success-glow);
   }
 
   50% {
@@ -411,13 +425,13 @@ function handlePaste(event: ClipboardEvent): void {
   }
 }
 
-.status--err {
+.dot--err {
   background: var(--danger);
-  box-shadow: 0 0 6px rgba(196, 92, 92, 0.5);
-  animation: chatDisconnectBlink 2s ease-in-out infinite;
+  box-shadow: 0 0 5px rgba(196, 92, 92, 0.5);
+  animation: dot-blink 2s ease-in-out infinite;
 }
 
-@keyframes chatDisconnectBlink {
+@keyframes dot-blink {
 
   0%,
   100% {
@@ -425,115 +439,200 @@ function handlePaste(event: ClipboardEvent): void {
   }
 
   50% {
-    opacity: 0.4;
+    opacity: 0.35;
   }
 }
 
-/* ------------------------------------------------ Attach button */
-.chat-input__attach {
+/* Capability badges */
+.ci__badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ci__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-input);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background var(--transition-normal), color var(--transition-normal);
+  color: var(--text-muted);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
 }
 
-.chat-input__attach:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+.ci__badge svg {
+  width: 11px;
+  height: 11px;
+}
+
+.ci__badge--on {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
+/* Flex spacer */
+.ci__gap {
+  flex: 1;
+}
+
+/* ============================================================
+   Input body (Layer 2 — border container, grows with textarea)
+   ============================================================ */
+.ci__body {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-input);
+  padding: 3px 4px;
+  transition:
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal);
+}
+
+.ci__body:focus-within {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 1px var(--accent-border), inset 0 0 16px var(--accent-glow);
+}
+
+/* Drag-over: glow the input border gold */
+.ci--drag .ci__body {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--accent-border), inset 0 0 24px var(--accent-glow);
+}
+
+/* Hidden file input */
+.ci__file-input {
+  display: none;
+}
+
+/* Attach button */
+.ci__attach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.ci__attach:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
   color: var(--accent);
 }
 
-.chat-input__attach:disabled {
-  opacity: 0.25;
+.ci__attach:disabled {
+  opacity: 0.3;
   cursor: not-allowed;
-  filter: grayscale(100%);
 }
 
-/* --------------------------------------------------- Textarea */
-.chat-input__textarea {
+/* Textarea */
+.ci__textarea {
   flex: 1;
-  min-height: 38px;
+  min-width: 0;
+  min-height: 34px;
   max-height: 120px;
-  padding: 8px 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  padding: 7px 4px;
+  background: transparent;
+  border: none;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   line-height: 1.5;
   resize: none;
   outline: none;
-  transition: border-color var(--transition-normal);
 }
 
-.chat-input__textarea:focus {
-  border-color: var(--accent-border);
+.ci__textarea::placeholder {
+  color: var(--text-muted);
 }
 
-.chat-input__textarea::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.6;
-}
-
-.chat-input__textarea:disabled {
-  opacity: 0.5;
+.ci__textarea:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* -------------------------------------------------- Send button */
-.chat-input__send {
+/* Send button */
+.ci__send {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
   flex-shrink: 0;
-  border: 1px solid var(--accent-border);
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-md);
+  border: 1px solid var(--accent-border);
   background: var(--accent-dim);
   color: var(--accent);
   cursor: pointer;
-  transition: background var(--transition-normal), opacity var(--transition-normal);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
-.chat-input__send:hover:not(:disabled) {
-  background: rgba(201, 168, 76, 0.22);
+.ci__send:hover:not(:disabled) {
+  background: rgba(201, 168, 76, 0.2);
+  color: var(--accent-hover);
 }
 
-.chat-input__send:disabled {
-  opacity: 0.35;
+.ci__send:disabled {
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
-/* -------------------------------------------------- Stop button */
-.chat-input__stop {
+/* Stop button (pulsing danger ring) */
+.ci__stop {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
   flex-shrink: 0;
-  border: 1px solid var(--danger, #c45c5c);
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-md);
-  background: rgba(196, 92, 92, 0.12);
-  color: var(--danger, #c45c5c);
+  border: 1px solid rgba(196, 92, 92, 0.4);
+  background: rgba(196, 92, 92, 0.1);
+  color: var(--danger);
   cursor: pointer;
-  transition: background var(--transition-normal), opacity var(--transition-normal);
+  animation: stop-ring 1.5s ease-out infinite;
+  transition: background var(--transition-fast);
 }
 
-.chat-input__stop:hover {
-  background: rgba(196, 92, 92, 0.25);
+.ci__stop:hover {
+  background: rgba(196, 92, 92, 0.22);
 }
 
-/* ----------------------------------------------- Button swap transition */
+@keyframes stop-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(196, 92, 92, 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 5px rgba(196, 92, 92, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(196, 92, 92, 0);
+  }
+}
+
+/* ============================================================
+   Button swap transition (send <-> stop)
+   ============================================================ */
 .btn-swap-enter-active,
 .btn-swap-leave-active {
   transition: opacity 0.15s ease, transform 0.15s ease;
@@ -541,49 +640,11 @@ function handlePaste(event: ClipboardEvent): void {
 
 .btn-swap-enter-from {
   opacity: 0;
-  transform: scale(0.85);
+  transform: scale(0.8);
 }
 
 .btn-swap-leave-to {
   opacity: 0;
-  transform: scale(0.85);
-}
-
-/* ----------------------------------------- Capability badges */
-.chat-input__caps {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin-bottom: 8px;
-  animation: capsEntrance 0.3s ease-out;
-}
-
-@keyframes capsEntrance {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.chat-input__cap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-}
-
-.chat-input__cap svg {
-  width: 12px;
-  height: 12px;
+  transform: scale(0.8);
 }
 </style>

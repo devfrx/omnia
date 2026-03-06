@@ -41,11 +41,21 @@ DEFAULT_MODEL: str = "qwen3.5:9b"
 """Default LLM model tag used when no model is specified."""
 
 KNOWN_MODELS: dict[str, dict[str, bool]] = {
+    # Ollama-style keys
     "qwen3.5:9b": {"vision": True, "thinking": False},
     "qwen2.5:14b": {"vision": False, "thinking": False},
     "qwq": {"vision": False, "thinking": True},
     "deepseek-r1:14b": {"vision": False, "thinking": True},
     "llava": {"vision": True, "thinking": False},
+    # LM Studio-style keys
+    "qwen/qwen3.5-9b": {"vision": True, "thinking": False},
+    "qwen/qwq-32b": {"vision": False, "thinking": True},
+    "deepseek/deepseek-r1-0528-qwen3-8b": {
+        "vision": False, "thinking": True,
+    },
+    "mistralai/ministral-3-14b-reasoning": {
+        "vision": False, "thinking": True,
+    },
 }
 """Known models mapped to their capabilities (vision, thinking)."""
 

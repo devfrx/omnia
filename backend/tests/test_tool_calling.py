@@ -266,3 +266,168 @@ class TestMessageToolFields:
         msg = Message(conversation_id=uuid.uuid4(), role="user", content="hello")
         assert msg.tool_calls is None
         assert msg.tool_call_id is None
+
+
+# ---------- F. SSE streaming — reasoning_content tests ----------
+
+
+def _sse_line(delta: dict, finish_reason: str | None = None) -> str:
+    """Build a single SSE data line from a delta dict."""
+    choice: dict = {"delta": delta}
+    if finish_reason:
+        choice["finish_reason"] = finish_reason
+    return f"data: {json.dumps({'choices': [choice]})}"
+
+
+class _FakeStreamResponse:
+    """Fake httpx streaming response that yields pre-built SSE lines."""
+
+    def __init__(self, lines: list[str]) -> None:
+        self._lines = lines
+
+    def raise_for_status(self) -> None:
+        pass
+
+    async def aiter_lines(self):
+        for line in self._lines:
+            yield line
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+def _make_llm(*, supports_thinking: bool) -> LLMService:
+    """Create an LLMService with a fake system prompt and given thinking flag."""
+    from backend.core.config import LLMConfig, PROJECT_ROOT
+
+    cfg = LLMConfig(
+        base_url="http://localhost:1234",
+        model="test-model",
+        system_prompt_file=str(PROJECT_ROOT / "config" / "system_prompt.md"),
+        supports_thinking=supports_thinking,
+    )
+    return LLMService(cfg)
+
+
+async def _collect_events(
+    llm: LLMService, lines: list[str],
+) -> list[dict]:
+    """Run LLMService.chat() against fake SSE lines, return all events."""
+    fake_resp = _FakeStreamResponse(lines)
+
+    with patch.object(llm._client, "stream", return_value=fake_resp):
+        events = []
+        async for event in llm.chat(
+            [{"role": "user", "content": "hi"}],
+        ):
+            events.append(event)
+    return events
+
+
+class TestReasoningContentStreaming:
+    """Verify reasoning_content in SSE deltas is always yielded."""
+
+    @pytest.mark.asyncio
+    async def test_reasoning_content_yielded_when_thinking_disabled(self):
+        """reasoning_content in SSE delta → thinking event even with supports_thinking=False."""
+        llm = _make_llm(supports_thinking=False)
+        lines = [
+            _sse_line({"reasoning_content": "Let me think..."}),
+            _sse_line({"content": "The answer is 42."}),
+            _sse_line({}, finish_reason="stop"),
+            "data: [DONE]",
+        ]
+        events = await _collect_events(llm, lines)
+
+        thinking_events = [e for e in events if e["type"] == "thinking"]
+        token_events = [e for e in events if e["type"] == "token"]
+        done_events = [e for e in events if e["type"] == "done"]
+
+        assert len(thinking_events) == 1
+        assert thinking_events[0]["content"] == "Let me think..."
+        assert len(token_events) == 1
+        assert token_events[0]["content"] == "The answer is 42."
+        assert len(done_events) == 1
+
+    @pytest.mark.asyncio
+    async def test_reasoning_content_yielded_when_thinking_enabled(self):
+        """reasoning_content in SSE delta → thinking event with supports_thinking=True."""
+        llm = _make_llm(supports_thinking=True)
+        lines = [
+            _sse_line({"reasoning_content": "Step 1: analyze"}),
+            _sse_line({"content": "Result here."}),
+            _sse_line({}, finish_reason="stop"),
+            "data: [DONE]",
+        ]
+        events = await _collect_events(llm, lines)
+
+        thinking_events = [e for e in events if e["type"] == "thinking"]
+        token_events = [e for e in events if e["type"] == "token"]
+
+        assert len(thinking_events) == 1
+        assert thinking_events[0]["content"] == "Step 1: analyze"
+        assert len(token_events) == 1
+        assert token_events[0]["content"] == "Result here."
+
+    @pytest.mark.asyncio
+    async def test_both_reasoning_and_content_in_same_delta(self):
+        """A single delta with both reasoning_content and content yields both events."""
+        llm = _make_llm(supports_thinking=False)
+        lines = [
+            _sse_line({
+                "reasoning_content": "thinking part",
+                "content": "visible part",
+            }),
+            _sse_line({}, finish_reason="stop"),
+            "data: [DONE]",
+        ]
+        events = await _collect_events(llm, lines)
+
+        thinking_events = [e for e in events if e["type"] == "thinking"]
+        token_events = [e for e in events if e["type"] == "token"]
+
+        assert len(thinking_events) == 1
+        assert thinking_events[0]["content"] == "thinking part"
+        assert len(token_events) == 1
+        assert token_events[0]["content"] == "visible part"
+
+    @pytest.mark.asyncio
+    async def test_think_tags_not_parsed_when_thinking_disabled(self):
+        """Inline <think> tags in content pass through raw when supports_thinking=False."""
+        llm = _make_llm(supports_thinking=False)
+        lines = [
+            _sse_line({"content": "<think>some reasoning</think>The answer"}),
+            _sse_line({}, finish_reason="stop"),
+            "data: [DONE]",
+        ]
+        events = await _collect_events(llm, lines)
+
+        token_events = [e for e in events if e["type"] == "token"]
+        thinking_events = [e for e in events if e["type"] == "thinking"]
+
+        # No ThinkTagParser active → content emitted as-is
+        assert len(thinking_events) == 0
+        assert len(token_events) == 1
+        assert "<think>" in token_events[0]["content"]
+
+    @pytest.mark.asyncio
+    async def test_think_tags_parsed_when_thinking_enabled(self):
+        """Inline <think> tags are separated into thinking events when enabled."""
+        llm = _make_llm(supports_thinking=True)
+        lines = [
+            _sse_line({"content": "<think>reasoning</think>answer"}),
+            _sse_line({}, finish_reason="stop"),
+            "data: [DONE]",
+        ]
+        events = await _collect_events(llm, lines)
+
+        thinking_events = [e for e in events if e["type"] == "thinking"]
+        token_events = [e for e in events if e["type"] == "token"]
+
+        assert len(thinking_events) == 1
+        assert thinking_events[0]["content"] == "reasoning"
+        assert len(token_events) == 1
+        assert token_events[0]["content"] == "answer"

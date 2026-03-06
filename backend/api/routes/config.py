@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from loguru import logger
 
 from backend.api.routes.models import serialise_model
@@ -150,27 +150,93 @@ async def update_config(request: Request) -> dict[str, Any]:
         llm_updates = body["llm"]
         if "model" in llm_updates:
             new_model = str(llm_updates["model"])
+
+            # Load the model on LM Studio BEFORE mutating config so
+            # the active-model state stays consistent on failure.
+            mgr = ctx.lmstudio_manager
+            if mgr is not None:
+                if mgr.is_busy:
+                    raise HTTPException(
+                        409,
+                        "Another model operation is already in progress",
+                    )
+
+                # Check if model is already loaded — skip redundant load
+                models_data: dict | None = None
+                try:
+                    models_data = await mgr.list_models()
+                    already_loaded = any(
+                        m.get("key") == new_model
+                        and m.get("loaded_instances")
+                        for m in models_data.get("models", [])
+                    )
+                except Exception as exc:
+                    logger.debug(
+                        "Could not check loaded models: {}", exc,
+                    )
+                    already_loaded = False
+
+                if not already_loaded:
+                    try:
+                        await mgr.load_model(new_model)
+                        logger.info(
+                            "Loaded model '{}' on LM Studio",
+                            new_model,
+                        )
+                    except RuntimeError as exc:
+                        raise HTTPException(409, str(exc))
+                    except Exception as exc:
+                        raise HTTPException(
+                            503,
+                            f"Failed to load model '{new_model}': {exc}",
+                        )
+                else:
+                    logger.info(
+                        "Model '{}' already loaded, skipping load",
+                        new_model,
+                    )
+
             object.__setattr__(cfg.llm, "model", new_model)
             caps = KNOWN_MODELS.get(
                 new_model, {"vision": False, "thinking": False},
             )
-            object.__setattr__(
-                cfg.llm, "supports_vision", caps.get("vision", False),
-            )
-            object.__setattr__(
-                cfg.llm, "supports_thinking", caps.get("thinking", False),
-            )
-            # Trigger model load on LM Studio when switching models.
-            mgr = ctx.lmstudio_manager
             if mgr is not None:
-                try:
-                    await mgr.load_model(new_model)
-                    logger.info("Loaded model '{}' on LM Studio", new_model)
-                except Exception as exc:
-                    logger.warning(
-                        "Could not load '{}' on LM Studio: {}",
-                        new_model, exc,
-                    )
+                # Reuse models_data from loaded-check; re-query
+                # only if the model was just loaded (data may be stale).
+                if not already_loaded or models_data is None:
+                    try:
+                        models_data = await mgr.list_models()
+                    except Exception as exc:
+                        logger.debug(
+                            "Could not query models for '{}': {}",
+                            new_model, exc,
+                        )
+                        models_data = None
+                if models_data is not None:
+                    for m_info in models_data.get("models", []):
+                        if m_info.get("key") == new_model:
+                            live_caps = m_info.get(
+                                "capabilities", {},
+                            )
+                            caps = {
+                                "vision": live_caps.get(
+                                    "vision",
+                                    caps.get("vision", False),
+                                ),
+                                "thinking": live_caps.get(
+                                    "thinking",
+                                    caps.get("thinking", False),
+                                ),
+                            }
+                            break
+            object.__setattr__(
+                cfg.llm, "supports_vision",
+                caps.get("vision", False),
+            )
+            object.__setattr__(
+                cfg.llm, "supports_thinking",
+                caps.get("thinking", False),
+            )
         if "temperature" in llm_updates:
             object.__setattr__(cfg.llm, "temperature", float(llm_updates["temperature"]))
         if "max_tokens" in llm_updates:
