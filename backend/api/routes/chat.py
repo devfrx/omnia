@@ -213,6 +213,13 @@ async def ws_chat(websocket: WebSocket) -> None:
     llm: LLMService = ctx.llm_service  # type: ignore[assignment]
     session_factory = ctx.db
 
+    if llm is None or session_factory is None:
+        await websocket.send_json(
+            {"type": "error", "content": "Server not ready \u2014 services not initialized"}
+        )
+        await websocket.close(code=1011)
+        return
+
     try:
         while True:
             raw = await websocket.receive_text()
@@ -450,7 +457,6 @@ async def ws_chat(websocket: WebSocket) -> None:
                             ctx=ctx,
                             session=session,
                             conv_id=conv_id,
-                            conv=conv,
                             llm=llm,
                             tool_calls_from_llm=tool_calls_collected,
                             full_content=full_content,

@@ -8,6 +8,7 @@ useful to verify without creating hard import cycles.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
@@ -68,6 +69,7 @@ class LLMServiceProtocol(Protocol):
         self,
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream a chat completion, yielding event dicts."""
         ...
@@ -121,6 +123,8 @@ class PluginManagerProtocol(Protocol):
     async def shutdown(self) -> None: ...
     async def health_check(self) -> bool: ...
     async def check_health(self) -> dict[str, Any]: ...
+    async def load_plugin(self, name: str) -> bool: ...
+    async def unload_plugin(self, name: str) -> bool: ...
     def get_plugin(self, name: str) -> Any: ...
     def get_all_plugins(self) -> dict[str, Any]: ...
     def get_loaded_plugin_names(self) -> list[str]: ...
@@ -146,6 +150,41 @@ class ToolRegistryProtocol(Protocol):
 
 
 # ---------------------------------------------------------------------------
+# LM Studio manager
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class LMStudioManagerProtocol(Protocol):
+    """Protocol for the LM Studio v1 REST API manager."""
+
+    async def list_models(self) -> dict: ...
+
+    async def load_model(
+        self,
+        model: str,
+        *,
+        context_length: int | None = None,
+        flash_attention: bool | None = None,
+        eval_batch_size: int | None = None,
+        num_experts: int | None = None,
+        offload_kv_cache_to_gpu: bool | None = None,
+    ) -> dict: ...
+
+    async def unload_model(self, instance_id: str) -> dict: ...
+
+    async def download_model(
+        self, model: str, *, quantization: str | None = None,
+    ) -> dict: ...
+
+    async def get_download_status(self, job_id: str) -> dict: ...
+
+    async def check_health(self) -> bool: ...
+
+    async def close(self) -> None: ...
+
+
+# ---------------------------------------------------------------------------
 # Conversation file manager
 # ---------------------------------------------------------------------------
 
@@ -154,19 +193,34 @@ class ToolRegistryProtocol(Protocol):
 class ConversationFileManagerProtocol(Protocol):
     """Protocol for file-based conversation persistence."""
 
-    async def save(self, conversation_data: dict[str, Any]) -> None:
+    @property
+    def base_dir(self) -> Path:
+        """The directory where conversation JSON files are stored."""
+        ...
+
+    async def save(
+        self, conversation_data: dict[str, Any], user_id: str | None = None,
+    ) -> None:
         """Persist a conversation dict to its JSON file."""
         ...
 
-    async def delete(self, conversation_id: str) -> None:
+    async def delete(
+        self, conversation_id: str, user_id: str | None = None,
+    ) -> None:
         """Remove the JSON file for a conversation."""
         ...
 
-    async def load(self, conversation_id: str) -> dict[str, Any] | None:
+    async def delete_all(self, user_id: str | None = None) -> int:
+        """Remove all JSON conversation files."""
+        ...
+
+    async def load(
+        self, conversation_id: str, user_id: str | None = None,
+    ) -> dict[str, Any] | None:
         """Read a single conversation from its JSON file."""
         ...
 
-    async def load_all(self) -> list[dict[str, Any]]:
+    async def load_all(self, user_id: str | None = None) -> list[dict[str, Any]]:
         """Read all conversation JSON files."""
         ...
 

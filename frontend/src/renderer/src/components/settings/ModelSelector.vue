@@ -2,21 +2,48 @@
 /**
  * ModelSelector.vue — Compact dropdown for switching the active LLM model.
  *
- * Displays the current model name as a small button. On click, opens a
- * dropdown listing all available models with size and capability badges.
+ * Displays the current model name as a small button in the ChatInput area.
+ * On click, opens a dropdown listing all available models with size,
+ * capability badges, load status, and model metadata.
  */
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, nextTick, watch } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
+import type { LMStudioModel } from '../../types/settings'
 
 const settingsStore = useSettingsStore()
 
-/** Whether the dropdown is open. */
 const isOpen = ref(false)
-
-/** Root element ref for click-outside detection. */
+const switchingModel = ref<string | null>(null)
+const errorMessage = ref<string | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
+const dropdownRef = ref<HTMLElement | null>(null)
 
-/** Format bytes to a human-readable size string (e.g. "5.4 GB"). */
+function adjustDropdownPosition(): void {
+  nextTick(() => {
+    const dropdown = dropdownRef.value
+    if (!dropdown) return
+    // Reset to default position, then measure once
+    dropdown.style.left = '0'
+    dropdown.style.right = 'auto'
+    const rect = dropdown.getBoundingClientRect()
+    // If goes off-screen right, flip to right-aligned
+    if (rect.right > window.innerWidth - 8) {
+      dropdown.style.left = 'auto'
+      dropdown.style.right = '0'
+    }
+  })
+}
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    isOpen.value = false
+  }
+}
+
+function handleResize(): void {
+  if (isOpen.value) adjustDropdownPosition()
+}
+
 function formatSize(bytes: number): string {
   const gb = bytes / 1_073_741_824
   if (gb >= 1) return `${gb.toFixed(1)} GB`
@@ -24,70 +51,113 @@ function formatSize(bytes: number): string {
   return `${mb.toFixed(0)} MB`
 }
 
-/** Truncate a model name for display. */
 function truncateName(name: string, maxLen = 24): string {
-  return name.length > maxLen ? name.slice(0, maxLen) + '…' : name
+  return name.length > maxLen ? name.slice(0, maxLen) + '\u2026' : name
 }
 
-/** Toggle the dropdown and fetch models if needed. */
 function toggle(): void {
   if (!isOpen.value && settingsStore.models.length === 0) {
     settingsStore.loadModels()
   }
   isOpen.value = !isOpen.value
+  errorMessage.value = null
 }
 
-/** Select a model and close the dropdown. */
 async function selectModel(name: string): Promise<void> {
-  isOpen.value = false
-  await settingsStore.switchModel(name)
+  switchingModel.value = name
+  errorMessage.value = null
+  try {
+    await settingsStore.switchModel(name)
+    isOpen.value = false
+  } catch (e) {
+    errorMessage.value = e instanceof Error ? e.message : 'Errore nel cambio modello'
+  } finally {
+    switchingModel.value = null
+  }
 }
 
-/** Close the dropdown when clicking outside. */
+async function toggleModelLoad(model: LMStudioModel, event: MouseEvent): Promise<void> {
+  event.stopPropagation()
+  errorMessage.value = null
+  try {
+    if (model.loaded && model.loaded_instances.length > 0) {
+      await settingsStore.unloadModel(model.loaded_instances[0].id)
+    } else {
+      await settingsStore.loadModel(model.name)
+    }
+  } catch (e) {
+    errorMessage.value = e instanceof Error ? e.message : 'Errore'
+  }
+}
+
+/** Check if a model's load/unload action is in progress. */
+function isModelBusy(model: LMStudioModel): boolean {
+  if (settingsStore.isModelLoading(model.name)) return true
+  if (
+    model.loaded &&
+    model.loaded_instances.length > 0 &&
+    settingsStore.isInstanceUnloading(model.loaded_instances[0].id)
+  ) return true
+  return false
+}
+
 function handleClickOutside(event: MouseEvent): void {
   if (rootRef.value && !rootRef.value.contains(event.target as Node)) {
     isOpen.value = false
   }
 }
 
+watch(isOpen, (val) => {
+  if (val) adjustDropdownPosition()
+})
+
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
+  window.addEventListener('resize', handleResize)
   settingsStore.loadModels()
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleClickOutside)
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <template>
   <div ref="rootRef" class="model-selector">
-    <button class="model-selector__trigger" @click="toggle">
+    <!-- Trigger button -->
+    <button class="model-selector__trigger" aria-haspopup="listbox" :aria-expanded="isOpen" @click="toggle"
+      @keydown="handleKeydown">
+      <span class="model-selector__status-dot" :class="settingsStore.lmStudioConnected
+        ? 'model-selector__status-dot--connected'
+        : 'model-selector__status-dot--disconnected'"
+        :title="settingsStore.lmStudioConnected ? 'LM Studio connesso' : 'LM Studio disconnesso'" />
       <span class="model-selector__label">
-        {{ settingsStore.activeModel ? truncateName(settingsStore.activeModel.name) : settingsStore.settings.llm.model }}
+        {{
+          settingsStore.activeModel
+            ? truncateName(settingsStore.activeModel.display_name || settingsStore.activeModel.name)
+            : settingsStore.settings.llm.model
+        }}
       </span>
-      <svg
-        class="model-selector__chevron"
-        :class="{ 'model-selector__chevron--open': isOpen }"
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
+      <svg class="model-selector__chevron" :class="{ 'model-selector__chevron--open': isOpen }" width="10" height="10"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        stroke-linejoin="round">
         <polyline points="6 9 12 15 18 9" />
       </svg>
     </button>
 
+    <!-- Dropdown -->
     <Transition name="dropdown">
-      <div v-if="isOpen" class="model-selector__dropdown">
+      <div v-if="isOpen" ref="dropdownRef" class="model-selector__dropdown" role="listbox">
+        <!-- Error -->
+        <div v-if="errorMessage" class="model-selector__error">
+          {{ errorMessage }}
+        </div>
+
         <!-- Loading state -->
         <div v-if="settingsStore.isLoadingModels" class="model-selector__loading">
           <span class="model-selector__spinner" />
-          <span>Caricamento modelli…</span>
+          <span>Caricamento modelli...</span>
         </div>
 
         <!-- Empty state -->
@@ -97,20 +167,103 @@ onBeforeUnmount(() => {
 
         <!-- Model list -->
         <template v-else>
-          <button
-            v-for="model in settingsStore.models"
-            :key="model.name"
-            class="model-selector__item"
-            :class="{ 'model-selector__item--active': model.is_active }"
-            @click="selectModel(model.name)"
-          >
-            <span class="model-selector__item-name">{{ truncateName(model.name) }}</span>
-            <span class="model-selector__item-meta">
-              <span class="model-selector__item-size">{{ formatSize(model.size) }}</span>
-              <span v-if="model.capabilities.vision" class="model-selector__badge" title="Vision">🔭</span>
-              <span v-if="model.capabilities.thinking" class="model-selector__badge" title="Thinking">💭</span>
-            </span>
-          </button>
+          <TransitionGroup name="model-list">
+            <button v-for="model in settingsStore.models" :key="model.name" class="model-selector__item" :class="{
+              'model-selector__item--active': model.is_active,
+              'model-selector__item--loaded': model.loaded,
+              'model-selector__item--switching': switchingModel === model.name,
+              'model-selector__item--busy': isModelBusy(model)
+            }" :disabled="switchingModel !== null" @click="selectModel(model.name)">
+              <!-- Left accent bar for loaded models -->
+              <span v-if="model.loaded" class="model-selector__accent-bar" />
+
+              <!-- Main row -->
+              <span class="model-selector__item-left">
+                <span class="model-selector__load-dot" :class="model.loaded
+                  ? 'model-selector__load-dot--loaded'
+                  : 'model-selector__load-dot--unloaded'" :title="model.loaded ? 'Caricato' : 'Non caricato'" />
+                <span class="model-selector__item-name">
+                  {{ truncateName(model.display_name || model.name) }}
+                </span>
+              </span>
+
+              <!-- Meta info -->
+              <span class="model-selector__item-meta">
+                <span v-if="model.params_string" class="model-selector__item-params">
+                  {{ model.params_string }}
+                </span>
+                <span v-if="model.quantization?.name" class="model-selector__item-quant">
+                  {{ model.quantization.name }}
+                </span>
+                <span class="model-selector__item-size">{{ formatSize(model.size) }}</span>
+                <span v-if="model.loaded && model.loaded_instances.length > 0" class="model-selector__item-ctx">
+                  ctx {{ model.loaded_instances[0].config.context_length.toLocaleString() }}
+                </span>
+
+                <!-- Capability badges -->
+                <span v-if="model.capabilities.vision" class="model-selector__badge" title="Vision">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <span class="model-selector__badge-label">Vision</span>
+                </span>
+                <span v-if="model.capabilities.thinking" class="model-selector__badge" title="Thinking">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2V17h7v-.7c.2-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
+                    <path d="M10 21h4" />
+                    <path d="M9 17h6" />
+                  </svg>
+                  <span class="model-selector__badge-label">Think</span>
+                </span>
+                <span v-if="model.capabilities.trained_for_tool_use" class="model-selector__badge" title="Tool Use">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                      d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                  </svg>
+                  <span class="model-selector__badge-label">Tools</span>
+                </span>
+
+                <!-- Load / Unload button -->
+                <button class="model-selector__load-btn"
+                  :class="{ 'model-selector__load-btn--busy': isModelBusy(model) }"
+                  :title="model.loaded ? 'Scarica dalla memoria' : 'Carica in memoria'" :disabled="isModelBusy(model)"
+                  @click="toggleModelLoad(model, $event)">
+                  <!-- Loading spinner -->
+                  <span v-if="isModelBusy(model)" class="model-selector__btn-spinner" />
+                  <!-- Unload icon (arrow up from tray) -->
+                  <svg v-else-if="model.loaded" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="17 11 12 6 7 11" />
+                    <line x1="12" y1="6" x2="12" y2="18" />
+                    <line x1="5" y1="21" x2="19" y2="21" />
+                  </svg>
+                  <!-- Load icon (arrow down to tray) -->
+                  <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="7 13 12 18 17 13" />
+                    <line x1="12" y1="18" x2="12" y2="6" />
+                    <line x1="5" y1="21" x2="19" y2="21" />
+                  </svg>
+                </button>
+              </span>
+
+              <!-- Switching spinner overlay -->
+              <span v-if="switchingModel === model.name" class="model-selector__item-loading">
+                <span class="model-selector__spinner model-selector__spinner--small" />
+              </span>
+
+              <!-- Loading progress bar -->
+              <div v-if="settingsStore.isModelLoading(model.name) && !switchingModel"
+                class="model-selector__load-progress">
+                <div class="model-selector__load-progress-bar" />
+                <span class="model-selector__load-progress-text">Caricamento in corso...</span>
+              </div>
+            </button>
+          </TransitionGroup>
         </template>
       </div>
     </Transition>
@@ -123,11 +276,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
 }
 
-/* ── Trigger button ── */
+/* ── Trigger button ───────────────────────────────────────────────── */
 .model-selector__trigger {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 4px 10px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
@@ -147,6 +300,56 @@ onBeforeUnmount(() => {
   border-color: var(--border-hover);
 }
 
+.model-selector__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.model-selector__status-dot--connected {
+  background: var(--success);
+  box-shadow: 0 0 4px var(--success-glow);
+  animation: msStatusPulse 3s ease-in-out infinite;
+}
+
+@keyframes msStatusPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--success-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 8px var(--success-glow), 0 0 2px var(--success);
+  }
+}
+
+.model-selector__status-dot--disconnected {
+  background: var(--danger);
+  box-shadow: 0 0 4px rgba(196, 92, 92, 0.5);
+  animation: msDisconnectBlink 2s ease-in-out infinite;
+}
+
+@keyframes msDisconnectBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.model-selector__label {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .model-selector__chevron {
   transition: transform var(--transition-fast);
   color: var(--text-secondary);
@@ -156,45 +359,93 @@ onBeforeUnmount(() => {
   transform: rotate(180deg);
 }
 
-/* ── Dropdown panel ── */
+/* ── Dropdown panel ───────────────────────────────────────────────── */
 .model-selector__dropdown {
   position: absolute;
   bottom: calc(100% + 6px);
   left: 0;
-  min-width: 240px;
-  max-height: 300px;
+  min-width: 380px;
+  max-width: min(480px, calc(100vw - 32px));
+  max-height: 360px;
   overflow-y: auto;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    0 -4px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
   z-index: 100;
   display: flex;
   flex-direction: column;
   padding: 4px;
 }
 
-/* ── Transition ── */
+/* Scrollbar */
+.model-selector__dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+
+.model-selector__dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.model-selector__dropdown::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 2px;
+}
+
+/* ── Dropdown transition ──────────────────────────────────────────── */
 .dropdown-enter-active,
 .dropdown-leave-active {
   transition:
-    opacity var(--transition-fast),
-    transform var(--transition-fast);
+    opacity var(--transition-normal),
+    transform var(--transition-normal);
 }
 
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: translateY(4px);
+  transform: translateY(6px);
 }
 
-/* ── Loading / empty states ── */
+/* ── Model list transitions ───────────────────────────────────────── */
+.model-list-enter-active,
+.model-list-leave-active {
+  transition: all var(--transition-normal);
+}
+
+.model-list-enter-from {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+.model-list-leave-to {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+.model-list-move {
+  transition: transform var(--transition-normal);
+}
+
+/* ── Error state ──────────────────────────────────────────────────── */
+.model-selector__error {
+  padding: 8px 10px;
+  color: var(--danger);
+  font-size: 0.75rem;
+  background: rgba(196, 92, 92, 0.1);
+  border: 1px solid rgba(196, 92, 92, 0.2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+}
+
+/* ── Loading / empty states ───────────────────────────────────────── */
 .model-selector__loading,
 .model-selector__empty {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 10px;
+  padding: 14px 12px;
   color: var(--text-secondary);
   font-size: 0.8rem;
 }
@@ -205,23 +456,31 @@ onBeforeUnmount(() => {
   border: 2px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: ms-spin 0.6s linear infinite;
+  flex-shrink: 0;
 }
 
-@keyframes spin {
+.model-selector__spinner--small {
+  width: 10px;
+  height: 10px;
+  border-width: 1.5px;
+}
+
+@keyframes ms-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-/* ── Model item ── */
+/* ── Model item ───────────────────────────────────────────────────── */
 .model-selector__item {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 10px 8px 12px;
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
@@ -230,7 +489,11 @@ onBeforeUnmount(() => {
   font-size: 0.8rem;
   cursor: pointer;
   text-align: left;
-  transition: background var(--transition-fast);
+  overflow: hidden;
+  transition:
+    background var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .model-selector__item:hover {
@@ -246,19 +509,113 @@ onBeforeUnmount(() => {
   background: var(--accent-dim);
 }
 
-/* ── Item parts ── */
+.model-selector__item--loaded {
+  background: rgba(92, 154, 110, 0.03);
+}
+
+.model-selector__item--switching {
+  opacity: 0.5;
+  pointer-events: none;
+  animation: msSwitching 1s ease-in-out infinite;
+}
+
+@keyframes msSwitching {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.model-selector__item--busy {
+  animation: ms-pulse 1.5s ease-in-out infinite;
+}
+
+.model-selector__item:disabled {
+  cursor: not-allowed;
+}
+
+@keyframes ms-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* ── Left accent bar for loaded models ────────────────────────────── */
+.model-selector__accent-bar {
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success-glow);
+  transition: opacity var(--transition-fast);
+}
+
+/* ── Load dot indicator ───────────────────────────────────────────── */
+.model-selector__load-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.model-selector__load-dot--loaded {
+  background: var(--success);
+  box-shadow: 0 0 4px var(--success-glow);
+}
+
+.model-selector__load-dot--unloaded {
+  background: var(--text-muted);
+}
+
+/* ── Item parts ───────────────────────────────────────────────────── */
+.model-selector__item-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
 .model-selector__item-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .model-selector__item-meta {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
+}
+
+.model-selector__item-params {
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.model-selector__item-quant {
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-family: var(--font-mono);
 }
 
 .model-selector__item-size {
@@ -266,8 +623,124 @@ onBeforeUnmount(() => {
   font-size: 0.7rem;
 }
 
+.model-selector__item-ctx {
+  color: var(--success);
+  font-size: 0.6rem;
+  font-family: var(--font-mono);
+}
+
+/* ── Capability badges ────────────────────────────────────────────── */
 .model-selector__badge {
-  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px 1px 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  color: var(--text-secondary);
+  font-size: 0.6rem;
   line-height: 1;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.model-selector__badge svg {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.model-selector__badge-label {
+  font-size: 0.55rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.model-selector__item--active .model-selector__badge {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
+/* ── Load / Unload button ─────────────────────────────────────────── */
+.model-selector__load-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.model-selector__load-btn:hover:not(:disabled) {
+  background: var(--bg-primary);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.model-selector__load-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.model-selector__load-btn--busy {
+  border-color: var(--accent-border);
+}
+
+/* Inline spinner inside the load button */
+.model-selector__btn-spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: ms-spin 0.6s linear infinite;
+}
+
+/* ── Switching overlay spinner ────────────────────────────────────── */
+.model-selector__item-loading {
+  display: flex;
+  align-items: center;
+  margin-left: 4px;
+}
+
+/* ── Loading progress bar ─────────────────────────────────────────── */
+.model-selector__load-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.model-selector__load-progress-bar {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: msLoadSlide 1.5s ease-in-out infinite;
+}
+
+@keyframes msLoadSlide {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.model-selector__load-progress-text {
+  display: none;
 }
 </style>

@@ -17,6 +17,7 @@ from backend.core.context import AppContext, create_context
 from backend.db.database import create_engine_and_session, init_db
 from backend.services.conversation_file_manager import ConversationFileManager
 from backend.services.llm_service import LLMService
+from backend.services.lmstudio_service import LMStudioManager
 from backend.core.plugin_manager import PluginManager
 from backend.core.tool_registry import ToolRegistry
 from backend.api.middleware.exception_handler import UnhandledExceptionMiddleware
@@ -56,6 +57,20 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     llm_service = LLMService(config.llm)
     ctx.llm_service = llm_service
+
+    # Validate system prompt file exists at startup.
+    prompt_path = Path(config.llm.system_prompt_file)
+    if not prompt_path.exists():
+        logger.warning(
+            "System prompt file not found: {} — LLM will use no system prompt",
+            prompt_path,
+        )
+
+    lmstudio_manager = LMStudioManager(
+        base_url=config.llm.base_url,
+        api_token=config.llm.api_token,
+    )
+    ctx.lmstudio_manager = lmstudio_manager
 
     conversations_dir = PROJECT_ROOT / "data" / "conversations"
     ctx.conversation_file_manager = ConversationFileManager(conversations_dir)
@@ -103,6 +118,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         await plugin_manager.shutdown()
     except Exception as exc:
         logger.error("Plugin system shutdown error: {}", exc)
+    await lmstudio_manager.close()
     await llm_service.close()
     await engine.dispose()
     logger.info("OMNIA backend stopped")
@@ -135,6 +151,11 @@ def create_app(testing: bool = False) -> FastAPI:
     app.state._testing = testing
 
     # -- Middleware ----------------------------------------------------------
+    # Starlette uses LIFO ordering: the last middleware added is the
+    # outermost layer.  We add UnhandledExceptionMiddleware first (inner),
+    # then CORSMiddleware (outer) so error responses carry CORS headers.
+    app.add_middleware(UnhandledExceptionMiddleware)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.server.cors_origins,
@@ -142,10 +163,6 @@ def create_app(testing: bool = False) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # Safety net: catch unhandled exceptions inside the CORS boundary so
-    # error responses always carry Access-Control-Allow-Origin headers.
-    app.add_middleware(UnhandledExceptionMiddleware)
 
     # Rate limiting (slowapi).
     setup_rate_limiting(app, config.server.rate_limit)

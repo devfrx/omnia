@@ -14,7 +14,15 @@ import type {
   FileAttachment,
   RenameConversationResponse
 } from '../types/chat'
-import type { OllamaModel } from '../types/settings'
+import type { PluginInfo } from '../types/plugin'
+import type {
+  DownloadStatusResponse,
+  LMStudioModel,
+  ModelDownloadResponse,
+  ModelLoadResponse,
+  ModelUnloadResponse,
+  ModelsStatusResponse
+} from '../types/settings'
 
 /** Base URL for all REST calls. */
 const BASE_URL = 'http://localhost:8000/api'
@@ -116,8 +124,40 @@ export const api = {
   // -- Config ---------------------------------------------------------------
 
   /** Retrieve the list of available LLM models. */
-  getModels: (): Promise<OllamaModel[]> =>
-    request<OllamaModel[]>('/config/models'),
+  getModels: (): Promise<LMStudioModel[]> =>
+    request<LMStudioModel[]>('/config/models'),
+
+  /** Load a model into LM Studio. */
+  loadModel: (
+    model: string,
+    config?: { context_length?: number; flash_attention?: boolean }
+  ): Promise<ModelLoadResponse> =>
+    request<ModelLoadResponse>('/models/load', {
+      method: 'POST',
+      body: JSON.stringify({ model, ...config })
+    }),
+
+  /** Unload a model instance from LM Studio. */
+  unloadModel: (instanceId: string): Promise<ModelUnloadResponse> =>
+    request<ModelUnloadResponse>('/models/unload', {
+      method: 'POST',
+      body: JSON.stringify({ instance_id: instanceId })
+    }),
+
+  /** Start downloading a model. */
+  downloadModel: (model: string, quantization?: string): Promise<ModelDownloadResponse> =>
+    request<ModelDownloadResponse>('/models/download', {
+      method: 'POST',
+      body: JSON.stringify({ model, ...(quantization ? { quantization } : {}) })
+    }),
+
+  /** Get download job status. */
+  getDownloadStatus: (jobId: string): Promise<DownloadStatusResponse> =>
+    request<DownloadStatusResponse>(`/models/download/${encodeURIComponent(jobId)}`),
+
+  /** Get quick LM Studio connection status + model summary. */
+  getModelsStatus: (): Promise<ModelsStatusResponse> =>
+    request<ModelsStatusResponse>('/models/status'),
 
   /** Retrieve the current server configuration. */
   getConfig: (): Promise<Record<string, unknown>> =>
@@ -160,11 +200,11 @@ export const api = {
   // -- Plugins --------------------------------------------------------------
 
   /** List installed plugins. */
-  getPlugins: (): Promise<unknown[]> => request<unknown[]>('/plugins'),
+  getPlugins: (): Promise<PluginInfo[]> => request<PluginInfo[]>('/plugins'),
 
   /** Enable or disable a plugin by name. */
-  togglePlugin: (name: string, enabled: boolean): Promise<unknown> =>
-    request<unknown>(`/plugins/${name}`, {
+  togglePlugin: (name: string, enabled: boolean): Promise<PluginInfo> =>
+    request<PluginInfo>(`/plugins/${name}`, {
       method: 'PATCH',
       body: JSON.stringify({ enabled })
     })

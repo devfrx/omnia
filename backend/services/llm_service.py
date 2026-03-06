@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -228,6 +229,7 @@ class LLMService:
         }
         if tools:
             payload["tools"] = tools
+            payload["tool_choice"] = "auto"
         if self._is_ollama:
             payload["options"] = {
                 "num_gpu": self._config.num_gpu,
@@ -238,6 +240,7 @@ class LLMService:
         # Accumulator for tool calls that arrive across multiple chunks.
         # Keyed by index (int) -> {"id": str, "name": str, "arguments": str}
         tool_calls_acc: dict[int, dict[str, str]] = {}
+        last_finish_reason: str | None = None
 
         # Inline <think> tag parser for models that embed reasoning in content.
         think_parser: ThinkTagParser | None = (
@@ -270,6 +273,8 @@ class LLMService:
                     # Flush any accumulated tool calls before finishing.
                     for _idx in sorted(tool_calls_acc):
                         tc = tool_calls_acc[_idx]
+                        if not tc["id"]:
+                            tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
                         yield {
                             "type": "tool_call",
                             "id": tc["id"],
@@ -278,7 +283,10 @@ class LLMService:
                                 "arguments": tc["arguments"],
                             },
                         }
-                    yield {"type": "done", "finish_reason": "stop"}
+                    yield {
+                        "type": "done",
+                        "finish_reason": last_finish_reason or "stop",
+                    }
                     return
 
                 try:
@@ -290,6 +298,10 @@ class LLMService:
                 choices = chunk.get("choices")
                 if not choices:
                     continue
+
+                chunk_finish = choices[0].get("finish_reason")
+                if chunk_finish:
+                    last_finish_reason = chunk_finish
 
                 delta = choices[0].get("delta", {})
 
@@ -333,7 +345,7 @@ class LLMService:
 
         # Stream ended without [DONE] — either cancelled or connection closed.
         cancelled = cancel_event is not None and cancel_event.is_set()
-        finish_reason = "cancelled" if cancelled else "stop"
+        finish = "cancelled" if cancelled else (last_finish_reason or "stop")
 
         if think_parser:
             for kind, text in think_parser.flush():
@@ -343,6 +355,13 @@ class LLMService:
                 }
         for _idx in sorted(tool_calls_acc):
             tc = tool_calls_acc[_idx]
+            if not tc["name"]:
+                logger.warning(
+                    "Discarding incomplete tool call: {}", tc,
+                )
+                continue
+            if not tc["id"]:
+                tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
             yield {
                 "type": "tool_call",
                 "id": tc["id"],
@@ -351,7 +370,7 @@ class LLMService:
                     "arguments": tc["arguments"],
                 },
             }
-        yield {"type": "done", "finish_reason": finish_reason}
+        yield {"type": "done", "finish_reason": finish}
 
     # ------------------------------------------------------------------
     # Non-streaming chat
@@ -382,6 +401,7 @@ class LLMService:
         }
         if tools:
             payload["tools"] = tools
+            payload["tool_choice"] = "auto"
         if self._is_ollama:
             payload["options"] = {
                 "num_gpu": self._config.num_gpu,

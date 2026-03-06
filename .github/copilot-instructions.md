@@ -6,7 +6,7 @@
 
 - **Backend**: Python 3.14, FastAPI, async-first, SQLite via SQLModel, plugin-based
 - **Frontend**: Electron + Vue 3 (Composition API) + TypeScript, electron-vite
-- **LLM**: LM Studio / Ollama (OpenAI-compatible API)
+- **LLM**: LM Studio (v1 REST API + OpenAI-compatible) / Ollama
 - **STT**: faster-whisper (CTranslate2)
 - **TTS**: Piper TTS (primary), XTTS v2 (optional)
 - **Communication**: WebSocket (streaming) + REST API
@@ -17,7 +17,7 @@
 ```
 backend/          # Python — pyproject.toml, .venv/
   core/           # App factory, config, context, event bus, plugin system
-  services/       # LLM, STT, TTS, audio services
+  services/       # LLM (lmstudio_service.py), STT, TTS, audio services
   api/routes/     # FastAPI endpoints
   api/middleware/  # Auth, error handling
   plugins/        # Each plugin: plugin.py + tools.py + business logic

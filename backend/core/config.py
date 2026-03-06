@@ -68,6 +68,7 @@ class ServerConfig(BaseSettings):
         default_factory=lambda: [
             "http://localhost:5173",
             "http://localhost:3000",
+            "null",
         ]
     )
 
@@ -103,11 +104,13 @@ class LLMConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="OMNIA_LLM__")
 
-    provider: str = "openai-compatible"
-    base_url: str = "http://localhost:11434"
+    provider: str = "lmstudio"
+    base_url: str = "http://localhost:1234"
     model: str = DEFAULT_MODEL
     temperature: float = 0.7
-    max_tokens: int = 4096
+    max_tokens: int = 8192
+    api_token: str = ""
+    """LM Studio API authentication token (optional)."""
     timeout: float = 120.0
     """HTTP read timeout in seconds for streaming LLM responses."""
     connect_timeout: float = 10.0
@@ -186,9 +189,6 @@ class PluginsConfig(BaseSettings):
     enabled: list[str] = Field(
         default_factory=lambda: [
             "system_info",
-            "pc_automation",
-            "web_search",
-            "calendar",
         ]
     )
 

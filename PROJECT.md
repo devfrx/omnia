@@ -437,7 +437,7 @@ Ogni conversazione è salvata come file JSON atomico, sincronizzato automaticame
 
 ---
 
-### Fase 6 — Plugin: Domotica / IoT
+<!-- ### Fase 6 — Plugin: Domotica / IoT
 
 #### 6.1 — Home Assistant Client
 - [ ] `HomeAssistantService`: singleton con persistent `httpx.AsyncClient` (connection pool, non nuova connessione per ogni tool call)
@@ -475,7 +475,7 @@ Ogni conversazione è salvata come file JSON atomico, sincronizzato automaticame
 - [ ] Test command validation: whitelist, sanitization, device access control
 - [ ] Test device registry: sync, filtro, dispositivi protetti
 
----
+--- -->
 
 ### Fase 7 — Plugin: Ricerca Web + Calendario
 

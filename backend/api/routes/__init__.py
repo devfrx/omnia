@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
-from backend.api.routes import chat, config, plugins
+from backend.api.routes import chat, config, models, plugins
 
 router = APIRouter(prefix="/api")
 
 router.include_router(chat.router)
 router.include_router(config.router)
+router.include_router(models.router)
 router.include_router(plugins.router)
 
 
 @router.get("/health")
-async def health() -> dict[str, str]:
+async def health(request: Request) -> dict[str, str]:
     """Liveness / readiness probe."""
-    return {"status": "ok", "version": "0.1.0"}
+    healthy = getattr(request.app.state, "healthy", True)
+    return {
+        "status": "ok" if healthy else "degraded",
+        "version": "0.1.0",
+    }
 

@@ -8,10 +8,11 @@ to avoid leaking private data (hostnames, user paths, env vars).
 from __future__ import annotations
 
 import asyncio
+import os
 import platform
 import time
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
@@ -23,6 +24,9 @@ from backend.core.plugin_models import (
     ToolDefinition,
     ToolResult,
 )
+
+if TYPE_CHECKING:
+    from backend.core.context import AppContext
 
 # -- Lazy import of psutil ------------------------------------------------
 
@@ -71,6 +75,21 @@ class SystemInfoPlugin(BasePlugin):
     plugin_dependencies: list[str] = []
     plugin_priority: int = 50
 
+    # -- Lifecycle ---------------------------------------------------------
+
+    async def initialize(self, ctx: AppContext) -> None:
+        """Initialize the plugin and warn if psutil is missing.
+
+        Args:
+            ctx: The shared application context.
+        """
+        await super().initialize(ctx)
+        if not _PSUTIL_AVAILABLE:
+            logger.warning(
+                "system_info plugin: psutil is not installed"
+                " — tools will be unavailable"
+            )
+
     # -- Tools -------------------------------------------------------------
 
     def get_tools(self) -> list[ToolDefinition]:
@@ -103,7 +122,20 @@ class SystemInfoPlugin(BasePlugin):
                     "properties": {
                         "filter_name": {
                             "type": "string",
-                            "description": "Substring to filter process names (case-insensitive).",
+                            "description": (
+                                "Substring to filter process names"
+                                " (case-insensitive)."
+                            ),
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": (
+                                "Maximum number of processes to"
+                                " return. Defaults to 50."
+                            ),
+                            "default": 50,
+                            "minimum": 1,
+                            "maximum": 500,
                         },
                     },
                 },
@@ -138,7 +170,10 @@ class SystemInfoPlugin(BasePlugin):
             data = await asyncio.to_thread(self._collect_system_info)
         elif tool_name == "get_process_list":
             filter_name: str | None = args.get("filter_name")
-            data = await asyncio.to_thread(self._collect_process_list, filter_name)
+            max_results: int = args.get("max_results", 50)
+            data = await asyncio.to_thread(
+                self._collect_process_list, filter_name, max_results,
+            )
         else:
             return ToolResult.error(f"Unknown tool: {tool_name}")
 
@@ -163,14 +198,14 @@ class SystemInfoPlugin(BasePlugin):
         return []
 
     async def get_connection_status(self) -> ConnectionStatus:
-        """Return CONNECTED if psutil is available, DEGRADED otherwise.
+        """Return CONNECTED if psutil is available, DISCONNECTED otherwise.
 
         Returns:
-            ``ConnectionStatus.CONNECTED`` or ``ConnectionStatus.DEGRADED``.
+            ``ConnectionStatus.CONNECTED`` or ``ConnectionStatus.DISCONNECTED``.
         """
         if _PSUTIL_AVAILABLE:
             return ConnectionStatus.CONNECTED
-        return ConnectionStatus.DEGRADED
+        return ConnectionStatus.DISCONNECTED
 
     # -- Private helpers ---------------------------------------------------
 
@@ -180,10 +215,16 @@ class SystemInfoPlugin(BasePlugin):
         Returns:
             A dict containing only the fields in ``_SYSTEM_INFO_FIELDS``.
         """
-        assert psutil is not None  # guarded by execute_tool
+        if psutil is None:
+            raise RuntimeError("psutil is required but not installed")
 
         vm = psutil.virtual_memory()
-        disk = psutil.disk_usage("/")
+        root = (
+            os.environ.get("SystemDrive", "C:") + "\\"
+            if platform.system() == "Windows"
+            else "/"
+        )
+        disk = psutil.disk_usage(root)
         boot_ts = datetime.fromtimestamp(psutil.boot_time(), tz=timezone.utc).isoformat()
 
         data: dict[str, Any] = {
@@ -208,17 +249,20 @@ class SystemInfoPlugin(BasePlugin):
     def _collect_process_list(
         self,
         filter_name: str | None = None,
+        max_results: int = 50,
     ) -> dict[str, Any]:
         """Gather a filtered process list with whitelisted fields only.
 
         Args:
             filter_name: Optional case-insensitive substring to match
                 against process names.
+            max_results: Maximum number of processes to return.
 
         Returns:
             A dict with ``"processes"`` key containing the list.
         """
-        assert psutil is not None  # guarded by execute_tool
+        if psutil is None:
+            raise RuntimeError("psutil is required but not installed")
 
         processes: list[dict[str, Any]] = []
         for proc in psutil.process_iter(["pid", "name", "cpu_percent", "memory_percent", "status"]):
@@ -236,7 +280,12 @@ class SystemInfoPlugin(BasePlugin):
             entry = {k: info[k] for k in _PROCESS_FIELDS if k in info}
             processes.append(entry)
 
-        return {"processes": processes}
+        # Sort by memory usage descending and truncate
+        processes.sort(
+            key=lambda p: p.get("memory_percent", 0.0),
+            reverse=True,
+        )
+        return {"processes": processes[:max_results]}
 
 
 # -- Register in static registry ------------------------------------------

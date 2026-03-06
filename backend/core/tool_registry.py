@@ -14,6 +14,12 @@ from typing import Any
 
 from loguru import logger
 
+try:
+    import jsonschema as _jsonschema
+except ImportError:
+    _jsonschema = None  # type: ignore[assignment]
+    logger.warning("jsonschema not installed — tool argument validation disabled")
+
 from backend.core.event_bus import EventBus, OmniaEvent
 from backend.core.plugin_manager import PluginManager
 from backend.core.plugin_models import (
@@ -206,6 +212,7 @@ class ToolRegistry:
                                 tool_def.requires_confirmation
                             ),
                             risk_level=tool_def.risk_level,
+                            sanitise_output=tool_def.sanitise_output,
                         )
 
                     # --- namespacing ---
@@ -361,11 +368,6 @@ class ToolRegistry:
         )
 
         # --- validate args against JSON Schema ---
-        try:
-            import jsonschema as _jsonschema
-        except ImportError:
-            _jsonschema = None  # type: ignore[assignment]
-
         if _jsonschema is not None:
             try:
                 _jsonschema.validate(instance=args, schema=tool_def.parameters)
@@ -434,16 +436,21 @@ class ToolRegistry:
         elapsed_ms = (time.perf_counter() - start) * 1000
         result.execution_time_ms = elapsed_ms
 
-        # --- sanitise & truncate ---
+        # --- sanitise (conditional) ---
+        if tool_def.sanitise_output:
+            if isinstance(result.content, str):
+                result.content = _sanitise_content(result.content)
+            elif isinstance(result.content, dict):
+                result.content = _sanitise_dict(result.content)
+
+        # --- truncate (always active) ---
         if isinstance(result.content, str):
-            result.content = _sanitise_content(result.content)
             if len(result.content) > MAX_TOOL_RESULT_LENGTH:
                 result.content = (
-                    result.content[:MAX_TOOL_RESULT_LENGTH]
+                    result.content[:MAX_TOOL_RESULT_LENGTH - 30]
+                    + "\n...[output truncated]"
                 )
                 result.truncated = True
-        elif isinstance(result.content, dict):
-            result.content = _sanitise_dict(result.content)
 
         # --- emit success / failure ---
         if result.success:

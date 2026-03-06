@@ -6,8 +6,10 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, Request
+from loguru import logger
 
-from backend.core.config import KNOWN_MODELS
+from backend.api.routes.models import serialise_model
+from backend.core.config import KNOWN_MODELS, DEFAULT_MODEL
 from backend.core.context import AppContext
 
 router = APIRouter()
@@ -19,34 +21,80 @@ def _ctx(request: Request) -> AppContext:
 
 @router.get("/config/models")
 async def list_models(request: Request) -> list[dict[str, Any]]:
-    """Fetch locally available models from Ollama and return enriched metadata."""
+    """Fetch locally available models and return enriched metadata.
+
+    Uses the LM Studio v1 API as primary source, falling back to
+    OpenAI-compatible ``/v1/models`` or Ollama ``/api/tags``.
+    """
     ctx = _ctx(request)
     active_model = ctx.config.llm.model
-    ollama_base = ctx.config.llm.base_url  # e.g. http://localhost:11434
+
+    # -- Primary: LM Studio v1 API ------------------------------------------
+    mgr = ctx.lmstudio_manager
+    if mgr is not None:
+        try:
+            data = await mgr.list_models()
+            return _models_from_v1(data, active_model)
+        except Exception:
+            logger.debug("v1 API unavailable, falling back to legacy")
+
+    # -- Fallback: legacy OpenAI-compat / Ollama ----------------------------
+    return await _models_legacy(ctx)
+
+
+def _models_from_v1(
+    data: dict, active_model: str,
+) -> list[dict[str, Any]]:
+    """Map LM Studio v1 response to the frontend-expected shape."""
+    return [
+        serialise_model(m, active_model)
+        for m in data.get("models", [])
+    ]
+
+
+async def _models_legacy(ctx: AppContext) -> list[dict[str, Any]]:
+    """Fetch models via OpenAI-compatible or Ollama endpoint."""
+    active_model = ctx.config.llm.model
+    base_url = ctx.config.llm.base_url
+    is_ollama = ":11434" in base_url
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{ollama_base}/api/tags")
-            resp.raise_for_status()
-            data = resp.json()
-    except (httpx.HTTPError, Exception):
+            if is_ollama:
+                resp = await client.get(f"{base_url}/api/tags")
+                resp.raise_for_status()
+                raw_models = resp.json().get("models", [])
+            else:
+                resp = await client.get(f"{base_url}/v1/models")
+                resp.raise_for_status()
+                raw_models = resp.json().get("data", [])
+    except Exception:
+        logger.debug("Failed to fetch models from {}", base_url)
         return []
 
     models: list[dict[str, Any]] = []
-    for m in data.get("models", []):
-        name = m.get("name", "")
-        caps = KNOWN_MODELS.get(name, {"vision": False, "thinking": False})
+    for m in raw_models:
+        name = m.get("id", "") or m.get("name", "")
+        known = KNOWN_MODELS.get(name, {})
         models.append({
             "name": name,
+            "display_name": name,
             "size": m.get("size", 0),
-            "modified_at": m.get("modified_at", ""),
+            "modified_at": m.get("modified_at", m.get("created", "")),
             "is_active": name == active_model,
+            "loaded": True,
+            "loaded_instances": [],
+            "architecture": None,
+            "quantization": None,
+            "params_string": None,
+            "format": None,
+            "max_context_length": 0,
             "capabilities": {
-                "vision": caps.get("vision", False),
-                "thinking": caps.get("thinking", False),
+                "vision": known.get("vision", False),
+                "thinking": known.get("thinking", False),
+                "trained_for_tool_use": False,
             },
         })
-
     return models
 
 
@@ -103,9 +151,26 @@ async def update_config(request: Request) -> dict[str, Any]:
         if "model" in llm_updates:
             new_model = str(llm_updates["model"])
             object.__setattr__(cfg.llm, "model", new_model)
-            caps = KNOWN_MODELS.get(new_model, {"vision": False, "thinking": False})
-            object.__setattr__(cfg.llm, "supports_vision", caps.get("vision", False))
-            object.__setattr__(cfg.llm, "supports_thinking", caps.get("thinking", False))
+            caps = KNOWN_MODELS.get(
+                new_model, {"vision": False, "thinking": False},
+            )
+            object.__setattr__(
+                cfg.llm, "supports_vision", caps.get("vision", False),
+            )
+            object.__setattr__(
+                cfg.llm, "supports_thinking", caps.get("thinking", False),
+            )
+            # Trigger model load on LM Studio when switching models.
+            mgr = ctx.lmstudio_manager
+            if mgr is not None:
+                try:
+                    await mgr.load_model(new_model)
+                    logger.info("Loaded model '{}' on LM Studio", new_model)
+                except Exception as exc:
+                    logger.warning(
+                        "Could not load '{}' on LM Studio: {}",
+                        new_model, exc,
+                    )
         if "temperature" in llm_updates:
             object.__setattr__(cfg.llm, "temperature", float(llm_updates["temperature"]))
         if "max_tokens" in llm_updates:

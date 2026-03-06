@@ -1,0 +1,5501 @@
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER] Success! HTTP server listening on port 1234
+2026-03-06 09:53:18  [INFO]
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER] Supported endpoints:
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]   LM Studio API
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  GET  http://localhost:1234/api/v1/models
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  POST http://localhost:1234/api/v1/chat
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  POST http://localhost:1234/api/v1/models/load
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  POST http://localhost:1234/api/v1/models/download
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  GET http://localhost:1234/api/v1/models/download/status:job_id
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]   OpenAI-compatible
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  GET  http://localhost:1234/v1/models
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  POST http://localhost:1234/v1/responses
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  POST http://localhost:1234/v1/chat/completions
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  POST http://localhost:1234/v1/completions
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER]    ->  POST http://localhost:1234/v1/embeddings
+2026-03-06 09:53:18  [INFO]
+2026-03-06 09:53:18  [INFO]
+ [LM STUDIO SERVER] Logs are saved into C:\Users\zagor\.lmstudio\server-logs
+2026-03-06 09:53:18  [INFO]
+ Server started.
+2026-03-06 09:53:18  [INFO]
+ Just-in-time model loading active.
+2026-03-06 09:54:14 [DEBUG]
+ [LM Studio] GPU Configuration:
+  Strategy: evenly
+  Priority: []
+  Disabled GPUs: []
+  Limit weight offload to dedicated GPU Memory: ON
+  Offload KV Cache to GPU: ON
+2026-03-06 09:54:14 [DEBUG]
+ [LM Studio] Live GPU memory info (source 'LMS Core'):
+  GPU 0: NVIDIA GeForce RTX 4060 Laptop GPU (Used: 1.43 GB, Total: 8.59 GB, Free: 7.16 GB)
+2026-03-06 09:54:14 [DEBUG]
+ [LM Studio] Model load size estimate with raw num offload layers 'max' and context length '20757':
+  Model: 8.53 GB
+  Context: 3.38 GB
+  Total: 11.91 GB
+2026-03-06 09:54:14 [DEBUG]
+ [LM Studio] Not using full context length for VRAM overflow calculations due to single GPU setup. Instead, using '8192' as context length for the calculation. Original context length: '20757'.
+[LM Studio] GPU offload layers for model 'qwen/qwen3.5-9b' was adjusted from 'max' to '19' to respect the strict GPU VRAM cap.
+[LM Studio] Model load size estimate with adjusted num offload layers '19' and context length '8192':
+  Model: 5.06 GB
+  Context: 949.21 MB
+  Total: 6.01 GB
+[LM Studio] Resolved GPU config options:
+  Num Offload Layers: 19
+  Num CPU Expert Layers: 0
+  Main GPU: 0
+  Tensor Split: [0]
+  Disabled GPUs: []
+ggml_cuda_init: found 1 CUDA devices:
+  Device 0: NVIDIA GeForce RTX 4060 Laptop GPU, compute capability 8.9, VMM: yes
+2026-03-06 09:54:14 [DEBUG]
+ CUDA : ARCHS = 750,800,890,900,1000,1200 | USE_GRAPHS = 1 | PEER_MAX_BATCH_SIZE = 128 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 |
+2026-03-06 09:54:14 [DEBUG]
+ llama_model_load_from_file_impl: using device CUDA0 (NVIDIA GeForce RTX 4060 Laptop GPU) (0000:01:00.0) - 7097 MiB free
+llama_model_loader: loaded meta data with 34 key-value pairs and 427 tensors from C:\Users\zagor\.lmstudio\models\lmstudio-community\Qwen3.5-9B-GGUF\Qwen3.5-9B-Q6_K.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Qwen_Qwen3.5 9B
+llama_model_loader: - kv   3:                           general.basename str              = Qwen_Qwen3.5
+llama_model_loader: - kv   4:                         general.size_label str              = 9B
+llama_model_loader: - kv   5:                         qwen35.block_count u32              = 32
+llama_model_loader: - kv   6:                      qwen35.context_length u32              = 262144
+llama_model_loader: - kv   7:                    qwen35.embedding_length u32              = 4096
+llama_model_loader: - kv   8:                 qwen35.feed_forward_length u32              = 12288
+llama_model_loader: - kv   9:                qwen35.attention.head_count u32              = 16
+llama_model_loader: - kv  10:             qwen35.attention.head_count_kv u32              = 4
+llama_model_loader: - kv  11:             qwen35.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  12:                      qwen35.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  13:    qwen35.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  14:                qwen35.attention.key_length u32              = 256
+llama_model_loader: - kv  15:              qwen35.attention.value_length u32              = 256
+llama_model_loader: - kv  16:                     qwen35.ssm.conv_kernel u32              = 4
+llama_model_loader: - kv  17:                      qwen35.ssm.state_size u32              = 128
+llama_model_loader: - kv  18:                     qwen35.ssm.group_count u32              = 16
+llama_model_loader: - kv  19:                  qwen35.ssm.time_step_rank u32              = 32
+llama_model_loader: - kv  20:                      qwen35.ssm.inner_size u32              = 4096
+llama_model_loader: - kv  21:             qwen35.full_attention_interval u32              = 4
+llama_model_loader: - kv  22:                qwen35.rope.dimension_count u32              = 64
+llama_model_loader: - kv  23:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  24:                         tokenizer.ggml.pre str              = qwen35
+2026-03-06 09:54:14 [DEBUG]
+ llama_model_loader: - kv  25:                      tokenizer.ggml.tokens arr[str,248320]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+2026-03-06 09:54:14 [DEBUG]
+ llama_model_loader: - kv  26:                  tokenizer.ggml.token_type arr[i32,248320]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+2026-03-06 09:54:15 [DEBUG]
+ llama_model_loader: - kv  27:                      tokenizer.ggml.merges arr[str,247587]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+llama_model_loader: - kv  28:                tokenizer.ggml.eos_token_id u32              = 248046
+llama_model_loader: - kv  29:            tokenizer.ggml.padding_token_id u32              = 248044
+llama_model_loader: - kv  30:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  31:                    tokenizer.chat_template str              = {%- set image_count = namespace(value...
+llama_model_loader: - kv  32:               general.quantization_version u32              = 2
+llama_model_loader: - kv  33:                          general.file_type u32              = 18
+llama_model_loader: - type  f32:  177 tensors
+llama_model_loader: - type q6_K:  250 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q6_K
+print_info: file size   = 6.84 GiB (6.57 BPW)
+2026-03-06 09:54:15 [DEBUG]
+ llama_model_load: error loading model: error loading model architecture: unknown model architecture: 'qwen35'
+llama_model_load_from_file_impl: failed to load model
+common_init_from_params: failed to load model 'C:\Users\zagor\.lmstudio\models\lmstudio-community\Qwen3.5-9B-GGUF\Qwen3.5-9B-Q6_K.gguf'
+lmstudio-llama-cpp: failed to load model. Error: error loading model: error loading model architecture: unknown model architecture: 'qwen35'
+2026-03-06 09:54:40 [DEBUG]
+ [LM Studio] GPU Configuration:
+  Strategy: evenly
+  Priority: []
+  Disabled GPUs: []
+  Limit weight offload to dedicated GPU Memory: ON
+  Offload KV Cache to GPU: ON
+2026-03-06 09:54:40 [DEBUG]
+ [LM Studio] Live GPU memory info (source 'LMS Core'):
+  GPU 0: NVIDIA GeForce RTX 4060 Laptop GPU (Used: 1.71 GB, Total: 8.59 GB, Free: 6.87 GB)
+2026-03-06 09:54:40 [DEBUG]
+ [LM Studio] Model load size estimate with raw num offload layers 'max' and context length '17082':
+  Model: 9.39 GB
+  Context: 4.26 GB
+  Total: 13.66 GB
+2026-03-06 09:54:40 [DEBUG]
+ [LM Studio] Not using full context length for VRAM overflow calculations due to single GPU setup. Instead, using '8192' as context length for the calculation. Original context length: '17082'.
+2026-03-06 09:54:40 [DEBUG]
+ [LM Studio] GPU offload layers for model 'mistralai/ministral-3-14b-reasoning' was adjusted from 'max' to '19' to respect the strict GPU VRAM cap.
+[LM Studio] Model load size estimate with adjusted num offload layers '19' and context length '8192':
+  Model: 4.46 GB
+  Context: 1.09 GB
+  Total: 5.55 GB
+[LM Studio] Resolved GPU config options:
+  Num Offload Layers: 19
+  Num CPU Expert Layers: 0
+  Main GPU: 0
+  Tensor Split: [0]
+  Disabled GPUs: []
+LlamaV4::load called with model path: C:\Users\zagor\.lmstudio\models\lmstudio-community\Ministral-3-14B-Reasoning-2512-GGUF\Ministral-3-14B-Reasoning-2512-Q4_K_M.gguf
+LlamaV4::load config: n_parallel=4 n_ctx=17082 kv_unified=true
+ggml_cuda_init: found 1 CUDA devices:
+  Device 0: NVIDIA GeForce RTX 4060 Laptop GPU, compute capability 8.9, VMM: yes
+2026-03-06 09:54:40 [DEBUG]
+ srv    load_model: loading model 'C:\Users\zagor\.lmstudio\models\lmstudio-community\Ministral-3-14B-Reasoning-2512-GGUF\Ministral-3-14B-Reasoning-2512-Q4_K_M.gguf'
+llama_model_load_from_file_impl: using device CUDA0 (NVIDIA GeForce RTX 4060 Laptop GPU) (0000:01:00.0) - 7097 MiB free
+2026-03-06 09:54:41 [DEBUG]
+ llama_model_loader: loaded meta data with 42 key-value pairs and 363 tensors from C:\Users\zagor\.lmstudio\models\lmstudio-community\Ministral-3-14B-Reasoning-2512-GGUF\Ministral-3-14B-Reasoning-2512-Q4_K_M.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = mistral3
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = mistralai_Ministral 3 14B Reasoning 2512
+llama_model_loader: - kv   3:                            general.version str              = 2512
+llama_model_loader: - kv   4:                           general.finetune str              = Reasoning
+llama_model_loader: - kv   5:                           general.basename str              = mistralai_Ministral-3
+llama_model_loader: - kv   6:                         general.size_label str              = 14B
+llama_model_loader: - kv   7:                       mistral3.block_count u32              = 40
+llama_model_loader: - kv   8:                    mistral3.context_length u32              = 262144
+llama_model_loader: - kv   9:                  mistral3.embedding_length u32              = 5120
+llama_model_loader: - kv  10:               mistral3.feed_forward_length u32              = 16384
+llama_model_loader: - kv  11:              mistral3.attention.head_count u32              = 32
+llama_model_loader: - kv  12:           mistral3.attention.head_count_kv u32              = 8
+llama_model_loader: - kv  13:  mistral3.attention.layer_norm_rms_epsilon f32              = 0.000010
+llama_model_loader: - kv  14:              mistral3.attention.key_length u32              = 128
+llama_model_loader: - kv  15:            mistral3.attention.value_length u32              = 128
+llama_model_loader: - kv  16:                        mistral3.vocab_size u32              = 131072
+llama_model_loader: - kv  17:              mistral3.rope.dimension_count u32              = 128
+llama_model_loader: - kv  18:                 mistral3.rope.scaling.type str              = yarn
+llama_model_loader: - kv  19:               mistral3.rope.scaling.factor f32              = 16.000000
+llama_model_loader: - kv  20:       mistral3.rope.scaling.yarn_beta_fast f32              = 32.000000
+llama_model_loader: - kv  21:       mistral3.rope.scaling.yarn_beta_slow f32              = 1.000000
+llama_model_loader: - kv  22:  mistral3.rope.scaling.yarn_log_multiplier f32              = 1.000000
+llama_model_loader: - kv  23: mistral3.rope.scaling.original_context_length u32              = 16384
+llama_model_loader: - kv  24:                    mistral3.rope.freq_base f32              = 1000000000.000000
+llama_model_loader: - kv  25:       mistral3.attention.temperature_scale f32              = 0.100000
+llama_model_loader: - kv  26:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  27:                         tokenizer.ggml.pre str              = tekken
+2026-03-06 09:54:41 [DEBUG]
+ llama_model_loader: - kv  28:                      tokenizer.ggml.tokens arr[str,131072]  = ["<unk>", "<s>", "</s>", "[INST]", "[...
+2026-03-06 09:54:41 [DEBUG]
+ llama_model_loader: - kv  29:                  tokenizer.ggml.token_type arr[i32,131072]  = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, ...
+2026-03-06 09:54:41 [DEBUG]
+ llama_model_loader: - kv  30:                      tokenizer.ggml.merges arr[str,269443]  = ["Ġ Ġ", "Ġ t", "e r", "i n", "Ġ �...
+llama_model_loader: - kv  31:                tokenizer.ggml.bos_token_id u32              = 1
+llama_model_loader: - kv  32:                tokenizer.ggml.eos_token_id u32              = 2
+llama_model_loader: - kv  33:            tokenizer.ggml.unknown_token_id u32              = 0
+llama_model_loader: - kv  34:            tokenizer.ggml.padding_token_id u32              = 11
+llama_model_loader: - kv  35:               tokenizer.ggml.add_bos_token bool             = true
+llama_model_loader: - kv  36:               tokenizer.ggml.add_sep_token bool             = false
+llama_model_loader: - kv  37:               tokenizer.ggml.add_eos_token bool             = false
+llama_model_loader: - kv  38:                    tokenizer.chat_template str              = {#- Default system message if no syst...
+llama_model_loader: - kv  39:            tokenizer.ggml.add_space_prefix bool             = false
+llama_model_loader: - kv  40:               general.quantization_version u32              = 2
+llama_model_loader: - kv  41:                          general.file_type u32              = 15
+llama_model_loader: - type  f32:   81 tensors
+llama_model_loader: - type q4_K:  241 tensors
+llama_model_loader: - type q6_K:   41 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 7.67 GiB (4.88 BPW)
+2026-03-06 09:54:41 [DEBUG]
+ load: 0 unused tokens
+2026-03-06 09:54:41 [DEBUG]
+ load: printing all EOG tokens:
+load:   - 2 ('</s>')
+2026-03-06 09:54:41 [DEBUG]
+ load: special tokens cache size = 1000
+2026-03-06 09:54:41 [DEBUG]
+ load: token to piece cache size = 0.8498 MB
+print_info: arch                  = mistral3
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 262144
+print_info: n_embd                = 5120
+print_info: n_embd_inp            = 5120
+print_info: n_layer               = 40
+print_info: n_head                = 32
+print_info: n_head_kv             = 8
+print_info: n_rot                 = 128
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: n_embd_head_k         = 128
+print_info: n_embd_head_v         = 128
+print_info: n_gqa                 = 4
+print_info: n_embd_k_gqa          = 1024
+print_info: n_embd_v_gqa          = 1024
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-05
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: n_ff                  = 16384
+print_info: n_expert              = 0
+print_info: n_expert_used         = 0
+print_info: n_expert_groups       = 0
+print_info: n_group_used          = 0
+print_info: causal attn           = 1
+print_info: pooling type          = 0
+print_info: rope type             = 0
+print_info: rope scaling          = yarn
+print_info: freq_base_train       = 1000000000.0
+print_info: freq_scale_train      = 0.0625
+print_info: n_ctx_orig_yarn       = 16384
+print_info: rope_yarn_log_mul     = 1.0000
+print_info: rope_finetuned        = unknown
+print_info: model type            = 14B
+print_info: model params          = 13.51 B
+print_info: general.name          = mistralai_Ministral 3 14B Reasoning 2512
+print_info: vocab type            = BPE
+print_info: n_vocab               = 131072
+print_info: n_merges              = 269443
+print_info: BOS token             = 1 '<s>'
+print_info: EOS token             = 2 '</s>'
+print_info: UNK token             = 0 '<unk>'
+print_info: PAD token             = 11 '<pad>'
+print_info: LF token              = 1010 'Ċ'
+print_info: EOG token             = 2 '</s>'
+print_info: max token length      = 150
+load_tensors: loading model tensors, this can take a while... (mmap = true, direct_io = false)
+2026-03-06 09:54:43 [DEBUG]
+ load_tensors: offloading output layer to GPU
+load_tensors: offloading 18 repeating layers to GPU
+load_tensors: offloaded 19/41 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =  4168.75 MiB
+load_tensors:        CUDA0 model buffer size =  3681.11 MiB
+2026-03-06 09:55:02 [DEBUG]
+ common_init_result: added </s> logit bias = -inf
+llama_context: constructing llama_context
+llama_context: setting new yarn_attn_factor = 1.0000 (mscale == 1.0, mscale_all_dim = 1.0)
+llama_context: n_seq_max     = 4
+llama_context: n_ctx         = 17152
+llama_context: n_ctx_seq     = 17152
+llama_context: n_batch       = 512
+llama_context: n_ubatch      = 512
+llama_context: causal_attn   = 1
+llama_context: flash_attn    = enabled
+llama_context: kv_unified    = true
+llama_context: freq_base     = 1000000000.0
+llama_context: freq_scale    = 0.0625
+llama_context: n_ctx_seq (17152) < n_ctx_train (262144) -- the full capacity of the model will not be utilized
+llama_context:  CUDA_Host  output buffer size =     2.00 MiB
+llama_kv_cache:        CPU KV buffer size =  1474.00 MiB
+2026-03-06 09:55:03 [DEBUG]
+ llama_kv_cache:      CUDA0 KV buffer size =  1206.00 MiB
+2026-03-06 09:55:03 [DEBUG]
+ llama_kv_cache: size = 2680.00 MiB ( 17152 cells,  40 layers,  4/1 seqs), K (f16): 1340.00 MiB, V (f16): 1340.00 MiB
+sched_reserve: reserving ...
+2026-03-06 09:55:03 [DEBUG]
+ sched_reserve:      CUDA0 compute buffer size =   266.00 MiB
+sched_reserve:  CUDA_Host compute buffer size =    53.52 MiB
+sched_reserve: graph nodes  = 1287
+sched_reserve: graph splits = 244 (with bs=512), 2 (with bs=1)
+sched_reserve: reserve took 60.45 ms, sched copies = 1
+2026-03-06 09:55:03 [DEBUG]
+ common_init_from_params: warming up the model with an empty run - please wait ... (--no-warmup to disable)
+2026-03-06 09:55:04 [DEBUG]
+ clip_model_loader: model name:   mistralai_Ministral 3 14B Reasoning 2512
+clip_model_loader: description:  
+clip_model_loader: GGUF version: 3
+clip_model_loader: alignment:    32
+clip_model_loader: n_tensors:    223
+clip_model_loader: n_kv:         23
+
+clip_model_loader: has vision encoder
+clip_ctx: CLIP using CUDA0 backend
+load_hparams: projector:          pixtral
+load_hparams: n_embd:             1024
+load_hparams: n_head:             16
+load_hparams: n_ff:               4096
+load_hparams: n_layer:            24
+load_hparams: ffn_op:             silu
+load_hparams: projection_dim:     5120
+
+--- vision hparams ---
+load_hparams: image_size:         1540
+load_hparams: patch_size:         14
+load_hparams: has_llava_proj:     0
+load_hparams: minicpmv_version:   0
+load_hparams: n_merge:            2
+load_hparams: n_wa_pattern: 0
+load_hparams: image_min_pixels:   6272
+load_hparams: image_max_pixels:   802816
+
+load_hparams: model size:         837.36 MiB
+load_hparams: metadata size:      0.08 MiB
+2026-03-06 09:55:07 [DEBUG]
+ warmup: warmup with image size = 448 x 448
+2026-03-06 09:55:07 [DEBUG]
+ alloc_compute_meta:      CUDA0 compute buffer size =    62.62 MiB
+alloc_compute_meta:        CPU compute buffer size =     2.30 MiB
+alloc_compute_meta: graph splits = 1, nodes = 845
+2026-03-06 09:55:07 [DEBUG]
+ warmup: flash attention is enabled
+srv    load_model: loaded multimodal model, 'C:/Users/zagor/.lmstudio/models/lmstudio-community/Ministral-3-14B-Reasoning-2512-GGUF/mmproj-Ministral-3-14B-Reasoning-2512-F16.gguf'
+srv    load_model: ctx_shift is not supported by multimodal, it will be disabled
+srv    load_model: initializing slots, n_slots = 4
+2026-03-06 09:55:08 [DEBUG]
+ no implementations specified for speculative decoding
+slot   load_model: id  0 | task -1 | speculative decoding context not initialized
+slot   load_model: id  0 | task -1 | new slot, n_ctx = 17152
+2026-03-06 09:55:08 [DEBUG]
+ no implementations specified for speculative decoding
+slot   load_model: id  1 | task -1 | speculative decoding context not initialized
+slot   load_model: id  1 | task -1 | new slot, n_ctx = 17152
+no implementations specified for speculative decoding
+slot   load_model: id  2 | task -1 | speculative decoding context not initialized
+slot   load_model: id  2 | task -1 | new slot, n_ctx = 17152
+no implementations specified for speculative decoding
+slot   load_model: id  3 | task -1 | speculative decoding context not initialized
+slot   load_model: id  3 | task -1 | new slot, n_ctx = 17152
+srv    load_model: prompt cache is enabled, size limit: 8192 MiB
+srv    load_model: use `--cache-ram 0` to disable the prompt cache
+srv    load_model: for more info see https://github.com/ggml-org/llama.cpp/pull/16391
+2026-03-06 09:55:08 [DEBUG]
+ init: chat template, example_format: 'You are a helpful assistantHelloHi thereHow are you?'
+srv          init: init: chat template, thinking = 0
+2026-03-06 09:55:08 [DEBUG]
+ srv  update_slots: all slots are idle
+2026-03-06 09:55:57 [DEBUG]
+ Received request: GET to /api/tags
+2026-03-06 09:55:57 [ERROR]
+ Unexpected endpoint or method. (GET /api/tags). Returning 200 anyway
+2026-03-06 09:56:15 [DEBUG]
+ Received request: POST to /v1/chat/completions with body  {
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "messages": [
+    {
+      "role": "system",
+      "content": "# OMNIA — System Prompt\n\nTu sei **OMNIA** (Orchest... <Truncated in logs> ...ol: integra i dati nella risposta in modo naturale"
+    },
+    {
+      "role": "user",
+      "content": "get_system_info"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 30311,
+  "stream": true
+}
+2026-03-06 09:56:15  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Running chat completion on conversation with 2 messages.
+2026-03-06 09:56:15  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Streaming response...
+2026-03-06 09:56:16 [DEBUG]
+ LlamaV4::predict slot selection: session_id=<empty> server-selected (LCP/LRU)
+2026-03-06 09:56:16 [DEBUG]
+ slot get_availabl: id  3 | task -1 | selected slot by LRU, t_last = -1
+2026-03-06 09:56:16 [DEBUG]
+ slot launch_slot_: id  3 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+slot launch_slot_: id  3 | task 0 | processing task, is_child = 0
+slot update_slots: id  3 | task 0 | new prompt, n_ctx_slot = 17152, n_keep = 764, task.n_tokens = 764
+slot update_slots: id  3 | task 0 | cache reuse is not supported - ignoring n_cache_reuse = 256
+slot update_slots: id  3 | task 0 | n_tokens = 0, memory_seq_rm [0, end)
+2026-03-06 09:56:16 [DEBUG]
+ slot update_slots: id  3 | task 0 | prompt processing progress, n_tokens = 512, batch.n_tokens = 512, progress = 0.670157
+2026-03-06 09:56:17  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 0.0%
+2026-03-06 09:56:19 [DEBUG]
+ slot update_slots: id  3 | task 0 | n_tokens = 512, memory_seq_rm [512, end)
+2026-03-06 09:56:19 [DEBUG]
+ slot init_sampler: id  3 | task 0 | init sampler, took 2.76 ms, tokens: text = 764, total = 764
+slot update_slots: id  3 | task 0 | prompt processing done, n_tokens = 764, batch.n_tokens = 252
+2026-03-06 09:56:19  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 67.0%
+2026-03-06 09:56:20  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 100.0%
+2026-03-06 09:56:21  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "role": "assistant",
+        "content": "Cont"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:21  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "roll"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:21  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "o"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:21  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " le"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:22 [DEBUG]
+ slot print_timing: id  3 | task 0 | 
+prompt eval time =    4210.86 ms /   764 tokens (    5.51 ms per token,   181.44 tokens per second)
+       eval time =    1137.82 ms /     9 tokens (  126.42 ms per token,     7.91 tokens per second)
+      total time =    5348.68 ms /   773 tokens
+2026-03-06 09:56:22  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " informazioni"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:22 [DEBUG]
+ slot      release: id  3 | task 0 | stop processing: n_tokens = 772, truncated = 0
+2026-03-06 09:56:22 [DEBUG]
+ srv  update_slots: all slots are idle
+2026-03-06 09:56:22 [DEBUG]
+ LlamaV4: server assigned slot 3 to task 0
+2026-03-06 09:56:22  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " di"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:22  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " sistema"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:22  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "..."
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:22  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-5rtloog5m4pns5afyogqi",
+  "object": "chat.completion.chunk",
+  "created": 1772787375,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {},
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ]
+}
+2026-03-06 09:56:22  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Finished streaming response
+2026-03-06 09:56:22 [DEBUG]
+ Received request: GET to /api/tags
+2026-03-06 09:56:22 [ERROR]
+ Unexpected endpoint or method. (GET /api/tags). Returning 200 anyway
+2026-03-06 09:56:33 [DEBUG]
+ Received request: POST to /v1/chat/completions with body  {
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "messages": [
+    {
+      "role": "system",
+      "content": "# OMNIA — System Prompt\n\nTu sei **OMNIA** (Orchest... <Truncated in logs> ...ol: integra i dati nella risposta in modo naturale"
+    },
+    {
+      "role": "user",
+      "content": "get_system_info"
+    },
+    {
+      "role": "assistant",
+      "content": "Controllo le informazioni di sistema..."
+    },
+    {
+      "role": "user",
+      "content": "get_system_info"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 30311,
+  "stream": true
+}
+2026-03-06 09:56:33  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Running chat completion on conversation with 4 messages.
+2026-03-06 09:56:33  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Streaming response...
+2026-03-06 09:56:33 [DEBUG]
+ LlamaV4::predict slot selection: session_id=<empty> server-selected (LCP/LRU)
+2026-03-06 09:56:33 [DEBUG]
+ slot get_availabl: id  3 | task -1 | selected slot by LCP similarity, sim_best = 0.992 (> 0.100 thold), f_keep = 1.000
+slot launch_slot_: id  3 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+slot launch_slot_: id  3 | task 11 | processing task, is_child = 0
+slot update_slots: id  3 | task 11 | new prompt, n_ctx_slot = 17152, n_keep = 764, task.n_tokens = 778
+slot update_slots: id  3 | task 11 | cache reuse is not supported - ignoring n_cache_reuse = 256
+slot update_slots: id  3 | task 11 | n_tokens = 772, memory_seq_rm [772, end)
+2026-03-06 09:56:33 [DEBUG]
+ slot init_sampler: id  3 | task 11 | init sampler, took 0.26 ms, tokens: text = 778, total = 778
+slot update_slots: id  3 | task 11 | prompt processing done, n_tokens = 778, batch.n_tokens = 6
+2026-03-06 09:56:33  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 0.0%
+2026-03-06 09:56:34  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 100.0%
+2026-03-06 09:56:34  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "role": "assistant",
+        "content": "E"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:34  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "cco"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:34  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " le"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:35  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " informazioni"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:35  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " di"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:35  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " sistema"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:35  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " att"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:35  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "uali"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:35  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":\n\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:35  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "**"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:36  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "S"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:36  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "istema"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:36  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Oper"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:36  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ativo"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:36  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":**\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:36  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:37  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Nome"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:37  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Windows"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " "
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "1"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "0"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "/"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "1"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "1"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ("
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "a"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " seconda"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:38  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " della"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:39  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " configur"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:39  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "azione"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:39  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ")\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:39  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:39  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Vers"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:39  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ione"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:40  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:40  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:40  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Vers"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:40  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ione"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " specific"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "a"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ","
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " es"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "."
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " "
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "2"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "2"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "H"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "2"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:41  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:42  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Arch"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:42  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "itett"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ura"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "3"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "2"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-bit"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " /"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " "
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "6"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:43  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "4"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:44  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-bit"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:44  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]\n\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:44  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "**"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:44  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Hard"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:44  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ware"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:44  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":**\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:44  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " CPU"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Mod"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ello"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ","
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " es"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:45  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "."
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:46  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Intel"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Core"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " i"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "7"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "1"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "2"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "7"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "0"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "0"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:47  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "K"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " RAM"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "X"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " GB"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " total"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:48  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "i"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:49  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ("
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:49  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "dis"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:49  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "pon"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ibili"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Y"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " GB"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ")\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Mem"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:50  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "oria"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:51  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Dis"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:51  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "pon"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:51  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ibile"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:51  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:51  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:51  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Z"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:51  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " GB"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "\n\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "**"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Dis"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "co"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":**\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:52  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Sp"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:53  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "azio"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:53  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Tot"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:53  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ale"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:53  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "A"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " GB"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Sp"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:54  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "azio"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Liber"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "o"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "B"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " GB"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:55  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:56  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Part"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:56  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "izioni"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:56  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:56  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:56  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "El"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:56  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "enco"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:56  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " se"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:57  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " r"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:57  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ilev"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:57  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ante"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:57  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]\n\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:57  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "**"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:57  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "R"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ete"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":**\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Conn"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "essione"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:58  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Wi"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:59  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-Fi"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:59  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " /"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:59  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Ethernet"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:59  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:59  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:59  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Vel"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:56:59  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "oc"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:00  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ità"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:00  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Download"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:00  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "/"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:00  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Upload"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:00  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:00  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:00  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Val"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:01  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ori"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:01  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " se"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:01  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " dispon"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:01  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ibili"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:01  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]\n\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:02  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "**"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:02  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "B"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:02  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "atter"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:02  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ia"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:02  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ("
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:02  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "se"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:02  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " laptop"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:03  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "):"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:03  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "**\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:03  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:03  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Cap"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:03  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ac"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ità"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "X"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " m"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Wh"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:04  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:05  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Car"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:05  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ica"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:05  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Res"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:05  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "id"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:05  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ua"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:05  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:06  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:06  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Y"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:06  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:06  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "%\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:06  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "-"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:06  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " Tempo"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:06  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " R"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "iman"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "ente"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ":"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " ["
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Z"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "]"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " minuti"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "\n\n"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "Se"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:07  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " hai"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:08  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " bisogno"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:08  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " di"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:08  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " dettag"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:08  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "li"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:08  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " specific"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "i"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " o"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " vu"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "oi"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " che"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " controll"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "i"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " qualcosa"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:09  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " in"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " particolare"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": ","
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:10 [DEBUG]
+ slot print_timing: id  3 | task 11 | 
+prompt eval time =     549.80 ms /     6 tokens (   91.63 ms per token,    10.91 tokens per second)
+       eval time =   36094.13 ms /   253 tokens (  142.66 ms per token,     7.01 tokens per second)
+      total time =   36643.93 ms /   259 tokens
+slot      release: id  3 | task 11 | stop processing: n_tokens = 1030, truncated = 0
+srv  update_slots: all slots are idle
+2026-03-06 09:57:10 [DEBUG]
+ LlamaV4: server assigned slot 3 to task 11
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " fam"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "mi"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " sapere"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "!"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-j3gp3al60zkh8yvjxmpzwa",
+  "object": "chat.completion.chunk",
+  "created": 1772787393,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {},
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ]
+}
+2026-03-06 09:57:10  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Finished streaming response
+2026-03-06 09:57:11 [DEBUG]
+ Received request: POST to /v1/chat/completions with body  {
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "messages": [
+    {
+      "role": "system",
+      "content": "# OMNIA — System Prompt\n\nTu sei **OMNIA** (Orchest... <Truncated in logs> ...ol: integra i dati nella risposta in modo naturale"
+    },
+    {
+      "role": "user",
+      "content": "get_system_info"
+    },
+    {
+      "role": "assistant",
+      "content": "Controllo le informazioni di sistema..."
+    },
+    {
+      "role": "user",
+      "content": "get_system_info"
+    },
+    {
+      "role": "assistant",
+      "content": "Ecco le informazioni di sistema attuali:\n\n**Sistem... <Truncated in logs> ...e controlli qualcosa in particolare, fammi sapere!"
+    },
+    {
+      "role": "user",
+      "content": "controlla la percentuale del mio processore"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 30311,
+  "stream": true
+}
+2026-03-06 09:57:11  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Running chat completion on conversation with 6 messages.
+2026-03-06 09:57:11  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Streaming response...
+2026-03-06 09:57:11 [DEBUG]
+ LlamaV4::predict slot selection: session_id=<empty> server-selected (LCP/LRU)
+2026-03-06 09:57:11 [DEBUG]
+ slot get_availabl: id  3 | task -1 | selected slot by LCP similarity, sim_best = 0.988 (> 0.100 thold), f_keep = 1.000
+2026-03-06 09:57:11 [DEBUG]
+ slot launch_slot_: id  3 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+slot launch_slot_: id  3 | task 265 | processing task, is_child = 0
+slot update_slots: id  3 | task 265 | new prompt, n_ctx_slot = 17152, n_keep = 764, task.n_tokens = 1043
+slot update_slots: id  3 | task 265 | cache reuse is not supported - ignoring n_cache_reuse = 256
+slot update_slots: id  3 | task 265 | n_tokens = 1030, memory_seq_rm [1030, end)
+slot init_sampler: id  3 | task 265 | init sampler, took 0.32 ms, tokens: text = 1043, total = 1043
+slot update_slots: id  3 | task 265 | prompt processing done, n_tokens = 1043, batch.n_tokens = 13
+2026-03-06 09:57:11  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 0.0%
+2026-03-06 09:57:12  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 100.0%
+2026-03-06 09:57:13  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "role": "assistant",
+        "content": "Cont"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:13  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "roll"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:13  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "o"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:13  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " la"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " percent"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "uale"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " d"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "'util"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14 [DEBUG]
+ slot print_timing: id  3 | task 265 | 
+prompt eval time =     864.16 ms /    13 tokens (   66.47 ms per token,    15.04 tokens per second)
+       eval time =    1630.82 ms /    13 tokens (  125.45 ms per token,     7.97 tokens per second)
+      total time =    2494.97 ms /    26 tokens
+2026-03-06 09:57:14 [DEBUG]
+ slot      release: id  3 | task 265 | stop processing: n_tokens = 1055, truncated = 0
+srv  update_slots: all slots are idle
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "izzo"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " della"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": " CPU"
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": "..."
+      },
+      "logprobs": null,
+      "finish_reason": null
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Generated packet:  {
+  "id": "chatcmpl-wkrb2poymhhxas9dxixcrm",
+  "object": "chat.completion.chunk",
+  "created": 1772787431,
+  "model": "mistralai/ministral-3-14b-reasoning",
+  "system_fingerprint": "mistralai/ministral-3-14b-reasoning",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {},
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ]
+}
+2026-03-06 09:57:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Finished streaming response
+2026-03-06 09:57:14 [DEBUG]
+ LlamaV4: server assigned slot 3 to task 265

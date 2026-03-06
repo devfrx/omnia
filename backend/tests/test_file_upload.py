@@ -204,15 +204,5 @@ class TestUploadErrors:
             data={"conversation_id": "../../etc/passwd"},
             files={"file": ("img.png", _TINY_PNG, "image/png")},
         )
-        # The endpoint accepts any string for conversation_id (Form field).
-        # Either it works and the file lands in a weird but safe subdir, or
-        # the server rejects it.  We just verify no file escapes PROJECT_ROOT.
-        if resp.status_code == 200:
-            file_id = resp.json()["file_id"]
-            # Verify the file didn't land outside the uploads tree.
-            from pathlib import Path
-
-            uploads_base = (PROJECT_ROOT / "data" / "uploads").resolve()
-            result_url = resp.json()["url"]
-            # The URL always starts with /uploads/ — the file is within tree.
-            assert result_url.startswith("/uploads/")
+        # Path traversal attempts must be rejected by validation.
+        assert resp.status_code in (400, 422)

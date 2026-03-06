@@ -17,6 +17,7 @@ from backend.core.event_bus import EventBus
 from backend.core.protocols import (
     ConversationFileManagerProtocol,
     LLMServiceProtocol,
+    LMStudioManagerProtocol,
     PluginManagerProtocol,
     STTServiceProtocol,
     TTSServiceProtocol,
@@ -43,6 +44,7 @@ class AppContext:
     stt_service: STTServiceProtocol | None = None
     tts_service: TTSServiceProtocol | None = None
     conversation_file_manager: ConversationFileManagerProtocol | None = None
+    lmstudio_manager: LMStudioManagerProtocol | None = None
 
     plugin_local_state: dict[str, dict] = field(default_factory=dict)
     """Per-plugin local state, keyed by plugin name."""

@@ -54,6 +54,7 @@ frontend/src/
 - CSS scoped in components (`<style scoped>`)
 - No `any` types — explicit types always
 - `const` over `let`, arrow functions
+- No EMOJI in code or comments
 
 ## UI/UX Guidelines
 

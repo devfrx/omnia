@@ -183,6 +183,16 @@ export interface WsWarningMessage {
   content: string
 }
 
+/** Server signals the LLM wants to invoke a tool (forwarded from LLM stream). */
+export interface WsToolCallMessage {
+  type: 'tool_call'
+  id: string
+  function: {
+    name: string
+    arguments: string
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Tool execution tracking (client-side)
 // ---------------------------------------------------------------------------
@@ -211,6 +221,7 @@ export type WsMessage =
   | WsThinkingMessage
   | WsDoneMessage
   | WsErrorMessage
+  | WsToolCallMessage
   | WsToolExecutionStartMessage
   | WsToolExecutionDoneMessage
   | WsToolConfirmationRequiredMessage

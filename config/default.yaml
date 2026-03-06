@@ -12,20 +12,21 @@ server:
     - "null"                    # Electron production (file:// origin)
 
 llm:
-  provider: "openai-compatible"    # Works with LM Studio, Ollama, or any OpenAI-compatible API
-  base_url: "http://localhost:1234"  # Ollama default (:11434) — change to :1234 for LM Studio
-  model: "mistralai/ministral-3-14b-reasoning"                 # Ollama model tag (use ollama list to verify)
+  provider: "lmstudio"             # Primary: LM Studio v1 REST API. Also compatible with Ollama
+  base_url: "http://localhost:1234"  # LM Studio default (:1234) — change to :11434 for Ollama
+  api_token: ""                      # LM Studio API token (optional, leave empty if auth disabled)
+  model: "mistralai/ministral-3-14b-reasoning"
   temperature: 0.7
   max_tokens: 30311
   system_prompt_file: "config/system_prompt.md"
   supports_thinking: true    # Enable for reasoning models (QwQ, DeepSeek R1)
-  supports_vision: true       # qwen3.5:9b supports vision natively
+  supports_vision: true       # Enable for multimodal models
   max_tool_iterations: 10
   confirmation_timeout_s: 60
-  # Ollama-specific options (ignored by LM Studio / other providers)
-  num_ctx: 8192          # Context window — Ollama defaults to 2048, too small for tool calling
-  num_gpu: -1            # -1 = offload all layers to GPU (use full VRAM)
-  keep_alive: "5m"       # Keep model loaded in VRAM between requests
+  # Ollama-specific options (ignored by LM Studio)
+  num_ctx: 8192
+  num_gpu: -1
+  keep_alive: "5m"
 
 stt:
   engine: "faster-whisper"
@@ -52,10 +53,10 @@ database:
 plugins:
   enabled:
     - system_info
-    - pc_automation
-    - web_search
-    - calendar
-    # - home_automation   # Abilitare quando Home Assistant è configurato
+    # - pc_automation    # TODO: implement
+    # - web_search       # TODO: implement
+    # - calendar         # TODO: implement
+    # - home_automation  # TODO: implement (requires Home Assistant)
 
 home_assistant:
   url: "http://homeassistant.local:8123"

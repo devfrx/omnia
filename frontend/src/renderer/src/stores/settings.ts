@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { api } from '../services/api'
-import type { OllamaModel } from '../types/settings'
+import type { DownloadStatusResponse, LMStudioModel } from '../types/settings'
 
 export interface OmniaSettings {
   llm: {
@@ -45,30 +45,191 @@ export const useSettingsStore = defineStore('settings', () => {
   })
 
   /** All models available on the backend. */
-  const models = ref<OllamaModel[]>([])
+  const models = ref<LMStudioModel[]>([])
 
   /** Whether models are currently being fetched. */
   const isLoadingModels = ref(false)
 
+  /** Model keys currently being loaded into LM Studio. */
+  const loadingModelKeys = ref<Set<string>>(new Set())
+
+  /** Instance IDs currently being unloaded from LM Studio. */
+  const unloadingInstanceIds = ref<Set<string>>(new Set())
+
+  /** LM Studio connection status. */
+  const lmStudioConnected = ref(false)
+
+  /** Number of currently loaded models. */
+  const loadedModelCount = ref(0)
+
+  /** Active download jobs. */
+  const activeDownloads = ref<Map<string, DownloadStatusResponse>>(new Map())
+
+  /** Track active polling timeouts for cleanup. */
+  const pollTimeouts = ref<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
   /** The model that is currently active (has `is_active === true`). */
   const activeModel = computed(() => models.value.find((m) => m.is_active) ?? null)
+
+  /** Models that are currently loaded in LM Studio. */
+  const loadedModels = computed(() => models.value.filter((m) => m.loaded))
+
+  /** Models that are available but not loaded. */
+  const unloadedModels = computed(() => models.value.filter((m) => !m.loaded))
+
+  /** Whether any model is currently being loaded. */
+  const isLoadingModel = computed(() => loadingModelKeys.value.size > 0)
+
+  /** Whether any model is currently being unloaded. */
+  const isUnloadingModel = computed(() => unloadingInstanceIds.value.size > 0)
+
+  /** Check if a specific model is currently being loaded. */
+  function isModelLoading(key: string): boolean {
+    return loadingModelKeys.value.has(key)
+  }
+
+  /** Check if a specific instance is currently being unloaded. */
+  function isInstanceUnloading(instanceId: string): boolean {
+    return unloadingInstanceIds.value.has(instanceId)
+  }
+
+  /** Check LM Studio connection and update status. */
+  async function checkConnection(): Promise<void> {
+    try {
+      const status = await api.getModelsStatus()
+      lmStudioConnected.value = status.connected
+      loadedModelCount.value = status.loaded_model_count
+    } catch {
+      lmStudioConnected.value = false
+      loadedModelCount.value = 0
+    }
+  }
 
   /** Fetch the list of available models from the backend. */
   async function loadModels(): Promise<void> {
     isLoadingModels.value = true
     try {
       models.value = await api.getModels()
+      await checkConnection()
     } finally {
       isLoadingModels.value = false
     }
   }
 
-  /** Switch the active LLM model and refresh the model list. */
-  async function switchModel(modelName: string): Promise<void> {
-    await api.updateConfig({ llm: { model: modelName } })
-    await loadModels()
-    settings.value.llm.model = modelName
+  /** Load a model into LM Studio. */
+  async function loadModel(
+    modelKey: string,
+    config?: { context_length?: number; flash_attention?: boolean }
+  ): Promise<void> {
+    loadingModelKeys.value = new Set([...loadingModelKeys.value, modelKey])
+    try {
+      await api.loadModel(modelKey, config)
+      await loadModels()
+    } finally {
+      const next = new Set(loadingModelKeys.value)
+      next.delete(modelKey)
+      loadingModelKeys.value = next
+    }
   }
 
-  return { settings, models, isLoadingModels, activeModel, loadModels, switchModel }
+  /** Unload a model instance from LM Studio. */
+  async function unloadModel(instanceId: string): Promise<void> {
+    unloadingInstanceIds.value = new Set([...unloadingInstanceIds.value, instanceId])
+    try {
+      await api.unloadModel(instanceId)
+      await loadModels()
+    } finally {
+      const next = new Set(unloadingInstanceIds.value)
+      next.delete(instanceId)
+      unloadingInstanceIds.value = next
+    }
+  }
+
+  /** Start downloading a model and begin polling for status. */
+  async function downloadModel(model: string, quantization?: string): Promise<void> {
+    const response = await api.downloadModel(model, quantization)
+    if (response.job_id && response.status === 'downloading') {
+      pollDownloadStatus(response.job_id)
+    } else if (response.status === 'already_downloaded') {
+      await loadModels()
+    }
+  }
+
+  /** Poll download status every 2s until completed or failed. */
+  function pollDownloadStatus(jobId: string): void {
+    const poll = async (): Promise<void> => {
+      try {
+        const status = await api.getDownloadStatus(jobId)
+        activeDownloads.value = new Map(activeDownloads.value.set(jobId, status))
+        if (status.status === 'downloading' || status.status === 'paused') {
+          const tid = setTimeout(poll, 2000)
+          pollTimeouts.value.set(jobId, tid)
+        } else {
+          pollTimeouts.value.delete(jobId)
+          if (status.status === 'completed') {
+            await loadModels()
+          }
+          const cleanupTid = setTimeout(() => {
+            const updated = new Map(activeDownloads.value)
+            updated.delete(jobId)
+            activeDownloads.value = updated
+          }, 5000)
+          pollTimeouts.value.set(`cleanup-${jobId}`, cleanupTid)
+        }
+      } catch {
+        pollTimeouts.value.delete(jobId)
+        const updated = new Map(activeDownloads.value)
+        updated.delete(jobId)
+        activeDownloads.value = updated
+      }
+    }
+    poll()
+  }
+
+  /** Cancel all active polling timers. */
+  function stopAllPolling(): void {
+    for (const tid of pollTimeouts.value.values()) {
+      clearTimeout(tid)
+    }
+    pollTimeouts.value.clear()
+  }
+
+  /** Switch the active LLM model. The backend loads it automatically. */
+  async function switchModel(modelName: string): Promise<void> {
+    loadingModelKeys.value = new Set([...loadingModelKeys.value, modelName])
+    try {
+      await api.updateConfig({ llm: { model: modelName } })
+      await loadModels()
+      settings.value.llm.model = modelName
+    } finally {
+      const next = new Set(loadingModelKeys.value)
+      next.delete(modelName)
+      loadingModelKeys.value = next
+    }
+  }
+
+  return {
+    settings,
+    models,
+    isLoadingModels,
+    isLoadingModel,
+    isUnloadingModel,
+    loadingModelKeys,
+    unloadingInstanceIds,
+    lmStudioConnected,
+    loadedModelCount,
+    activeDownloads,
+    activeModel,
+    loadedModels,
+    unloadedModels,
+    isModelLoading,
+    isInstanceUnloading,
+    checkConnection,
+    loadModels,
+    loadModel,
+    unloadModel,
+    downloadModel,
+    switchModel,
+    stopAllPolling
+  }
 })

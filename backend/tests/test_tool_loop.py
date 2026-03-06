@@ -15,7 +15,7 @@ import pytest
 
 from backend.api.routes._tool_loop import run_tool_loop
 from backend.core.plugin_models import ExecutionContext, ToolDefinition, ToolResult
-from backend.db.models import Conversation, Message
+from backend.db.models import Message
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +178,6 @@ async def _run(
         ctx=_Ctx(reg),
         session=session,
         conv_id=conv_id,
-        conv=Conversation(id=conv_id),
         llm=llm,
         tool_calls_from_llm=tool_calls,
         full_content="",

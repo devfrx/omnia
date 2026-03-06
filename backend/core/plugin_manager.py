@@ -96,6 +96,27 @@ class PluginManager:
                 )
                 self._discover_plugins()
 
+        # Import enabled plugin modules so they register in PLUGIN_REGISTRY.
+        # Try the package first (__init__.py re-export), then the .plugin
+        # submodule directly — matches _discover_plugins / reload_plugin.
+        for name in enabled:
+            if name not in PLUGIN_REGISTRY:
+                for suffix in ("", ".plugin"):
+                    mod = f"backend.plugins.{name}{suffix}"
+                    try:
+                        importlib.import_module(mod)
+                    except Exception as exc:
+                        self._logger.debug(
+                            "Import '{}' failed: {}", mod, exc,
+                        )
+                        continue
+                    if name in PLUGIN_REGISTRY:
+                        self._logger.debug(
+                            "Plugin '{}' registered via '{}'",
+                            name, mod,
+                        )
+                        break
+
         # Filter unknown plugins
         valid: list[str] = []
         for name in enabled:
@@ -118,6 +139,12 @@ class PluginManager:
             plugin = plugin_cls()
             try:
                 await plugin.initialize(self._ctx)
+                missing = plugin.check_dependencies()
+                if missing:
+                    self._logger.warning(
+                        "Plugin '{}' has missing dependencies: {}",
+                        name, ", ".join(missing),
+                    )
                 self._plugins[name] = plugin
                 loaded += 1
                 await self._ctx.event_bus.emit(
@@ -263,6 +290,124 @@ class PluginManager:
                 )
                 self._plugins.pop(name, None)
                 return False
+
+    async def load_plugin(self, name: str) -> bool:
+        """Load and initialise a single plugin by name.
+
+        Imports the plugin module, instantiates the class from
+        ``PLUGIN_REGISTRY``, and calls ``initialize``.
+
+        Args:
+            name: The plugin name.
+
+        Returns:
+            ``True`` on success, ``False`` on failure.
+        """
+        async with self._lock:
+            if name in self._plugins:
+                self._logger.warning(
+                    "Plugin '{}' is already loaded", name,
+                )
+                return True
+
+            # Import the module so it registers in PLUGIN_REGISTRY
+            if name not in PLUGIN_REGISTRY:
+                for suffix in ("", ".plugin"):
+                    mod = f"backend.plugins.{name}{suffix}"
+                    try:
+                        importlib.import_module(mod)
+                    except Exception as exc:
+                        self._logger.debug(
+                            "Import '{}' failed: {}", mod, exc,
+                        )
+                        continue
+                    if name in PLUGIN_REGISTRY:
+                        break
+
+            plugin_cls = PLUGIN_REGISTRY.get(name)
+            if plugin_cls is None:
+                self._logger.error(
+                    "Plugin '{}' not found in PLUGIN_REGISTRY",
+                    name,
+                )
+                return False
+
+            try:
+                plugin = plugin_cls()
+                await plugin.initialize(self._ctx)
+                self._plugins[name] = plugin
+                if name not in self._load_order:
+                    self._load_order.append(name)
+                self._failed_plugins.discard(name)
+
+                await self._ctx.event_bus.emit(
+                    OmniaEvent.PLUGIN_LOADED,
+                    plugin_name=name,
+                    version=plugin.plugin_version,
+                )
+                self._logger.info(
+                    "Plugin '{}' v{} loaded",
+                    name, plugin.plugin_version,
+                )
+
+                if self._ctx.tool_registry:
+                    await self._ctx.tool_registry.refresh()
+
+                return True
+            except Exception as exc:
+                self._logger.error(
+                    "Failed to load plugin '{}': {}",
+                    name, exc,
+                )
+                self._failed_plugins.add(name)
+                return False
+
+    async def unload_plugin(self, name: str) -> bool:
+        """Unload a single plugin by name.
+
+        Calls ``on_app_shutdown`` and ``cleanup``, then removes the
+        plugin from internal tracking.
+
+        Args:
+            name: The plugin name.
+
+        Returns:
+            ``True`` on success, ``False`` if plugin was not loaded.
+        """
+        async with self._lock:
+            plugin = self._plugins.get(name)
+            if plugin is None:
+                self._logger.warning(
+                    "Cannot unload '{}': not loaded", name,
+                )
+                return False
+
+            try:
+                await plugin.on_app_shutdown()
+            except Exception as exc:
+                self._logger.error(
+                    "Plugin '{}' on_app_shutdown error: {}",
+                    name, exc,
+                )
+            try:
+                await plugin.cleanup()
+            except Exception as exc:
+                self._logger.error(
+                    "Plugin '{}' cleanup error: {}",
+                    name, exc,
+                )
+
+            del self._plugins[name]
+            if name in self._load_order:
+                self._load_order.remove(name)
+            self._last_status.pop(name, None)
+
+            self._logger.info("Plugin '{}' unloaded", name)
+
+            if self._ctx.tool_registry:
+                await self._ctx.tool_registry.refresh()
+
+            return True
 
     # ---------------------------------------------------------------
     # Accessors

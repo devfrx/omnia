@@ -10,8 +10,15 @@
  * - Thumbnails of pending images appear above the input area.
  * - The send button is disabled when the input is empty (and no files) or streaming.
  */
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import ModelSelector from '../settings/ModelSelector.vue'
+import { useSettingsStore } from '../../stores/settings'
+
+const settingsStore = useSettingsStore()
+
+const supportsVision = computed(() => settingsStore.activeModel?.capabilities.vision ?? false)
+const supportsToolUse = computed(() => settingsStore.activeModel?.capabilities.trained_for_tool_use ?? false)
+const supportsThinking = computed(() => settingsStore.activeModel?.capabilities.thinking ?? false)
 
 const props = defineProps<{
   /** Disable the input (e.g. while streaming). */
@@ -43,6 +50,9 @@ const pendingFiles = ref<File[]>([])
 
 /** Whether the user is dragging files over the input area. */
 const isDragOver = ref(false)
+
+/** Counter to handle drag enter/leave on child elements without flicker. */
+const dragCounter = ref(0)
 
 /** Thumbnail blob-URLs keyed by their File reference. */
 const thumbnailUrls = ref<Map<File, string>>(new Map())
@@ -116,6 +126,7 @@ function handleFileSelect(event: Event): void {
 /** Add image files to the pending list and generate thumbnails. */
 function addFiles(files: File[]): void {
   const imageFiles = files.filter((f) => f.type.startsWith('image/'))
+  if (!supportsVision.value && imageFiles.length > 0) return
   for (const file of imageFiles) {
     pendingFiles.value.push(file)
     const url = URL.createObjectURL(file)
@@ -152,23 +163,25 @@ function getThumbnail(file: File): string {
 /** @internal */
 function handleDragEnter(event: DragEvent): void {
   event.preventDefault()
+  dragCounter.value++
   isDragOver.value = true
 }
 
 /** @internal */
 function handleDragOver(event: DragEvent): void {
   event.preventDefault()
-  isDragOver.value = true
 }
 
 /** @internal */
 function handleDragLeave(): void {
-  isDragOver.value = false
+  dragCounter.value--
+  if (dragCounter.value === 0) isDragOver.value = false
 }
 
 /** @internal */
 function handleDrop(event: DragEvent): void {
   event.preventDefault()
+  dragCounter.value = 0
   isDragOver.value = false
   if (event.dataTransfer?.files) {
     addFiles(Array.from(event.dataTransfer.files))
@@ -209,7 +222,7 @@ function handlePaste(event: ClipboardEvent): void {
     @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
     <!-- Thumbnail preview strip -->
     <div v-if="pendingFiles.length > 0" class="chat-input__attachments">
-      <div v-for="(file, idx) in pendingFiles" :key="idx" class="chat-input__thumb">
+      <div v-for="file in pendingFiles" :key="file.name + file.size + file.lastModified" class="chat-input__thumb">
         <img :src="getThumbnail(file)" :alt="file.name" :title="file.name" />
         <button class="chat-input__thumb-remove" aria-label="Rimuovi allegato" @click="removeFile(file)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -226,7 +239,9 @@ function handlePaste(event: ClipboardEvent): void {
       <div class="chat-input__status" :class="isConnected ? 'status--ok' : 'status--err'" />
 
       <!-- Attachment (paperclip) button -->
-      <button class="chat-input__attach" :disabled="disabled" aria-label="Allega immagine" @click="openFilePicker">
+      <button class="chat-input__attach" :disabled="disabled || !supportsVision"
+        :aria-label="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'"
+        :title="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'" @click="openFilePicker">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <path
@@ -241,6 +256,32 @@ function handlePaste(event: ClipboardEvent): void {
       <textarea ref="textareaRef" v-model="text" class="chat-input__textarea" placeholder="Scrivi un messaggio..."
         rows="1" :disabled="disabled" aria-label="Scrivi un messaggio" @keydown="handleKeydown" @input="autoResize"
         @paste="handlePaste" />
+
+      <!-- Model capability badges -->
+      <div v-if="settingsStore.activeModel" class="chat-input__caps">
+        <span v-if="supportsVision" class="chat-input__cap" title="Vision">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </span>
+        <span v-if="supportsThinking" class="chat-input__cap" title="Thinking">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2h7c.1-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
+            <line x1="10" y1="20" x2="14" y2="20" />
+            <line x1="10" y1="22" x2="14" y2="22" />
+          </svg>
+        </span>
+        <span v-if="supportsToolUse" class="chat-input__cap" title="Tool Use">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+          </svg>
+        </span>
+      </div>
 
       <ModelSelector />
 
@@ -355,11 +396,37 @@ function handlePaste(event: ClipboardEvent): void {
 .status--ok {
   background: var(--success);
   box-shadow: 0 0 6px var(--success-glow);
+  animation: chatStatusPulse 3s ease-in-out infinite;
+}
+
+@keyframes chatStatusPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 6px var(--success-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 10px var(--success-glow), 0 0 3px var(--success);
+  }
 }
 
 .status--err {
   background: var(--danger);
   box-shadow: 0 0 6px rgba(196, 92, 92, 0.5);
+  animation: chatDisconnectBlink 2s ease-in-out infinite;
+}
+
+@keyframes chatDisconnectBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* ------------------------------------------------ Attach button */
@@ -384,8 +451,9 @@ function handlePaste(event: ClipboardEvent): void {
 }
 
 .chat-input__attach:disabled {
-  opacity: 0.35;
+  opacity: 0.25;
   cursor: not-allowed;
+  filter: grayscale(100%);
 }
 
 /* --------------------------------------------------- Textarea */
@@ -479,5 +547,43 @@ function handlePaste(event: ClipboardEvent): void {
 .btn-swap-leave-to {
   opacity: 0;
   transform: scale(0.85);
+}
+
+/* ----------------------------------------- Capability badges */
+.chat-input__caps {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 8px;
+  animation: capsEntrance 0.3s ease-out;
+}
+
+@keyframes capsEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.chat-input__cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.chat-input__cap svg {
+  width: 12px;
+  height: 12px;
 }
 </style>

@@ -17,7 +17,7 @@ from sqlmodel import select
 
 from backend.core.context import AppContext
 from backend.core.plugin_models import ExecutionContext, ToolResult
-from backend.db.models import Conversation, Message
+from backend.db.models import Message
 from backend.services.llm_service import LLMService
 
 # Type alias for the sync callback.
@@ -30,7 +30,6 @@ async def run_tool_loop(
     ctx: AppContext,
     session: Any,
     conv_id: uuid.UUID,
-    conv: Conversation,
     llm: LLMService,
     tool_calls_from_llm: list[dict[str, Any]],
     full_content: str,
@@ -53,7 +52,6 @@ async def run_tool_loop(
         ctx: Application context (tool registry, config, etc.).
         session: Active async DB session (caller manages commit).
         conv_id: Current conversation UUID.
-        conv: The Conversation ORM object.
         llm: LLMService instance for re-querying.
         tool_calls_from_llm: Initial tool calls from the first LLM response.
         full_content: Text content from the first LLM response.
@@ -110,12 +108,46 @@ async def run_tool_loop(
         tasks: list[tuple[str, str, dict[str, Any], ExecutionContext]] = []
 
         for tc in tool_calls_from_llm:
-            tool_name = tc["function"]["name"]
-            raw_args = tc["function"].get("arguments", "{}") or "{}"
+            fn = tc.get("function") or {}
+            tool_name = fn.get("name", "")
+            if not tool_name:
+                logger.warning(
+                    "Skipping tool call with no function name: {}", tc,
+                )
+                tc_id = tc.get("id", "")
+                if tc_id:
+                    session.add(Message(
+                        conversation_id=conv_id,
+                        role="tool",
+                        content="Error: tool call has no function name.",
+                        tool_call_id=tc_id,
+                    ))
+                    await session.flush()
+                continue
+
+            raw_args = fn.get("arguments", "{}") or "{}"
             try:
                 args = json.loads(raw_args)
-            except json.JSONDecodeError:
-                args = {}
+            except json.JSONDecodeError as e:
+                logger.warning(
+                    "Invalid JSON args for tool '{}': {}",
+                    tool_name, raw_args[:200],
+                )
+                session.add(Message(
+                    conversation_id=conv_id,
+                    role="tool",
+                    content=f"Error: could not parse arguments \u2014 {e}",
+                    tool_call_id=tc["id"],
+                ))
+                await session.flush()
+                await websocket.send_json({
+                    "type": "tool_execution_done",
+                    "tool_name": tool_name,
+                    "result": f"Error: could not parse arguments \u2014 {e}",
+                    "execution_id": str(uuid.uuid4()),
+                    "success": False,
+                })
+                continue
 
             dedup_key = (tool_name, json.dumps(args, sort_keys=True))
             if dedup_key in seen:
@@ -186,6 +218,8 @@ async def run_tool_loop(
         # in the DB (OpenAI API requires a tool response for every tool_call_id).
         for idx, res in enumerate(results):
             if isinstance(res, BaseException):
+                if not isinstance(res, Exception):
+                    raise res
                 # Save an error tool message to satisfy the OpenAI contract.
                 failed_tc_id = tasks[idx][0]
                 failed_tool_name = tasks[idx][1]

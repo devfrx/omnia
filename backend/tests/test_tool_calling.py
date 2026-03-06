@@ -28,10 +28,12 @@ def llm_config():
     """Create a test LLMConfig with defaults."""
     from backend.core.config import LLMConfig
 
+    from backend.core.config import PROJECT_ROOT
+
     return LLMConfig(
         base_url="http://localhost:11434",
         model="test-model",
-        system_prompt_file="config/system_prompt.md",  # Use project's actual file
+        system_prompt_file=str(PROJECT_ROOT / "config" / "system_prompt.md"),
         max_tool_iterations=10,
         confirmation_timeout_s=60,
     )

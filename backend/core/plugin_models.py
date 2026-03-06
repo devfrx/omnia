@@ -63,6 +63,7 @@ class ToolDefinition:
     timeout_ms: int = 30_000
     requires_confirmation: bool = False
     risk_level: Literal["safe", "medium", "dangerous", "forbidden"] = "safe"
+    sanitise_output: bool = True
 
     def __post_init__(self) -> None:
         if self.parameters is None:
