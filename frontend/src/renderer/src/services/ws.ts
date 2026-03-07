@@ -153,6 +153,14 @@ export class WebSocketManager {
     this.scheduleDrain()
   }
 
+  /** Send binary data (e.g. audio frames) directly on the WebSocket. */
+  sendBinary(data: ArrayBuffer | Blob): void {
+    if (this.ws?.readyState !== WebSocket.OPEN) return
+    // Drop frame if send buffer is saturated (backpressure for real-time audio)
+    if (this.ws.bufferedAmount >= this.bufferHighWaterMark) return
+    this.ws.send(data)
+  }
+
   /** Schedule periodic queue draining until the buffer is clear. */
   private scheduleDrain(): void {
     if (this.drainTimer !== null) return

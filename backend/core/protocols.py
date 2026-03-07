@@ -62,6 +62,15 @@ class LLMServiceProtocol(Protocol):
 # ---------------------------------------------------------------------------
 
 
+class TranscriptionResult(Protocol):
+    """Result returned by STT transcription."""
+
+    text: str
+    language: str
+    confidence: float
+    duration_s: float
+
+
 @runtime_checkable
 class STTServiceProtocol(Protocol):
     """Protocol for speech-to-text services."""
@@ -69,6 +78,18 @@ class STTServiceProtocol(Protocol):
     async def start(self) -> None: ...
     async def stop(self) -> None: ...
     async def health_check(self) -> bool: ...
+
+    @property
+    def engine(self) -> str: ...
+
+    @property
+    def model_name(self) -> str: ...
+
+    async def transcribe(
+        self, audio_data: bytes, sample_rate: int = 16000,
+    ) -> TranscriptionResult:
+        """Transcribe audio bytes, returning a TranscriptionResult."""
+        ...
 
 
 @runtime_checkable
@@ -78,6 +99,44 @@ class TTSServiceProtocol(Protocol):
     async def start(self) -> None: ...
     async def stop(self) -> None: ...
     async def health_check(self) -> bool: ...
+
+    @property
+    def engine(self) -> str: ...
+
+    async def synthesize(self, text: str) -> bytes:
+        """Synthesize text to audio bytes (WAV)."""
+        ...
+
+    async def synthesize_stream(self, text: str) -> AsyncIterator[bytes]:
+        """Yield audio chunks as they are synthesized."""
+        ...
+
+    @property
+    def sample_rate(self) -> int: ...
+
+
+# ---------------------------------------------------------------------------
+# VRAM Monitor
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class VRAMMonitorProtocol(Protocol):
+    """Protocol for GPU VRAM monitoring."""
+
+    async def start(self) -> None: ...
+    async def stop(self) -> None: ...
+    async def health_check(self) -> bool: ...
+    async def get_usage(self) -> Any:
+        """Return current VRAM usage information."""
+        ...
+    def register_component(self, name: str, estimated_mb: int) -> None: ...
+    def unregister_component(self, name: str) -> None: ...
+
+    @property
+    def last_usage(self) -> Any:
+        """Most recent cached VRAM usage (None before first poll)."""
+        ...
 
 
 # ---------------------------------------------------------------------------
@@ -199,6 +258,16 @@ class ConversationFileManagerProtocol(Protocol):
     async def load_all(self, user_id: str | None = None) -> list[dict[str, Any]]:
         """Read all conversation JSON files."""
         ...
+
+
+# ---------------------------------------------------------------------------
+# Conversation DB sync
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class ConversationDBSyncProtocol(Protocol):
+    """Protocol for rebuilding database from conversation files."""
 
     async def rebuild_from_files(self, session_factory: Any) -> int:
         """Rebuild the database from saved JSON files."""

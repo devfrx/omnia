@@ -38,6 +38,16 @@ class OmniaEvent(StrEnum):
     TOOL_EXECUTION_START = "tool.execution_start"
     TOOL_EXECUTION_SUCCEEDED = "tool.execution_succeeded"
     TOOL_EXECUTION_FAILED = "tool.execution_failed"
+    # -- Voice (Phase 4) --
+    STT_STARTED = "stt.started"
+    STT_STOPPED = "stt.stopped"
+    STT_ERROR = "stt.error"
+    TTS_DONE = "tts.done"
+    TTS_ERROR = "tts.error"
+    VOICE_SESSION_START = "voice.session_start"
+    VOICE_SESSION_END = "voice.session_end"
+    VRAM_WARNING = "vram.warning"
+    VRAM_CRITICAL = "vram.critical"
     ERROR = "error"
 
 # Type alias for async handlers

@@ -51,6 +51,22 @@
         </div>
       </section>
 
+      <!-- Voice Settings -->
+      <section class="settings-section">
+        <h3 class="settings-section__title">Voce</h3>
+        <div class="settings-section__grid">
+          <label class="settings-field settings-field--toggle">
+            <span class="settings-field__label">Conferma invio trascrizione</span>
+            <span class="settings-field__hint">Mostra i pulsanti Invia/Annulla dopo la trascrizione vocale</span>
+            <button class="settings-toggle" :class="{ 'settings-toggle--on': voiceStore.confirmTranscript }"
+              role="switch" :aria-checked="voiceStore.confirmTranscript"
+              @click="voiceStore.confirmTranscript = !voiceStore.confirmTranscript">
+              <span class="settings-toggle__thumb" />
+            </button>
+          </label>
+        </div>
+      </section>
+
       <!-- UI Settings -->
       <section class="settings-section">
         <h3 class="settings-section__title">Interfaccia</h3>
@@ -75,8 +91,10 @@
 <script setup lang="ts">
 import ModelManager from '../components/settings/ModelManager.vue'
 import { useSettingsStore } from '../stores/settings'
+import { useVoiceStore } from '../stores/voice'
 
 const settingsStore = useSettingsStore()
+const voiceStore = useVoiceStore()
 </script>
 
 <style scoped>
@@ -161,5 +179,53 @@ const settingsStore = useSettingsStore()
 
 .settings-field__input:focus {
   border-color: var(--accent-border);
+}
+
+.settings-field--toggle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  grid-column: 1 / -1;
+}
+
+.settings-field__hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.settings-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.settings-toggle--on {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+}
+
+.settings-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.settings-toggle--on .settings-toggle__thumb {
+  transform: translateX(18px);
+  background: var(--accent);
 }
 </style>

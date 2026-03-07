@@ -1,0 +1,265 @@
+"""O.M.N.I.A. — Text-to-Speech service.
+
+Supports **Piper TTS** (CPU-only, low RAM) as primary engine and
+**XTTS v2** (GPU, voice-cloning) as optional alternative.  Both engines
+run blocking synthesis in a thread pool to keep the async loop free.
+Audio is returned as WAV-formatted audio bytes at the configured
+sample rate.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import io
+import os
+import re
+import tempfile
+import wave
+from collections.abc import AsyncIterator
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from loguru import logger
+
+if TYPE_CHECKING:
+    from backend.core.config import TTSConfig
+
+# ---------------------------------------------------------------------------
+# Sentence splitter
+# ---------------------------------------------------------------------------
+
+_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÖÙ-Ü])")
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Split *text* into sentence-like chunks for incremental synthesis."""
+    parts = _SENTENCE_RE.split(text.strip())
+    return [p for p in parts if p]
+
+
+# ---------------------------------------------------------------------------
+# Piper engine (lazy import)
+# ---------------------------------------------------------------------------
+
+
+class _PiperEngine:
+    """Thin wrapper around ``piper.PiperVoice``."""
+
+    def __init__(self, voice: str, sample_rate: int, speed: float = 1.0) -> None:
+        from piper import PiperVoice  # lazy
+
+        self._sample_rate = sample_rate
+        self._length_scale = 1.0 / speed if speed > 0 else 1.0
+
+        # Resolve relative to project root (3 levels up from services/)
+        project_root = Path(__file__).resolve().parent.parent.parent
+        model_path = voice if voice.endswith(".onnx") else f"{voice}.onnx"
+        model_path_obj = Path(model_path)
+        if not model_path_obj.is_absolute():
+            model_path_obj = project_root / model_path_obj
+        model_path = str(model_path_obj)
+
+        logger.info("Loading Piper voice: {}", model_path)
+        self._voice = PiperVoice.load(model_path)
+
+    def synthesize(self, text: str) -> bytes:
+        """Synthesize *text* and return raw PCM-16 audio bytes (blocking)."""
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(self._sample_rate)
+            self._voice.synthesize(text, wf, length_scale=self._length_scale)
+        return buf.getvalue()
+
+    def close(self) -> None:
+        """Release resources."""
+        self._voice = None  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
+# XTTS v2 engine (lazy import)
+# ---------------------------------------------------------------------------
+
+
+class _XTTSEngine:
+    """Thin wrapper around ``TTS`` (Coqui TTS) for XTTS v2."""
+
+    def __init__(
+        self, model: str, speaker_wav: str, language: str,
+        speed: float = 1.0,
+    ) -> None:
+        from TTS.api import TTS  # lazy
+
+        logger.info("Loading XTTS model: {}", model)
+        self._tts = TTS(model_name=model, gpu=True)
+        self._speaker_wav = speaker_wav
+        self._language = language
+        self._speed = speed
+
+        if not speaker_wav or not Path(speaker_wav).is_file():
+            logger.warning("XTTS speaker_wav not found or empty: {}", speaker_wav)
+
+    def synthesize(self, text: str) -> bytes:
+        """Synthesize *text* and return WAV bytes (blocking)."""
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp_path = tmp.name
+        try:
+            self._tts.tts_to_file(
+                text=text,
+                speaker_wav=self._speaker_wav,
+                language=self._language,
+                file_path=tmp_path,
+                speed=self._speed,
+            )
+            return Path(tmp_path).read_bytes()
+        finally:
+            os.unlink(tmp_path)
+
+    def close(self) -> None:
+        """Release GPU resources."""
+        self._tts = None  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
+# Public service
+# ---------------------------------------------------------------------------
+
+
+class TTSService:
+    """High-level TTS service with async interface and streaming support.
+
+    Implements the ``TTSServiceProtocol`` expected by ``AppContext``.
+
+    Args:
+        config: ``TTSConfig`` from the application configuration.
+    """
+
+    def __init__(self, config: TTSConfig) -> None:
+        self._config = config
+        self._engine: _PiperEngine | _XTTSEngine | None = None
+        self._started = False
+        self._synth_lock = asyncio.Lock()
+
+    # -- lifecycle ----------------------------------------------------------
+
+    async def start(self) -> None:
+        """Initialise the selected TTS engine in a background thread."""
+        if self._started:
+            return
+        engine = self._config.engine
+        logger.info("Starting TTS service (engine={})", engine)
+        try:
+            if engine == "xtts":
+                try:
+                    self._engine = await asyncio.to_thread(
+                        _XTTSEngine,
+                        self._config.xtts_model,
+                        self._config.xtts_speaker_wav,
+                        self._config.xtts_language,
+                        self._config.speed,
+                    )
+                    self._started = True
+                except Exception:
+                    logger.warning("XTTS failed to load, falling back to Piper")
+                    try:
+                        self._engine = await asyncio.to_thread(
+                            _PiperEngine,
+                            self._config.voice,
+                            self._config.sample_rate,
+                            self._config.speed,
+                        )
+                        self._started = True
+                        logger.info("TTS fallback to Piper successful")
+                    except Exception:
+                        logger.exception("Piper fallback also failed")
+            else:
+                self._engine = await asyncio.to_thread(
+                    _PiperEngine,
+                    self._config.voice,
+                    self._config.sample_rate,
+                    self._config.speed,
+                )
+                self._started = True
+            if self._started:
+                logger.info("TTS service ready (engine={})", engine)
+        except ImportError:
+            logger.warning(
+                "TTS engine '{}' not available — library not installed", engine,
+            )
+        except Exception:
+            logger.exception("Failed to start TTS engine '{}'", engine)
+
+    async def stop(self) -> None:
+        """Shut down the engine and free resources."""
+        if self._engine is not None:
+            await asyncio.to_thread(self._engine.close)
+            self._engine = None
+        self._started = False
+        logger.info("TTS service stopped")
+
+    async def health_check(self) -> bool:
+        """Return ``True`` when an engine is loaded and ready."""
+        return self._started and self._engine is not None
+
+    # -- synthesis ----------------------------------------------------------
+
+    async def synthesize(self, text: str) -> bytes:
+        """Convert *text* to a complete WAV audio buffer.
+
+        Args:
+            text: The text to synthesize.
+
+        Returns:
+            WAV-formatted audio bytes.
+
+        Raises:
+            RuntimeError: If the service has not been started.
+            ValueError: If *text* is empty or blank.
+        """
+        if not text or not text.strip():
+            raise ValueError("Text must not be empty or blank")
+        engine = self._engine
+        if engine is None:
+            raise RuntimeError("TTS engine not initialised — call start()")
+        async with self._synth_lock:
+            return await asyncio.to_thread(engine.synthesize, text)
+
+    async def synthesize_stream(self, text: str) -> AsyncIterator[bytes]:
+        """Yield WAV audio chunks sentence-by-sentence.
+
+        Splits *text* into sentences and synthesizes each independently,
+        yielding results as soon as each sentence is ready.  This reduces
+        time-to-first-audio compared to synthesizing the full text at once.
+
+        Args:
+            text: The text to synthesize.
+
+        Yields:
+            WAV-formatted audio bytes for each sentence.
+
+        Raises:
+            RuntimeError: If the service has not been started.
+        """
+        engine = self._engine
+        if engine is None:
+            raise RuntimeError("TTS engine not initialised — call start()")
+        sentences = _split_sentences(text)
+        if not sentences:
+            return
+        async with self._synth_lock:
+            for sentence in sentences:
+                chunk = await asyncio.to_thread(engine.synthesize, sentence)
+                yield chunk
+
+    # -- properties ---------------------------------------------------------
+
+    @property
+    def engine(self) -> str:
+        """TTS engine identifier (e.g. ``'piper'``, ``'xtts'``)."""
+        return self._config.engine
+
+    @property
+    def sample_rate(self) -> int:
+        """Configured audio sample rate in Hz."""
+        return self._config.sample_rate

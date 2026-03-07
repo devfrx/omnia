@@ -220,5 +220,11 @@ export const api = {
     request<PluginInfo>(`/plugins/${name}`, {
       method: 'PATCH',
       body: JSON.stringify({ enabled })
-    })
+    }),
+
+  // -- Voice ----------------------------------------------------------------
+
+  /** Get voice service status (STT/TTS availability). */
+  getVoiceStatus: (): Promise<{ stt_available: boolean; tts_available: boolean; active_connections: number }> =>
+    request<{ stt_available: boolean; tts_available: boolean; active_connections: number }>('/voice/status')
 }

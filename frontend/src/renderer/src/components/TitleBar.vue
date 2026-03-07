@@ -5,10 +5,35 @@
  * Provides a draggable region with app title and native-style
  * window control buttons (minimize, maximize/restore, close).
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useSettingsStore } from '../stores/settings'
+import { useVoiceStore } from '../stores/voice'
 
 /** Tracks whether the window is currently maximized */
 const isMaximized = ref(false)
+
+const settingsStore = useSettingsStore()
+const voiceStore = useVoiceStore()
+
+/** Display name of the active LLM model, truncated at 30 chars */
+const modelDisplayName = computed(() => {
+  const model = settingsStore.activeModel
+  if (!model) return settingsStore.settings?.llm?.model || 'Nessun modello'
+  const name = model.display_name || model.name
+  return name.length > 30 ? name.slice(0, 30) + '\u2026' : name
+})
+
+/** Whether a model is active (for styling "Nessun modello" differently) */
+const hasActiveModel = computed(() => {
+  return !!settingsStore.activeModel || !!settingsStore.settings?.llm?.model
+})
+
+/** LM Studio connection status */
+const connectionStatus = computed<'connected' | 'loading' | 'disconnected'>(() => {
+  if (settingsStore.isAnyOperationInProgress) return 'loading'
+  if (settingsStore.lmStudioConnected) return 'connected'
+  return 'disconnected'
+})
 
 const windowControls = window.electron?.windowControls
 
@@ -52,6 +77,24 @@ onUnmounted(() => {
     <!-- Draggable region -->
     <div class="titlebar__drag-region">
       <span class="titlebar__title">O.M.N.I.A.</span>
+
+      <span class="titlebar__separator">&middot;</span>
+
+      <div class="titlebar__model-info">
+        <span class="titlebar__status-dot" :class="`titlebar__status-dot--${connectionStatus}`" />
+        <span class="titlebar__model-name" :class="{ 'titlebar__model-name--empty': !hasActiveModel }"
+          :title="modelDisplayName">
+          {{ modelDisplayName }}
+        </span>
+        <span v-if="connectionStatus === 'loading'" class="titlebar__spinner" />
+      </div>
+
+      <template v-if="voiceStore.sttAvailable && voiceStore.sttEngine">
+        <span class="titlebar__separator">&middot;</span>
+        <span class="titlebar__stt">
+          {{ voiceStore.sttEngine }} · {{ voiceStore.sttModel }}
+        </span>
+      </template>
     </div>
 
     <!-- Window controls (no-drag so buttons are clickable) -->
@@ -115,6 +158,90 @@ onUnmounted(() => {
   font-weight: var(--weight-semibold);
   letter-spacing: 2px;
   color: var(--text-muted);
+}
+
+/* Separator between title and model info */
+.titlebar__separator {
+  color: var(--text-muted);
+  opacity: 0.3;
+  margin: 0 8px;
+  font-size: 14px;
+}
+
+/* Model info container */
+.titlebar__model-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+  transition: opacity var(--transition-fast);
+}
+
+/* Connection status dot */
+.titlebar__status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.titlebar__status-dot--connected {
+  background: var(--success);
+}
+
+.titlebar__status-dot--loading {
+  background: var(--accent);
+}
+
+.titlebar__status-dot--disconnected {
+  background: var(--danger);
+}
+
+/* Model name */
+.titlebar__model-name {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar__model-name--empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* STT engine + model label */
+.titlebar__stt {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mini spinner */
+.titlebar__spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid transparent;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: titlebar-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes titlebar-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Control button group */

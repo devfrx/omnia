@@ -30,22 +30,25 @@ llm:
 
 stt:
   engine: "faster-whisper"
-  model: "large-v3"
+  model: "small"
   language: "it"
   device: "cuda"            # cuda | cpu
   compute_type: "float16"   # float16 | int8 | int8_float16
   vad_filter: true
   vad_threshold: 0.5
+  enabled: true
+  max_audio_duration_s: 300
+  max_audio_size_mb: 50
 
 tts:
   engine: "piper"
-  voice: "it_IT-riccardo-x_low"
+  voice: "models/tts/it_IT-riccardo-x_low"
   sample_rate: 22050
-  # Alternative XTTS config (opzionale):
-  # engine: "xtts"
-  # model: "tts_models/multilingual/multi-dataset/xtts_v2"
-  # speaker_wav: "config/voice_reference.wav"
-  # language: "it"
+  enabled: true
+  speed: 1.0
+  xtts_model: "tts_models/multilingual/multi-dataset/xtts_v2"
+  xtts_speaker_wav: ""
+  xtts_language: "it"
 
 database:
   url: "sqlite+aiosqlite:///data/omnia.db"
@@ -72,6 +75,15 @@ voice:
   wake_word: "omnia"
   activation_mode: "push_to_talk"  # push_to_talk | wake_word | always_on
   silence_timeout_ms: 1500
+  auto_tts_response: true
+  voice_confirmation_enabled: true
+
+vram:
+  monitoring_enabled: true
+  warning_threshold_mb: 14000
+  critical_threshold_mb: 15000
+  poll_interval_s: 10
+  total_budget_mb: 16000
 
 ui:
   theme: "dark"

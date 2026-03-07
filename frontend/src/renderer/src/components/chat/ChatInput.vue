@@ -11,10 +11,14 @@
  * - The send button is disabled when the input is empty (and no files) or streaming.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import type { AudioDevice } from '../../composables/useVoice'
 import ModelSelector from '../settings/ModelSelector.vue'
+import MicrophoneButton from '../voice/MicrophoneButton.vue'
 import { useSettingsStore } from '../../stores/settings'
+import { useVoiceStore } from '../../stores/voice'
 
 const settingsStore = useSettingsStore()
+const voiceStore = useVoiceStore()
 
 const supportsVision = computed(() => settingsStore.activeModel?.capabilities.vision ?? false)
 const supportsToolUse = computed(() => settingsStore.activeModel?.capabilities.trained_for_tool_use ?? false)
@@ -27,6 +31,10 @@ const props = defineProps<{
   isConnected: boolean
   /** Whether the LLM is currently streaming a response. */
   isStreaming: boolean
+  /** Available audio input devices. */
+  audioDevices?: AudioDevice[]
+  /** Currently selected audio device ID. */
+  selectedDeviceId?: string
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +42,16 @@ const emit = defineEmits<{
   send: [content: string, attachments: File[]]
   /** Fired when the user clicks the stop button during streaming. */
   stop: []
+  /** Fired when the user starts voice recording. */
+  'voice-start': []
+  /** Fired when the user stops voice recording. */
+  'voice-stop': []
+  /** Fired when the user cancels a stuck processing state. */
+  'voice-cancel-processing': []
+  /** Refresh device list. */
+  'refresh-devices': []
+  /** Select an audio input device. */
+  'select-device': [deviceId: string]
 }>()
 
 /** Two-way bound text value. */
@@ -293,25 +311,34 @@ function handlePaste(event: ClipboardEvent): void {
         :disabled="disabled" aria-label="Scrivi un messaggio" @keydown="handleKeydown" @input="autoResize"
         @paste="handlePaste" />
 
-      <!-- Send / Stop toggle with transition -->
-      <Transition name="btn-swap" mode="out-in">
-        <button v-if="isStreaming" key="stop" class="ci__stop" aria-label="Interrompi generazione"
-          @click="emit('stop')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none" />
-          </svg>
-        </button>
-        <button v-else key="send" class="ci__send" :disabled="(!text.trim() && pendingFiles.length === 0) || disabled"
-          aria-label="Invia messaggio" @click="submit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-        </button>
-      </Transition>
+      <!-- Microphone button (toggle to talk) -->
+      <div class="ci__actions">
+        <MicrophoneButton v-if="voiceStore.isReady" :available="voiceStore.sttAvailable"
+          :connected="voiceStore.connected" :audio-devices="audioDevices ?? []"
+          :selected-device-id="selectedDeviceId ?? ''" @start-recording="$emit('voice-start')"
+          @stop-recording="$emit('voice-stop')" @cancel-processing="$emit('voice-cancel-processing')"
+          @refresh-devices="$emit('refresh-devices')" @select-device="(id) => $emit('select-device', id)" />
+
+        <!-- Send / Stop toggle with transition -->
+        <Transition name="btn-swap" mode="out-in">
+          <button v-if="isStreaming" key="stop" class="ci__stop" aria-label="Interrompi generazione"
+            @click="emit('stop')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none" />
+            </svg>
+          </button>
+          <button v-else key="send" class="ci__send" :disabled="(!text.trim() && pendingFiles.length === 0) || disabled"
+            aria-label="Invia messaggio" @click="submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </Transition>
+      </div>
     </div>
   </div>
 </template>
@@ -554,7 +581,7 @@ function handlePaste(event: ClipboardEvent): void {
   font-size: var(--text-md);
   line-height: var(--leading-normal);
   resize: none;
-  outline: none;
+  outline: none !important;
 }
 
 .ci__textarea::placeholder {
@@ -564,6 +591,12 @@ function handlePaste(event: ClipboardEvent): void {
 .ci__textarea:disabled {
   opacity: var(--opacity-muted);
   cursor: not-allowed;
+}
+
+.ci__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 /* Send button */

@@ -26,7 +26,7 @@ function createWindow(): void {
   // --- Content Security Policy (dev-aware) --------------------------------
   const devCsp = [
     "default-src 'self'",
-    "script-src 'self'",
+    "script-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: http://localhost:8000",
     "connect-src 'self' ws://localhost:8000 http://localhost:8000 ws://localhost:5173"
@@ -34,7 +34,7 @@ function createWindow(): void {
 
   const prodCsp = [
     "default-src 'self'",
-    "script-src 'self'",
+    "script-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: http://localhost:8000",
     "connect-src 'self' ws://localhost:8000 http://localhost:8000"

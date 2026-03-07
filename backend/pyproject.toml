@@ -54,16 +54,40 @@ dev = [
 ]
 # STT
 stt = [
-    "faster-whisper>=1.1",
-    "sounddevice>=0.5",
+    "faster-whisper>=1.1,<2",
     "numpy>=1.26",
+]
+# STT GPU (CUDA 12 runtime libraries)
+stt-gpu = [
+    "nvidia-cublas-cu12>=12.4,<13",
+    "nvidia-cudnn-cu12>=9.0,<10",
 ]
 # TTS
 tts-piper = [
-    "piper-tts>=1.2",
+    "piper-tts>=1.2,<2",
 ]
 tts-xtts = [
     "TTS>=0.22",
+]
+# VRAM monitoring
+vram = [
+    "pynvml>=12.0,<13",
+]
+# Voice (all-in-one: STT + TTS piper + VRAM, CPU-compatible)
+voice = [
+    "faster-whisper>=1.1,<2",
+    "numpy>=1.26",
+    "piper-tts>=1.2,<2",
+    "pynvml>=12.0,<13",
+]
+# Voice with GPU acceleration (adds CUDA libraries)
+voice-gpu = [
+    "faster-whisper>=1.1,<2",
+    "numpy>=1.26",
+    "piper-tts>=1.2,<2",
+    "pynvml>=12.0,<13",
+    "nvidia-cublas-cu12>=12.4,<13",
+    "nvidia-cudnn-cu12>=9.0,<10",
 ]
 
 [build-system]

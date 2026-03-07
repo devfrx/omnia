@@ -12,12 +12,24 @@ import ChatInput from '../components/chat/ChatInput.vue'
 import MessageBubble from '../components/chat/MessageBubble.vue'
 import StreamingIndicator from '../components/chat/StreamingIndicator.vue'
 import ToolConfirmationDialog from '../components/chat/ToolConfirmationDialog.vue'
+import TranscriptOverlay from '../components/voice/TranscriptOverlay.vue'
 import { ChatApiKey } from '../composables/useChat'
+import { useVoice } from '../composables/useVoice'
 import { useChatStore } from '../stores/chat'
+import { useVoiceStore } from '../stores/voice'
 
 const chatStore = useChatStore()
 const chatApi = inject(ChatApiKey)!
 const { sendMessage: send, isConnected, stopGeneration } = chatApi
+
+// Voice composable — manages mic capture + TTS playback
+const {
+  startListening, stopListening, cancelProcessing, connect: connectVoice, transcript,
+  audioDevices, selectedDeviceId, refreshDevices,
+} = useVoice()
+
+// Voice state — TranscriptOverlay handles send/dismiss via user action.
+const voiceStore = useVoiceStore()
 
 /** Pending confirmations as an array for template iteration. */
 const pendingConfirmationsList = computed(() =>
@@ -55,6 +67,39 @@ function handleScroll(): void {
   showScrollButton.value = distanceFromBottom > 200
 }
 
+function handleTranscriptSend(text: string): void {
+  voiceStore.clearTranscript()
+  send(text).then(() => scrollToBottom(true)).catch(console.error)
+}
+
+function handleTranscriptDismiss(): void {
+  voiceStore.clearTranscript()
+}
+
+// Auto-send transcript when confirmation is disabled
+watch(
+  () => voiceStore.transcript,
+  (text) => {
+    if (!text.trim()) return
+    if (voiceStore.confirmTranscript) return
+    const toSend = text.trim()
+    voiceStore.clearTranscript()
+    send(toSend).then(() => scrollToBottom(true)).catch(console.error)
+  }
+)
+
+// Flush pending transcript if user toggles confirm → auto-send mid-flight
+watch(
+  () => voiceStore.confirmTranscript,
+  (confirm) => {
+    if (!confirm && voiceStore.transcript.trim()) {
+      const t = voiceStore.transcript.trim()
+      voiceStore.clearTranscript()
+      send(t).then(() => scrollToBottom(true)).catch(console.error)
+    }
+  }
+)
+
 /** Handle a send event from the ChatInput component. */
 async function handleSend(content: string, attachments: File[]): Promise<void> {
   await send(content, undefined, attachments)
@@ -81,6 +126,8 @@ onMounted(() => {
   }
   scrollToBottom()
   messagesContainer.value?.addEventListener('scroll', handleScroll)
+  // Connect voice WS so the MicrophoneButton becomes available when backend has STT/TTS enabled.
+  connectVoice()
 })
 
 onUnmounted(() => {
@@ -141,8 +188,17 @@ onUnmounted(() => {
     </div>
 
     <!-- Input -->
-    <ChatInput :disabled="false" :is-connected="isConnected" :is-streaming="chatStore.isStreamingCurrentConversation"
-      @send="handleSend" @stop="stopGeneration" />
+    <div class="chat-view__input-wrapper">
+      <TranscriptOverlay :text="transcript" :is-processing="voiceStore.isProcessing"
+        :is-recording="voiceStore.isListening" :audio-level="voiceStore.audioLevel"
+        :duration="voiceStore.formattedDuration" :auto-send="!voiceStore.confirmTranscript" @send="handleTranscriptSend"
+        @dismiss="handleTranscriptDismiss" class="transcript-overlay" />
+      <ChatInput :disabled="chatStore.isStreamingCurrentConversation" :is-connected="isConnected"
+        :is-streaming="chatStore.isStreamingCurrentConversation" :audio-devices="audioDevices"
+        :selected-device-id="selectedDeviceId" @send="handleSend" @stop="stopGeneration" @voice-start="startListening"
+        @voice-stop="stopListening" @voice-cancel-processing="cancelProcessing" @refresh-devices="refreshDevices"
+        @select-device="(id) => { selectedDeviceId = id }" />
+    </div>
 
     <!-- Tool confirmation dialog (one at a time; others queued) -->
     <ToolConfirmationDialog v-if="pendingConfirmationsList.length > 0" :key="pendingConfirmationsList[0].executionId"
@@ -254,6 +310,19 @@ onUnmounted(() => {
   opacity: 0;
   transform: translateX(-50%) translateY(8px);
 }
+
+/* ------------------------------------------ Input wrapper */
+.chat-view__input-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.transcript-overlay {
+  margin: var(--space-3);
+  z-index: var(--z-dropdown);
+}
+
+
 
 /* ------------------------------------------ Streaming-elsewhere banner */
 .chat-view__streaming-elsewhere {

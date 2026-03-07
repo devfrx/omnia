@@ -14,10 +14,14 @@ from loguru import logger
 
 from backend.core.config import OmniaConfig, PROJECT_ROOT, load_config
 from backend.core.context import AppContext, create_context
+from backend.core.event_bus import OmniaEvent
 from backend.db.database import create_engine_and_session, init_db
 from backend.services.conversation_file_manager import ConversationFileManager
 from backend.services.llm_service import LLMService
 from backend.services.lmstudio_service import LMStudioManager
+from backend.services.stt_service import STTService
+from backend.services.tts_service import TTSService
+from backend.services.vram_monitor import VRAMMonitor
 from backend.core.plugin_manager import PluginManager
 from backend.core.tool_registry import ToolRegistry
 from backend.api.middleware.exception_handler import UnhandledExceptionMiddleware
@@ -86,6 +90,63 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as exc:
             logger.error("Failed to rebuild conversations from files: {}", exc)
 
+    # -- Voice services (Phase 4) ------------------------------------------
+    if config.stt.enabled:
+        try:
+            stt_service = STTService(config.stt)
+            await stt_service.start()
+            ctx.stt_service = stt_service
+            logger.info("STT service started (engine={})", config.stt.engine)
+        except Exception as exc:
+            logger.warning("STT service failed to start: {}", exc)
+
+    if config.tts.enabled:
+        try:
+            tts_service = TTSService(config.tts)
+            await tts_service.start()
+            ctx.tts_service = tts_service
+            logger.info("TTS service started (engine={})", config.tts.engine)
+        except Exception as exc:
+            logger.warning("TTS service failed to start: {}", exc)
+
+    if config.vram.monitoring_enabled:
+        try:
+            vram_monitor = VRAMMonitor(
+                ctx.event_bus,
+                poll_interval=config.vram.poll_interval_s,
+                warning_mb=config.vram.warning_threshold_mb,
+                critical_mb=config.vram.critical_threshold_mb,
+            )
+            await vram_monitor.start()
+            ctx.vram_monitor = vram_monitor
+            logger.info("VRAM monitor started")
+        except Exception as exc:
+            logger.warning("VRAM monitor failed to start: {}", exc)
+
+    # -- VRAM event handlers ------------------------------------------------
+    if ctx.vram_monitor:
+        async def _handle_vram_warning(**kwargs):
+            """React to VRAM pressure by logging and suggesting degradation."""
+            usage = kwargs.get("usage")
+            if usage:
+                logger.warning(
+                    "VRAM warning handler: {}MB used / {}MB total — "
+                    "consider switching to a smaller STT model or disabling XTTS",
+                    usage.used_mb, usage.total_mb,
+                )
+
+        async def _handle_vram_critical(**kwargs):
+            """React to critical VRAM pressure."""
+            usage = kwargs.get("usage")
+            if usage:
+                logger.error(
+                    "VRAM critical handler: {}MB used / {}MB total",
+                    usage.used_mb, usage.total_mb,
+                )
+
+        ctx.event_bus.subscribe(OmniaEvent.VRAM_WARNING, _handle_vram_warning)
+        ctx.event_bus.subscribe(OmniaEvent.VRAM_CRITICAL, _handle_vram_critical)
+
     # -- Plugin system ------------------------------------------------------
     plugin_manager = PluginManager(ctx)
     ctx.plugin_manager = plugin_manager
@@ -120,6 +181,21 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.error("Plugin system shutdown error: {}", exc)
     await lmstudio_manager.close()
     await llm_service.close()
+    if ctx.stt_service:
+        try:
+            await ctx.stt_service.stop()
+        except Exception as exc:
+            logger.error("STT shutdown error: {}", exc)
+    if ctx.tts_service:
+        try:
+            await ctx.tts_service.stop()
+        except Exception as exc:
+            logger.error("TTS shutdown error: {}", exc)
+    if ctx.vram_monitor:
+        try:
+            await ctx.vram_monitor.stop()
+        except Exception as exc:
+            logger.error("VRAM monitor shutdown error: {}", exc)
     await engine.dispose()
     logger.info("OMNIA backend stopped")
 

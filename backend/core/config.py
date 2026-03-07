@@ -168,12 +168,18 @@ class STTConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OMNIA_STT__")
 
     engine: str = "faster-whisper"
-    model: str = "large-v3"
+    model: str = "small"
     language: str = "it"
     device: str = "cuda"
     compute_type: str = "float16"
     vad_filter: bool = True
     vad_threshold: float = 0.5
+    enabled: bool = False
+    """Whether STT is enabled. Model loads lazily when first activated."""
+    max_audio_duration_s: int = 300
+    """Maximum audio recording duration in seconds (5 minutes)."""
+    max_audio_size_mb: int = 50
+    """Maximum audio buffer size in megabytes."""
 
 
 class TTSConfig(BaseSettings):
@@ -184,6 +190,17 @@ class TTSConfig(BaseSettings):
     engine: str = "piper"
     voice: str = "it_IT-riccardo-x_low"
     sample_rate: int = 22050
+    enabled: bool = False
+    """Whether TTS is enabled."""
+    speed: float = 1.0
+    """Playback speed multiplier (0.5 to 2.0)."""
+    # XTTS-specific options (ignored when engine == "piper")
+    xtts_model: str = "tts_models/multilingual/multi-dataset/xtts_v2"
+    """XTTS v2 model identifier."""
+    xtts_speaker_wav: str = ""
+    """Path to reference WAV for voice cloning (XTTS only)."""
+    xtts_language: str = "it"
+    """Language for XTTS synthesis."""
 
 
 class DatabaseConfig(BaseSettings):
@@ -234,6 +251,27 @@ class VoiceConfig(BaseSettings):
     wake_word: str = "omnia"
     activation_mode: str = "push_to_talk"
     silence_timeout_ms: int = 1500
+    auto_tts_response: bool = True
+    """Automatically speak LLM responses when voice mode is active."""
+    voice_confirmation_enabled: bool = True
+    """Use voice for tool confirmation (say 'sì'/'no')."""
+
+
+class VRAMConfig(BaseSettings):
+    """VRAM monitoring configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="OMNIA_VRAM__")
+
+    monitoring_enabled: bool = True
+    """Enable GPU VRAM monitoring."""
+    warning_threshold_mb: int = 14_000
+    """VRAM warning threshold in MB (emit alert above this)."""
+    critical_threshold_mb: int = 15_000
+    """VRAM critical threshold in MB (trigger degradation above this)."""
+    poll_interval_s: float = 10.0
+    """Seconds between VRAM checks."""
+    total_budget_mb: int = 16_000
+    """Total GPU VRAM budget in MB."""
 
 
 class UIConfig(BaseSettings):
@@ -270,6 +308,7 @@ class OmniaConfig(BaseSettings):
     )
     mqtt: MQTTConfig = Field(default_factory=MQTTConfig)
     voice: VoiceConfig = Field(default_factory=VoiceConfig)
+    vram: VRAMConfig = Field(default_factory=VRAMConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
 
     @model_validator(mode="before")
