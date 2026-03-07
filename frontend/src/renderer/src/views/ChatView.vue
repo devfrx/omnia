@@ -25,7 +25,7 @@ const { sendMessage: send, isConnected, stopGeneration } = chatApi
 // Voice composable — manages mic capture + TTS playback
 const {
   startListening, stopListening, cancelProcessing, connect: connectVoice, transcript,
-  audioDevices, selectedDeviceId, refreshDevices,
+  audioDevices, selectedDeviceId, refreshDevices, speak,
 } = useVoice()
 
 // Voice state — TranscriptOverlay handles send/dismiss via user action.
@@ -96,6 +96,27 @@ watch(
       const t = voiceStore.transcript.trim()
       voiceStore.clearTranscript()
       send(t).then(() => scrollToBottom(true)).catch(console.error)
+    }
+  }
+)
+
+// Trigger TTS when LLM response finishes (reads every assistant reply aloud).
+// Track whether the stream belonged to the viewed conversation so we don't
+// accidentally speak a message from a different conversation after navigation.
+let wasStreamingHere = false
+watch(
+  () => chatStore.isStreamingCurrentConversation,
+  (streaming) => {
+    if (streaming) {
+      wasStreamingHere = true
+    } else if (wasStreamingHere) {
+      wasStreamingHere = false
+      if (!voiceStore.ttsAvailable || !voiceStore.connected) return
+      const msgs = chatStore.messages
+      const lastMsg = msgs[msgs.length - 1]
+      if (lastMsg?.role === 'assistant' && lastMsg.content?.trim()) {
+        speak(lastMsg.content)
+      }
     }
   }
 )

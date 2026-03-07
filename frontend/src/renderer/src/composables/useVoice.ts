@@ -176,9 +176,15 @@ export function useVoice(): UseVoiceReturn {
   }
   const onTtsStart = (): void => { store.isSpeaking = true }
   const onTtsDone = (): void => { store.isSpeaking = false }
+
+  // Binary audio chunks arrive as Blob in browsers — convert and queue sequentially.
+  let audioConvertChain: Promise<void> = Promise.resolve()
   const onBinaryAudio = (data: unknown): void => {
-    audioQueue.push(data as ArrayBuffer)
-    if (!isPlayingQueue) playNextChunk()
+    audioConvertChain = audioConvertChain.then(async () => {
+      const buf = data instanceof Blob ? await data.arrayBuffer() : data as ArrayBuffer
+      audioQueue.push(buf)
+      if (!isPlayingQueue) playNextChunk()
+    })
   }
   const onVoiceError = (data: unknown): void => {
     const d = data as { message: string }

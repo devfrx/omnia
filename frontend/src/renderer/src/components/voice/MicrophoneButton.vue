@@ -187,7 +187,7 @@ const ringOuterStyle = computed(() => ({
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--space-3);
   background: transparent;
   color: var(--text-secondary, #a0a0a0);
   cursor: pointer;
@@ -261,7 +261,7 @@ const ringOuterStyle = computed(() => ({
    ============================================================ */
 .mic-ring {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--space-4);
   border: 2px solid rgba(231, 76, 60, 0.4);
   pointer-events: none;
   transition: transform 0.08s ease, opacity 0.08s ease;

@@ -397,43 +397,55 @@ Ogni conversazione è salvata come file JSON atomico, sincronizzato automaticame
 
 ### Fase 5 — Plugin: PC Automation
 
+> **Stato architettura attuale**: Il framework di base per risk level, conferme e tool execution è già funzionante (Fase 3). Il plugin `pc_automation` è uno stub vuoto (`__init__.py` only). Le dipendenze (`pyautogui`, `pywinauto`, `pywin32`, `pynput`) sono già in `pyproject.toml` ma non usate.
+
 #### 5.1 — Security Framework (PREREQUISITO — questa è la fase più critica per sicurezza)
-- [ ] `ToolRiskLevel` enum: `SAFE`, `MEDIUM`, `DANGEROUS`, `FORBIDDEN`
-- [ ] **Whitelist comandi**: solo comandi pre-approvati eseguibili (no shell arbitrario)
+- [x] `risk_level`: già implementato come `Literal["safe", "medium", "dangerous", "forbidden"]` in `ToolDefinition` (`plugin_models.py`)
+- [x] `requires_confirmation: bool` già in `ToolDefinition` — gate nel tool loop (`_tool_loop.py`)
+- [ ] **Enforcement FORBIDDEN**: aggiungere check esplicito in `_tool_loop.py` — attualmente tool con `risk_level="forbidden"` NON vengono bloccati se `requires_confirmation=False` ⚠️ **GAP SICUREZZA**
+- [ ] **Whitelist comandi**: dizionario comandi pre-approvati per `execute_command` (no shell arbitrario)
 - [ ] **Subprocess sicuro**: sempre `shell=False`, argomenti come lista, `timeout=30s`, output troncato a 500 chars
 - [ ] **Path validation**: file target deve esistere, non in directory di sistema (`C:\Windows`, `C:\Program Files`, etc.)
-- [ ] **Anti-prompt-injection**: LLM reasoning loggato; se tool `DANGEROUS`, utente vede reasoning + args prima di approvare
-- [ ] **Post-screenshot lockout**: dopo screenshot, bloccare tool `send_email`, `upload_file`, `execute_command` per 60s (anti-exfiltration)
-- [ ] **Confirmation timing attack prevention**: `asyncio.Lock` su executor — un solo tool alla volta quando confirmation pending
+- [ ] **Reasoning in conferma**: passare `thinking_content` nel payload WS `tool_confirmation_required` — attualmente invia `description` (del tool) invece del reasoning LLM ⚠️ **BLOCCANTE per anti-prompt-injection**
+- [ ] **Post-screenshot lockout**: dopo screenshot, bloccare tool `send_email`, `upload_file`, `execute_command` per 60s (anti-exfiltration) — nessun meccanismo attuale
+- [ ] **Confirmation timing attack prevention**: `asyncio.Lock` su executor — un solo tool alla volta quando confirmation pending (attualmente `asyncio.gather()` esegue in parallelo anche con conferme pendenti)
 
-#### 5.2 — Tool Definitions
-- [ ] `open_application(app_name: str)` — risk: `MEDIUM`, whitelist app names
-- [ ] `close_application(app_name: str)` — risk: `MEDIUM`
-- [ ] `type_text(text: str)` — risk: `MEDIUM` (potrebbe digitare comandi pericolosi)
-- [ ] `press_keys(keys: list[str])` — risk: `MEDIUM`, whitelist combinazioni (no Ctrl+Alt+Del, no Win+R)
-- [ ] `take_screenshot() -> base64_png` — risk: `MEDIUM`, privacy warning obbligatorio
-- [ ] `get_active_window() -> str` — risk: `SAFE`
-- [ ] `get_running_apps() -> list[str]` — risk: `SAFE`
-- [ ] `execute_command(command: str)` — risk: `DANGEROUS`, solo whitelist pre-approvata (`ipconfig`, `systeminfo`, `tasklist`, etc.)
-- [ ] `move_mouse(x, y)` / `click(x, y)` — risk: `MEDIUM`
+#### 5.2 — Tool Definitions (plugin `pc_automation` — da creare in `backend/plugins/pc_automation/plugin.py`)
+- [ ] `open_application(app_name: str)` — risk: `medium`, `requires_confirmation: True`, whitelist app names
+- [ ] `close_application(app_name: str)` — risk: `medium`, `requires_confirmation: True`
+- [ ] `type_text(text: str)` — risk: `medium`, `requires_confirmation: True` (potrebbe digitare comandi pericolosi)
+- [ ] `press_keys(keys: list[str])` — risk: `medium`, `requires_confirmation: True`, whitelist combinazioni (no Ctrl+Alt+Del, no Win+R)
+- [ ] `take_screenshot() -> base64_png` — risk: `medium`, `requires_confirmation: True`, `timeout_ms: 10000`, privacy warning obbligatorio
+- [ ] `get_active_window() -> str` — risk: `safe`, `requires_confirmation: False`
+- [ ] `get_running_apps() -> list[str]` — risk: `safe`, `requires_confirmation: False`
+- [ ] `execute_command(command: str)` — risk: `dangerous`, `requires_confirmation: True`, solo whitelist pre-approvata (`ipconfig`, `systeminfo`, `tasklist`, etc.)
+- [ ] `move_mouse(x, y)` / `click(x, y)` — risk: `medium`, `requires_confirmation: True`
+- [ ] Registrazione plugin: `PLUGIN_REGISTRY["pc_automation"] = PcAutomationPlugin` + aggiungere a `config/default.yaml` plugins.enabled
 
 #### 5.3 — Executor (async wrapper)
-- [ ] **Tutte le chiamate blocking** (`pywinauto`, `pyautogui`, `subprocess`) wrappate in `asyncio.to_thread()` — MAI bloccare event loop FastAPI
-- [ ] Timeout per-tool (default 30s, screenshot 10s)
-- [ ] Error handling: catturare `WindowNotFoundError`, `FailSafeException`, `CalledProcessError` ecc.
-- [ ] **Screenshot**: downscale automatico se > 2MP (ottimizza per vision model), auto-delete dopo 60s
+- [x] Pattern `asyncio.to_thread()` già consolidato nel codebase (usato in `stt_service`, `tts_service`, `system_info`, `conversation_file_manager`, ecc.)
+- [x] Timeout per-tool già supportato via `ToolDefinition.timeout_ms` + `asyncio.wait_for()` in `tool_registry.execute_tool()`
+- [x] Output sanitization (rimozione traceback, path) + troncamento a 4096 chars già in `tool_registry.py`
+- [ ] Applicare `asyncio.to_thread()` a tutte le chiamate blocking (`pywinauto`, `pyautogui`, `subprocess`) nel nuovo plugin
+- [ ] Error handling specifico: catturare `WindowNotFoundError`, `FailSafeException`, `CalledProcessError` e restituire `ToolResult.error()` con messaggi user-friendly
+- [ ] **Screenshot**: downscale automatico se > 2MP (ottimizza per vision model), `result_type: "binary_base64"`, auto-delete dal contesto dopo 60s
 
-#### 5.4 — Confirmation UI
-- [ ] Modale frontend con: tool name, args, LLM reasoning (dalla `<think>` section), risk level badge
-- [ ] Timer visuale: 60s per approvare, poi timeout automatico → reject
-- [ ] **Keyboard shortcut**: Enter = approva, Esc = rifiuta (per rapidità)
-- [ ] **Log azioni**: ogni azione approvata/rifiutata salvata in log (audit trail)
+#### 5.4 — Confirmation UI (parzialmente implementata — completare gap)
+- [x] Modale `ToolConfirmationDialog.vue` esistente con: tool name badge, args JSON formattato, risk level badge colorato (warning/error/error-severe), pulsanti Approva/Rifiuta
+- [x] **Keyboard shortcut**: Enter = approva, Esc = rifiuta — già implementati
+- [x] Auto-approve per tool `safe` senza mostrare dialog (`useChat.ts`)
+- [x] Backend: `_request_confirmation()` con timeout server-side via `config.llm.confirmation_timeout_s`
+- [ ] **Reasoning display**: aggiungere campo `reasoning` al payload WS e al tipo TS `WsToolConfirmationRequiredMessage` — mostrare sezione collassabile nel dialog
+- [ ] **Timer visuale 60s**: countdown live nel dialog frontend con cambio colore in prossimità della scadenza + auto-reject alla scadenza
+- [ ] **Log azioni (audit trail)**: DB model `ToolConfirmationAudit` + log su ogni approvazione/rifiuto + endpoint `GET /api/audit/confirmations`
+- [ ] **Attiva/Disattiva approvazione**: config setting `confirmations.enabled: bool` + checkbox in Settings UI + warning safety se disabilitato
 
 #### 5.5 — Test Suite Fase 5
-- [ ] Test security: tool FORBIDDEN non eseguibile, path traversal bloccato, shell injection bloccato
-- [ ] Test confirmation flow: approval, rejection, timeout
-- [ ] Test executor: mock pyautogui/pywinauto, async wrapping, timeout
+- [ ] Test security: tool `forbidden` non eseguibile (enforcement check), path traversal bloccato, shell injection bloccato, whitelist comandi
+- [ ] Test confirmation flow: approval, rejection, timeout, reasoning nel payload
+- [ ] Test executor: mock pyautogui/pywinauto, `asyncio.to_thread()` wrapping, timeout per-tool
 - [ ] Test screenshot: downscale, auto-delete, post-screenshot lockout
+- [ ] Test audit trail: persistenza approvazioni/rifiuti, query endpoint
 
 ---
 

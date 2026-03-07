@@ -188,7 +188,7 @@ class TTSConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OMNIA_TTS__")
 
     engine: str = "piper"
-    voice: str = "it_IT-riccardo-x_low"
+    voice: str = "models/tts/it_IT-paola-medium"
     sample_rate: int = 22050
     enabled: bool = False
     """Whether TTS is enabled."""

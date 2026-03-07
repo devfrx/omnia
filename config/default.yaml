@@ -42,7 +42,7 @@ stt:
 
 tts:
   engine: "piper"
-  voice: "models/tts/it_IT-riccardo-x_low"
+  voice: "models/tts/it_IT-paola-medium"
   sample_rate: 22050
   enabled: true
   speed: 1.0

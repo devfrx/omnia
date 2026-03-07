@@ -15,18 +15,21 @@ from backend.core.config import TTSConfig
 # ---------------------------------------------------------------------------
 
 
-def _write_wav_frames(text, wf, **kwargs):
-    """Side-effect for mocked PiperVoice.synthesize — writes silent PCM."""
-    wf.writeframes(b"\x00" * 2000)
+class _FakeChunk:
+    """Mimics ``piper.voice.AudioChunk`` with just the bytes we need."""
+    def __init__(self, data: bytes) -> None:
+        self.audio_int16_bytes = data
 
 
 def _mock_piper_module() -> MagicMock:
     """Build a mock ``piper`` module whose ``PiperVoice.load()`` returns a
-    voice that writes silent frames via the wave writer."""
+    voice that yields ``_FakeChunk`` objects (matching the current Piper API)."""
     mod = MagicMock()
     voice = MagicMock()
-    voice.synthesize.side_effect = _write_wav_frames
+    voice.synthesize.return_value = [_FakeChunk(b"\x00" * 2000)]
     mod.PiperVoice.load.return_value = voice
+    # Ensure `from piper.config import SynthesisConfig` resolves
+    mod.config.SynthesisConfig = MagicMock
     return mod
 
 
@@ -72,7 +75,7 @@ class TestTTSServiceLifecycle:
     async def test_start_initializes_engine(self, tts_config: TTSConfig):
         """Starting should initialize the Piper engine."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             assert await svc.health_check() is True
@@ -81,7 +84,7 @@ class TestTTSServiceLifecycle:
     async def test_stop_cleans_up(self, tts_config: TTSConfig):
         """Stopping should release engine resources."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             await svc.stop()
@@ -90,7 +93,7 @@ class TestTTSServiceLifecycle:
     async def test_health_check_true(self, tts_config: TTSConfig):
         """health_check True when engine loaded."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             assert await svc.health_check() is True
@@ -110,7 +113,7 @@ class TestTTSSynthesize:
     async def test_synthesize_returns_wav_bytes(self, tts_config: TTSConfig):
         """synthesize() should return valid WAV bytes."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             result = await svc.synthesize("Ciao mondo")
@@ -121,7 +124,7 @@ class TestTTSSynthesize:
     async def test_synthesize_empty_text_raises(self, tts_config: TTSConfig):
         """Empty text should raise ValueError."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             with pytest.raises(ValueError, match="(?i)empty"):
@@ -130,7 +133,7 @@ class TestTTSSynthesize:
     async def test_synthesize_blank_text_raises(self, tts_config: TTSConfig):
         """Whitespace-only text should raise ValueError."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             with pytest.raises(ValueError, match="(?i)empty"):
@@ -157,7 +160,7 @@ class TestTTSStream:
     async def test_stream_yields_chunks(self, tts_config: TTSConfig):
         """synthesize_stream should yield audio chunks."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             chunks: list[bytes] = []
@@ -169,7 +172,7 @@ class TestTTSStream:
     async def test_stream_splits_sentences(self, tts_config: TTSConfig):
         """Long text should be split into sentence chunks."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             # Sentences must start with uppercase to match the improved splitter
@@ -196,7 +199,7 @@ class TestTTSEngineSelection:
     async def test_piper_engine_selected(self, tts_config: TTSConfig):
         """Config engine=piper should invoke PiperVoice.load()."""
         piper = _mock_piper_module()
-        with patch.dict(sys.modules, {"piper": piper}):
+        with patch.dict(sys.modules, {"piper": piper, "piper.config": piper.config}):
             svc = _build_service(tts_config)
             await svc.start()
             piper.PiperVoice.load.assert_called_once()

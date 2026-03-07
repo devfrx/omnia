@@ -38,6 +38,51 @@ def _split_sentences(text: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Markdown / formatting cleanup for TTS
+# ---------------------------------------------------------------------------
+
+_IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+_FENCED_CODE_RE = re.compile(r"```[^\n]*\n[\s\S]*?```")
+_INLINE_CODE_RE = re.compile(r"`([^`]+)`")
+_HEADING_RE = re.compile(r"^#{1,6}\s+", re.MULTILINE)
+_BOLD3_RE = re.compile(r"\*{3}(.+?)\*{3}|_{3}(.+?)_{3}")
+_BOLD_RE = re.compile(r"\*{2}(.+?)\*{2}|_{2}(.+?)_{2}")
+_ITALIC_RE = re.compile(r"(?<!\w)\*(.+?)\*(?!\w)|(?<!\w)_(.+?)_(?!\w)")
+_BULLET_RE = re.compile(r"^\s*[-*+]\s+", re.MULTILINE)
+_NUMBERED_LIST_RE = re.compile(r"^\s*\d+\.\s+", re.MULTILINE)
+_HR_RE = re.compile(r"^[ \t]*([\-*_])\1{2,}[ \t]*$", re.MULTILINE)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+_MULTI_NEWLINE_RE = re.compile(r"\n{2,}")
+_MULTI_SPACE_RE = re.compile(r"[ \t]{2,}")
+
+
+def _normalize_for_tts(text: str) -> str:
+    """Strip markdown formatting so TTS engines read clean prose.
+
+    Handles bold/italic, headings, bullet/numbered lists, code blocks,
+    links, images, horizontal rules, and HTML tags.  Multiple newlines
+    are collapsed to a single space for continuous speech output.
+    """
+    t = text
+    t = _IMAGE_RE.sub("", t)               # images → remove
+    t = _LINK_RE.sub(r"\1", t)             # [text](url) → text
+    t = _FENCED_CODE_RE.sub("", t)         # fenced code blocks → remove
+    t = _INLINE_CODE_RE.sub(r"\1", t)      # `code` → code
+    t = _HR_RE.sub("", t)                  # horizontal rules → remove
+    t = _HEADING_RE.sub("", t)             # ## heading → heading
+    t = _BOLD3_RE.sub(lambda m: m.group(1) or m.group(2), t)  # ***bold italic***
+    t = _BOLD_RE.sub(lambda m: m.group(1) or m.group(2), t)   # **bold**
+    t = _ITALIC_RE.sub(lambda m: m.group(1) or m.group(2), t) # *italic*
+    t = _BULLET_RE.sub("", t)              # - item → item
+    t = _NUMBERED_LIST_RE.sub("", t)       # 1. item → item
+    t = _HTML_TAG_RE.sub("", t)            # <br>, <b>, etc. → remove
+    t = _MULTI_NEWLINE_RE.sub(" ", t)      # multiple newlines → space
+    t = _MULTI_SPACE_RE.sub(" ", t)        # collapse whitespace
+    return t.strip()
+
+
+# ---------------------------------------------------------------------------
 # Piper engine (lazy import)
 # ---------------------------------------------------------------------------
 
@@ -47,9 +92,12 @@ class _PiperEngine:
 
     def __init__(self, voice: str, sample_rate: int, speed: float = 1.0) -> None:
         from piper import PiperVoice  # lazy
+        from piper.config import SynthesisConfig  # lazy
 
         self._sample_rate = sample_rate
-        self._length_scale = 1.0 / speed if speed > 0 else 1.0
+        self._syn_config = SynthesisConfig(
+            length_scale=1.0 / speed if speed > 0 else 1.0,
+        )
 
         # Resolve relative to project root (3 levels up from services/)
         project_root = Path(__file__).resolve().parent.parent.parent
@@ -63,13 +111,14 @@ class _PiperEngine:
         self._voice = PiperVoice.load(model_path)
 
     def synthesize(self, text: str) -> bytes:
-        """Synthesize *text* and return raw PCM-16 audio bytes (blocking)."""
+        """Synthesize *text* and return WAV-formatted audio bytes (blocking)."""
         buf = io.BytesIO()
         with wave.open(buf, "wb") as wf:
             wf.setnchannels(1)
             wf.setsampwidth(2)
             wf.setframerate(self._sample_rate)
-            self._voice.synthesize(text, wf, length_scale=self._length_scale)
+            for chunk in self._voice.synthesize(text, syn_config=self._syn_config):
+                wf.writeframes(chunk.audio_int16_bytes)
         return buf.getvalue()
 
     def close(self) -> None:
@@ -222,8 +271,11 @@ class TTSService:
         engine = self._engine
         if engine is None:
             raise RuntimeError("TTS engine not initialised — call start()")
+        clean = _normalize_for_tts(text)
+        if not clean:
+            raise ValueError("Text must not be empty or blank")
         async with self._synth_lock:
-            return await asyncio.to_thread(engine.synthesize, text)
+            return await asyncio.to_thread(engine.synthesize, clean)
 
     async def synthesize_stream(self, text: str) -> AsyncIterator[bytes]:
         """Yield WAV audio chunks sentence-by-sentence.
@@ -244,7 +296,8 @@ class TTSService:
         engine = self._engine
         if engine is None:
             raise RuntimeError("TTS engine not initialised — call start()")
-        sentences = _split_sentences(text)
+        clean = _normalize_for_tts(text)
+        sentences = _split_sentences(clean)
         if not sentences:
             return
         async with self._synth_lock:
