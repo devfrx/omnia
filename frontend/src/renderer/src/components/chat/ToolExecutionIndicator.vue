@@ -41,8 +41,10 @@ function truncate(text: string, max = 100): string {
             <!-- Tool name -->
             <span class="tool-exec__name">{{ exec.toolName }}</span>
 
-            <!-- Result snippet -->
-            <span v-if="exec.result" class="tool-exec__result">{{ truncate(exec.result) }}</span>
+            <!-- Result snippet (image or text) -->
+            <img v-if="exec.result && exec.contentType?.startsWith('image/')" class="tool-exec__image"
+                :src="`data:${exec.contentType};base64,${exec.result}`" alt="Screenshot" />
+            <span v-else-if="exec.result" class="tool-exec__result">{{ truncate(exec.result) }}</span>
         </div>
     </div>
 </template>
@@ -105,6 +107,15 @@ function truncate(text: string, max = 100): string {
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 280px;
+}
+
+.tool-exec__image {
+    max-width: 240px;
+    max-height: 140px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--white-subtle);
+    object-fit: contain;
+    margin-top: var(--space-1);
 }
 
 @keyframes toolSpin {

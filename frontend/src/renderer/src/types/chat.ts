@@ -152,6 +152,8 @@ export interface WsToolExecutionDoneMessage {
   result: string
   execution_id: string
   success: boolean
+  /** MIME type of the result content (e.g. "image/png"). */
+  content_type?: string
 }
 
 /** Server requests user confirmation before running a tool. */
@@ -162,6 +164,8 @@ export interface WsToolConfirmationRequiredMessage {
   execution_id: string
   risk_level: 'safe' | 'medium' | 'dangerous' | 'forbidden'
   description: string
+  /** LLM reasoning/thinking content explaining why this tool was called. */
+  reasoning?: string
 }
 
 /** Payload the client sends to approve/reject a tool confirmation. */
@@ -204,6 +208,8 @@ export interface ToolExecution {
   status: 'running' | 'done' | 'error'
   result?: string
   success?: boolean
+  /** MIME type of the result content (e.g. "image/png"). */
+  contentType?: string
 }
 
 /** A pending tool confirmation awaiting user approval. */
@@ -213,6 +219,8 @@ export interface ConfirmationRequest {
   args: Record<string, unknown>
   riskLevel: 'safe' | 'medium' | 'dangerous' | 'forbidden'
   description: string
+  /** LLM reasoning for invoking this tool (from thinking content). */
+  reasoning?: string
 }
 
 /** Discriminated union of all server→client WebSocket frames. */

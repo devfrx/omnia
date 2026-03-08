@@ -139,7 +139,7 @@ class TestVoiceWebSocket:
     """Tests for ``/api/voice/ws/voice`` protocol."""
 
     def test_connect_sends_voice_ready_no_services(self, voice_app: FastAPI):
-        """No STT/TTS → voice_error messages, then voice_ready with both False."""
+        """No STT/TTS → voice_ready with both False."""
         client = TestClient(voice_app)
         with client.websocket_connect("/api/voice/ws/voice") as ws:
             ready = _drain_until_ready(ws)

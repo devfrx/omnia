@@ -240,8 +240,13 @@ async def ws_chat(websocket: WebSocket) -> None:
         return
 
     try:
+        message_buffer: list[str] = []
+
         while True:
-            raw = await websocket.receive_text()
+            if message_buffer:
+                raw = message_buffer.pop(0)
+            else:
+                raw = await websocket.receive_text()
             try:
                 data = json.loads(raw)
             except json.JSONDecodeError:
@@ -395,6 +400,7 @@ async def ws_chat(websocket: WebSocket) -> None:
 
                 async def _listen_for_cancel(
                     stream_task: asyncio.Task[None],
+                    msg_buffer: list[str],
                 ) -> None:
                     """Read WS messages while streaming; set cancel on request.
 
@@ -402,6 +408,8 @@ async def ws_chat(websocket: WebSocket) -> None:
                     we set *cancel_event* **and** cancel the *stream_task* so that
                     even a blocked ``httpx.stream()`` call (waiting for response
                     headers from a slow reasoning model) is interrupted immediately.
+                    Non-cancel messages are buffered in *msg_buffer* for later
+                    processing by the main loop.
                     """
                     while not stream_task.done():
                         try:
@@ -414,6 +422,9 @@ async def ws_chat(websocket: WebSocket) -> None:
                                 stream_task.cancel()
                                 logger.debug("Client requested stream cancel")
                                 return
+                            else:
+                                msg_buffer.append(raw_cancel)
+                                logger.debug("Buffered non-cancel message during streaming")
                         except asyncio.TimeoutError:
                             continue
                         except WebSocketDisconnect:
@@ -428,7 +439,7 @@ async def ws_chat(websocket: WebSocket) -> None:
 
                 stream_task = asyncio.create_task(_stream_and_collect())
                 cancel_task = asyncio.create_task(
-                    _listen_for_cancel(stream_task),
+                    _listen_for_cancel(stream_task, message_buffer),
                 )
 
                 try:
@@ -500,10 +511,11 @@ async def ws_chat(websocket: WebSocket) -> None:
                             full_content=full_content,
                             thinking_content=thinking_content,
                             max_iterations=ctx.config.llm.max_tool_iterations,
-                            confirmation_timeout_s=ctx.config.llm.confirmation_timeout_s,
+                            confirmation_timeout_s=ctx.config.pc_automation.confirmation_timeout_s,
                             client_ip=client_ip,
                             sync_fn=_sync_conversation_to_file,
                             cancel_event=cancel_event,
+                            message_buffer=message_buffer,
                         )
                     except WebSocketDisconnect:
                         # Save any pending assistant content before propagating.
@@ -559,17 +571,24 @@ async def ws_chat(websocket: WebSocket) -> None:
 
                 # --- save assistant message --------------------------------
                 try:
-                    asst_msg = Message(
-                        conversation_id=conv_id,
-                        role="assistant",
-                        content=full_content,
-                        thinking_content=thinking_content or None,
-                    )
-                    session.add(asst_msg)
+                    asst_msg_id = ""
+
+                    # Only save a final assistant message if there is actual
+                    # content.  When tool_calls were executed, intermediate
+                    # messages are already persisted by the tool loop.
+                    if full_content.strip() or not tool_calls_collected:
+                        asst_msg = Message(
+                            conversation_id=conv_id,
+                            role="assistant",
+                            content=full_content,
+                            thinking_content=thinking_content or None,
+                        )
+                        session.add(asst_msg)
+                        asst_msg_id = str(asst_msg.id)
 
                     # --- update conversation timestamp -------------------------
                     conv.updated_at = _utcnow()
-                    if conv.title is None and full_content:
+                    if conv.title is None and user_content:
                         conv.title = user_content[:100]
 
                     await session.commit()
@@ -598,7 +617,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                     {
                         "type": "done",
                         "conversation_id": str(conv_id),
-                        "message_id": str(asst_msg.id),
+                        "message_id": asst_msg_id,
                         "finish_reason": finish_reason,
                     }
                 )

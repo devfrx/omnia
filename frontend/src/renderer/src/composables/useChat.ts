@@ -146,15 +146,15 @@ export function useChat(): UseChatReturn {
   const onToolExecutionDone = (data: unknown): void => {
     if (store.streamGeneration !== activeGeneration) return
     const msg = data as WsToolExecutionDoneMessage
-    store.completeToolExecution(msg.execution_id, msg.result, msg.success)
+    store.completeToolExecution(msg.execution_id, msg.result, msg.success, msg.content_type)
   }
 
   const onToolConfirmationRequired = (data: unknown): void => {
     if (store.streamGeneration !== activeGeneration) return
     const msg = data as WsToolConfirmationRequiredMessage
 
-    // Auto-approve safe tools — only show dialog for medium+ risk.
-    if (msg.risk_level === 'safe') {
+    // Auto-approve safe tools or ALL tools when confirmations are disabled.
+    if (msg.risk_level === 'safe' || !settingsStore.toolConfirmations) {
       respondToConfirmation(msg.execution_id, true)
       return
     }
@@ -164,7 +164,8 @@ export function useChat(): UseChatReturn {
       toolName: msg.tool_name,
       args: msg.args,
       riskLevel: msg.risk_level,
-      description: msg.description
+      description: msg.description,
+      reasoning: msg.reasoning
     })
   }
 

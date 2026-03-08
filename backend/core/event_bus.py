@@ -48,6 +48,12 @@ class OmniaEvent(StrEnum):
     VOICE_SESSION_END = "voice.session_end"
     VRAM_WARNING = "vram.warning"
     VRAM_CRITICAL = "vram.critical"
+    # -- PC Automation (Phase 5) --
+    PC_SCREENSHOT_TAKEN = "pc_automation.screenshot_taken"
+    PC_COMMAND_EXECUTED = "pc_automation.command_executed"
+    PC_APP_OPENED = "pc_automation.app_opened"
+    PC_APP_CLOSED = "pc_automation.app_closed"
+    TOOL_CONFIRMATION_LOGGED = "tool.confirmation_logged"
     ERROR = "error"
 
 # Type alias for async handlers

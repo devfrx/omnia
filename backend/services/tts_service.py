@@ -28,13 +28,22 @@ if TYPE_CHECKING:
 # Sentence splitter
 # ---------------------------------------------------------------------------
 
-_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÖÙ-Ü])")
+_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÖØ-Ý\"'(])")
 
 
 def _split_sentences(text: str) -> list[str]:
-    """Split *text* into sentence-like chunks for incremental synthesis."""
+    """Split *text* into sentence-like chunks for incremental synthesis.
+
+    Avoids splitting on decimal numbers (e.g. ``3.14``) and single-letter
+    abbreviations (e.g. ``U.S.A.``).
+    """
+    if not text or not text.strip():
+        return []
     parts = _SENTENCE_RE.split(text.strip())
-    return [p for p in parts if p]
+    # If no split occurred (all lowercase or single sentence), return as-is
+    if len(parts) <= 1:
+        return [text.strip()] if text.strip() else []
+    return [p.strip() for p in parts if p.strip()]
 
 
 # ---------------------------------------------------------------------------
@@ -209,6 +218,22 @@ class TTSService:
                         self._config.speed,
                     )
                     self._started = True
+                except ImportError as exc:
+                    logger.warning(
+                        "XTTS not available ({}): falling back to Piper engine",
+                        exc,
+                    )
+                    try:
+                        self._engine = await asyncio.to_thread(
+                            _PiperEngine,
+                            self._config.voice,
+                            self._config.sample_rate,
+                            self._config.speed,
+                        )
+                        self._started = True
+                        logger.info("TTS fallback to Piper successful")
+                    except Exception:
+                        logger.exception("Piper fallback also failed")
                 except Exception:
                     logger.warning("XTTS failed to load, falling back to Piper")
                     try:
@@ -300,10 +325,10 @@ class TTSService:
         sentences = _split_sentences(clean)
         if not sentences:
             return
-        async with self._synth_lock:
-            for sentence in sentences:
+        for sentence in sentences:
+            async with self._synth_lock:
                 chunk = await asyncio.to_thread(engine.synthesize, sentence)
-                yield chunk
+            yield chunk
 
     # -- properties ---------------------------------------------------------
 

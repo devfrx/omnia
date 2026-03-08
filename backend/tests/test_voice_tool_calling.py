@@ -20,7 +20,7 @@ from starlette.testclient import TestClient
 
 from backend.api.routes import voice as voice_module
 from backend.core.app import create_app
-from backend.core.config import load_config
+from backend.core.config import OmniaConfig, load_config
 from backend.services.audio_utils import MAX_AUDIO_SIZE_BYTES
 
 
@@ -88,7 +88,7 @@ def _reset_voice_connections():
 @pytest.fixture
 async def voice_app():
     """FastAPI app with STT/TTS/VRAM disabled for clean voice tests."""
-    config = load_config()
+    config = OmniaConfig()
     config.stt.enabled = False
     config.tts.enabled = False
     config.vram.monitoring_enabled = False
@@ -132,6 +132,8 @@ class TestVoiceTranscription:
         ctx = voice_app.state.context
         stt = AsyncMock()
         stt.health_check.return_value = True
+        stt.engine = "faster-whisper"
+        stt.model_name = "small"
         stt.transcribe.side_effect = RuntimeError("Model crashed")
         ctx.stt_service = stt
         client = TestClient(voice_app)
@@ -153,6 +155,8 @@ class TestVoiceTranscription:
         ctx = voice_app.state.context
         stt = AsyncMock()
         stt.health_check.return_value = True
+        stt.engine = "faster-whisper"
+        stt.model_name = "small"
         stt.transcribe.side_effect = ValueError("Bad audio format")
         ctx.stt_service = stt
         client = TestClient(voice_app)

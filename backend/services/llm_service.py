@@ -96,8 +96,16 @@ class LLMService:
     # System prompt
     # ------------------------------------------------------------------
 
+    @property
+    def supports_vision(self) -> bool:
+        """Whether the active model supports multimodal (vision) input."""
+        return self._config.supports_vision
+
     def _load_system_prompt(self) -> str:
         """Read the system prompt from the configured file path.
+
+        Appends dynamic environment info (username, home directory)
+        so the LLM can build correct file paths.
 
         Returns:
             The system prompt text.
@@ -114,7 +122,21 @@ class LLMService:
                 f"System prompt file not found: {path}"
             )
 
-        self._system_prompt = path.read_text(encoding="utf-8").strip()
+        base = path.read_text(encoding="utf-8").strip()
+
+        # Append dynamic environment context
+        import os
+        username = os.getlogin()
+        home = os.path.expanduser("~")
+        desktop = os.path.join(home, "Desktop")
+        env_block = (
+            f"\n\n## Ambiente utente\n\n"
+            f"- **Username**: {username}\n"
+            f"- **Home**: {home}\n"
+            f"- **Desktop**: {desktop}\n"
+        )
+
+        self._system_prompt = base + env_block
         logger.debug("Loaded system prompt from {}", path)
         return self._system_prompt
 
@@ -710,6 +732,25 @@ class LLMService:
                     logger.warning("Skipping malformed SSE chunk: {}", data_str)
                     continue
 
+                # Detect error responses from the LLM server (e.g.
+                # Jinja template rendering failures in LM Studio).
+                if "error" in chunk:
+                    err = chunk["error"]
+                    err_msg = (
+                        err.get("message", str(err))
+                        if isinstance(err, dict)
+                        else str(err)
+                    )
+                    logger.error(
+                        "LLM server error during streaming: {}", err_msg,
+                    )
+                    yield {"type": "error", "content": err_msg}
+                    yield {
+                        "type": "done",
+                        "finish_reason": "error",
+                    }
+                    return
+
                 choices = chunk.get("choices")
                 if not choices:
                     continue
@@ -762,6 +803,11 @@ class LLMService:
 
         # Stream ended without [DONE] — either cancelled or connection closed.
         cancelled = cancel_event is not None and cancel_event.is_set()
+        if not cancelled and not tool_calls_acc and last_finish_reason is None:
+            logger.warning(
+                "LLM stream ended without [DONE] and no content/tool_calls "
+                "— possible server error (e.g. Jinja template failure)"
+            )
         finish = "cancelled" if cancelled else (last_finish_reason or "stop")
 
         if think_parser:

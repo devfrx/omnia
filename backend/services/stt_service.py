@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import math
-import struct
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -18,7 +17,10 @@ from typing import TYPE_CHECKING
 from loguru import logger
 
 from backend.core.config import STTConfig
-from backend.services.audio_utils import SUPPORTED_FORMATS
+from backend.services.audio_utils import (
+    _find_data_chunk,
+    validate_audio_buffer,
+)
 
 if TYPE_CHECKING:
     from faster_whisper import WhisperModel
@@ -27,7 +29,11 @@ if TYPE_CHECKING:
 # Constants
 # ---------------------------------------------------------------------------
 
-TRANSCRIPTION_TIMEOUT_S: int = 120  # max seconds for a single transcription
+DEFAULT_TRANSCRIPTION_TIMEOUT_S: float = 120.0  # fallback when duration unknown
+MIN_TRANSCRIPTION_TIMEOUT_S: float = 30.0  # minimum timeout
+
+# Backward-compatible alias (referenced by tests)
+TRANSCRIPTION_TIMEOUT_S: float = DEFAULT_TRANSCRIPTION_TIMEOUT_S
 
 
 # ---------------------------------------------------------------------------
@@ -127,6 +133,9 @@ class STTService:
         self._validate_audio(audio_data)
         await self._load_model()
 
+        # Proportional timeout based on audio duration
+        timeout = self._compute_timeout(audio_data)
+
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         tmp_path = Path(tmp.name)
         try:
@@ -137,13 +146,30 @@ class STTService:
                 "Transcribing {} bytes of audio (sample_rate={})",
                 len(audio_data), sample_rate,
             )
-            result = await self._run_transcription(tmp_path)
+            result = await self._run_transcription(tmp_path, timeout)
         finally:
             tmp_path.unlink(missing_ok=True)
 
         return result
 
     # -- internals -----------------------------------------------------------
+
+    def _compute_timeout(self, audio_data: bytes) -> float:
+        """Calculate a proportional transcription timeout from audio duration.
+
+        Uses ``duration * 1.5`` with a minimum of 30 s and a fallback of
+        120 s when the duration cannot be determined.  The result is also
+        capped by ``TRANSCRIPTION_TIMEOUT_S`` so the module-level
+        constant still acts as an absolute upper bound.
+        """
+        cap = TRANSCRIPTION_TIMEOUT_S
+        try:
+            _, data_size = _find_data_chunk(audio_data)
+            sample_rate = 16000  # STT input is always 16 kHz
+            duration_s = data_size / (sample_rate * 2)  # 16-bit mono
+            return min(max(MIN_TRANSCRIPTION_TIMEOUT_S, duration_s * 1.5), cap)
+        except Exception:
+            return cap
 
     async def _load_model(self) -> None:
         """Lazy-load the faster-whisper model (thread-safe)."""
@@ -281,31 +307,35 @@ class STTService:
             pass
         self._model = None
 
-    async def _run_transcription(self, audio_path: Path) -> TranscriptResult:
+    async def _run_transcription(
+        self,
+        audio_path: Path,
+        timeout: float = DEFAULT_TRANSCRIPTION_TIMEOUT_S,
+    ) -> TranscriptResult:
         """Run faster-whisper transcription in a worker thread.
 
         Both ``model.transcribe()`` and segment iteration MUST happen
         in the same thread — the returned generator holds CUDA state
         that cannot be accessed from a different thread.
 
-        Includes a timeout to prevent infinite hangs from CUDA errors,
-        and invalidates the model on RuntimeError so the next call
-        triggers a fresh reload.
+        Includes a proportional timeout to prevent infinite hangs from
+        CUDA errors, and invalidates the model on RuntimeError so the
+        next call triggers a fresh reload.
         """
         try:
             async with self._inference_lock:
                 return await asyncio.wait_for(
                     asyncio.to_thread(self._transcribe_sync, audio_path),
-                    timeout=TRANSCRIPTION_TIMEOUT_S,
+                    timeout=timeout,
                 )
         except TimeoutError:
             logger.error(
-                "STT transcription timed out after {}s — invalidating model",
-                TRANSCRIPTION_TIMEOUT_S,
+                "STT transcription timed out after {:.0f}s — invalidating model",
+                timeout,
             )
             await self._invalidate_model()
             raise RuntimeError(
-                f"Transcription timed out after {TRANSCRIPTION_TIMEOUT_S}s"
+                f"Transcription timed out after {timeout:.0f}s"
             )
         except RuntimeError as exc:
             logger.error(
@@ -363,41 +393,37 @@ class STTService:
     # -- validation ----------------------------------------------------------
 
     def _validate_audio(self, data: bytes) -> None:
-        """Check audio size, format via magic bytes, and duration for WAV.
+        """Validate audio data before transcription.
+
+        Delegates common checks (format, size, WAV duration) to
+        :func:`~backend.services.audio_utils.validate_audio_buffer`,
+        then applies STT-specific limits from ``self._config``.
 
         Raises:
             ValueError: On any validation failure.
         """
-        if not data:
-            raise ValueError("Empty audio data")
+        # Common audio buffer validation (format, size, duration)
+        validate_audio_buffer(data)
 
+        # STT-specific: enforce per-config size limit (may be stricter)
         max_size = self._config.max_audio_size_mb * 1024 * 1024
         if len(data) > max_size:
             raise ValueError(
                 f"Audio exceeds {self._config.max_audio_size_mb} MB limit"
             )
 
-        detected_fmt: str | None = None
-        for fmt, signatures in SUPPORTED_FORMATS.items():
-            if any(data.startswith(sig) for sig in signatures):
-                detected_fmt = fmt
-                break
-        if detected_fmt is None:
-            raise ValueError(
-                "Unsupported audio format — expected WAV, MP3, OGG, or FLAC"
-            )
-
-        # Duration check for WAV files via header parsing
-        if detected_fmt == "wav" and len(data) >= 44:
+        # STT-specific: enforce per-config duration limit for WAV
+        if data[:4] == b"RIFF" and len(data) >= 44:
             try:
-                byte_rate = struct.unpack_from("<I", data, 28)[0]
-                data_size = struct.unpack_from("<I", data, 40)[0]
-                if byte_rate > 0:
-                    duration = data_size / byte_rate
-                    if duration > self._config.max_audio_duration_s:
-                        raise ValueError(
-                            f"Audio duration {duration:.1f}s exceeds "
-                            f"{self._config.max_audio_duration_s}s limit"
-                        )
-            except struct.error:
+                _, data_size = _find_data_chunk(data)
+                sample_rate = 16000  # STT input is always 16 kHz
+                duration = data_size / (sample_rate * 2)  # 16-bit mono
+                if duration > self._config.max_audio_duration_s:
+                    raise ValueError(
+                        f"Audio duration {duration:.1f}s exceeds "
+                        f"{self._config.max_audio_duration_s}s limit"
+                    )
+            except ValueError:
+                raise
+            except Exception:
                 logger.warning("Failed to parse WAV header for duration check")

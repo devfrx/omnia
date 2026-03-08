@@ -72,6 +72,10 @@ class MockSession:
         """No-op flush."""
         self.flush_count += 1
 
+    async def commit(self) -> None:
+        """No-op commit."""
+        pass
+
     async def exec(self, _stmt: Any) -> _ResultSet:
         """Return all added Message objects."""
         msgs = [o for o in self.added if isinstance(o, Message)]
@@ -136,12 +140,35 @@ class MockToolRegistry:
         return self._definitions.get(name)
 
 
+class _PcAutoCfg:
+    """Minimal PcAutomationConfig stand-in."""
+
+    def __init__(self) -> None:
+        self.confirmations_enabled: bool = True
+
+
+class _Cfg:
+    """Minimal config stand-in."""
+
+    def __init__(self) -> None:
+        self.pc_automation = _PcAutoCfg()
+
+
+class _EventBus:
+    """Minimal EventBus stand-in."""
+
+    async def emit(self, *args, **kwargs) -> None:
+        pass
+
+
 class _Ctx:
     """Lightweight stand-in for AppContext."""
 
     def __init__(self, registry: MockToolRegistry) -> None:
         self.tool_registry = registry
         self.conversation_file_manager = None
+        self.config = _Cfg()
+        self.event_bus = _EventBus()
 
 
 # ---------------------------------------------------------------------------

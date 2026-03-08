@@ -233,6 +233,17 @@ function handlePaste(event: ClipboardEvent): void {
     addFiles(imageFiles)
   }
 }
+
+// -----------------------------------------------------------------------
+// Expose for parent (voice sends need access to pending files)
+// -----------------------------------------------------------------------
+
+defineExpose({
+  pendingFiles,
+  clearPendingFiles(): void {
+    clearAllFiles()
+  },
+})
 </script>
 
 <template>

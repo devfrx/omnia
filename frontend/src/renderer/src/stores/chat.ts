@@ -61,7 +61,7 @@ export const useChatStore = defineStore('chat', () => {
   const activeToolExecutions = ref<ToolExecution[]>([])
 
   /** Tool confirmations awaiting user approval. */
-  const pendingConfirmations = ref<Map<string, ConfirmationRequest>>(new Map())
+  const pendingConfirmations = ref<Record<string, ConfirmationRequest>>({})
 
   // -----------------------------------------------------------------------
   // Computed
@@ -357,7 +357,7 @@ export const useChatStore = defineStore('chat', () => {
       isCancelling.value = false
       streamingConversationId.value = null
       activeToolExecutions.value = []
-      pendingConfirmations.value = new Map()
+      pendingConfirmations.value = {}
       loadConversations().catch(console.error)
       return
     }
@@ -384,7 +384,7 @@ export const useChatStore = defineStore('chat', () => {
     isCancelling.value = false
     streamingConversationId.value = null
     activeToolExecutions.value = []
-    pendingConfirmations.value = new Map()
+    pendingConfirmations.value = {}
 
     // Refresh sidebar list asynchronously (fire-and-forget)
     loadConversations().catch(console.error)
@@ -417,25 +417,31 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /** Mark a tool execution as completed. */
-  function completeToolExecution(executionId: string, result: string, success: boolean): void {
+  function completeToolExecution(
+    executionId: string,
+    result: string,
+    success: boolean,
+    contentType?: string
+  ): void {
     const exec = activeToolExecutions.value.find((e) => e.executionId === executionId)
     if (exec) {
       exec.status = success ? 'done' : 'error'
       exec.result = result
       exec.success = success
+      if (contentType) exec.contentType = contentType
     }
     // Clean up any orphaned confirmation (e.g. backend timeout before user responded).
-    pendingConfirmations.value.delete(executionId)
+    delete pendingConfirmations.value[executionId]
   }
 
   /** Add a pending confirmation request. */
   function addPendingConfirmation(req: ConfirmationRequest): void {
-    pendingConfirmations.value.set(req.executionId, req)
+    pendingConfirmations.value[req.executionId] = req
   }
 
   /** Remove a pending confirmation (after user responds). */
   function removePendingConfirmation(executionId: string): void {
-    pendingConfirmations.value.delete(executionId)
+    delete pendingConfirmations.value[executionId]
   }
 
   /** Clear streaming state (e.g. on error or cancel). Preserves partial content as a message. */
@@ -462,7 +468,7 @@ export const useChatStore = defineStore('chat', () => {
     isCancelling.value = false
     streamingConversationId.value = null
     activeToolExecutions.value = []
-    pendingConfirmations.value = new Map()
+    pendingConfirmations.value = {}
   }
 
   // -----------------------------------------------------------------------

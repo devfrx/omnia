@@ -35,7 +35,6 @@ def llm_config():
         model="test-model",
         system_prompt_file=str(PROJECT_ROOT / "config" / "system_prompt.md"),
         max_tool_iterations=10,
-        confirmation_timeout_s=60,
     )
 
 
@@ -181,17 +180,19 @@ class TestToolCallingConfig:
         assert config.max_tool_iterations == 10
 
     def test_default_confirmation_timeout(self):
-        from backend.core.config import LLMConfig
+        from backend.core.config import PcAutomationConfig
 
-        config = LLMConfig()
+        config = PcAutomationConfig()
         assert config.confirmation_timeout_s == 60
 
     def test_custom_values(self):
-        from backend.core.config import LLMConfig
+        from backend.core.config import LLMConfig, PcAutomationConfig
 
-        config = LLMConfig(max_tool_iterations=5, confirmation_timeout_s=30)
-        assert config.max_tool_iterations == 5
-        assert config.confirmation_timeout_s == 30
+        llm_config = LLMConfig(max_tool_iterations=5)
+        assert llm_config.max_tool_iterations == 5
+
+        pc_config = PcAutomationConfig(confirmation_timeout_s=30)
+        assert pc_config.confirmation_timeout_s == 30
 
 
 # ---------- D. Tool execution integration ----------

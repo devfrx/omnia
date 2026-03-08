@@ -1,34 +1,46 @@
 <script setup lang="ts">
 /**
- * VoiceSettings.vue — Voice configuration panel.
+ * VoiceSettings.vue — Unified voice, STT & TTS configuration panel.
  *
- * Allows the user to enable/disable STT and TTS,
- * select voice, adjust speed, and choose activation mode.
+ * Single source of truth for all voice-related settings. Loads config
+ * from backend on mount and persists changes via PUT /config.
  */
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { api } from '../../services/api'
+import { useSettingsStore } from '../../stores/settings'
+import { useVoiceStore } from '../../stores/voice'
 
-const props = defineProps<{
-  /** Current voice configuration from backend. */
-  config: {
-    stt: { enabled: boolean; model: string; language: string }
-    tts: { enabled: boolean; engine: string; voice: string; speed: number }
-    voice: { activation_mode: string; wake_word: string; auto_tts_response: boolean }
-  }
-}>()
+const settingsStore = useSettingsStore()
+const voiceStore = useVoiceStore()
 
-const emit = defineEmits<{
-  /** Emitted when configuration changes. */
-  update: [config: Record<string, unknown>]
-}>()
+// Local state — overwritten once backend responds
+const loaded = ref(false)
+const saving = ref(false)
+const saveError = ref('')
 
-// Local state mirrors config for two-way binding
-const sttEnabled = ref(props.config.stt.enabled)
-const ttsEnabled = ref(props.config.tts.enabled)
-const ttsEngine = ref(props.config.tts.engine)
-const ttsVoice = ref(props.config.tts.voice)
-const ttsSpeed = ref(props.config.tts.speed)
-const activationMode = ref(props.config.voice.activation_mode)
-const autoTtsResponse = ref(props.config.voice.auto_tts_response)
+// STT
+const sttEnabled = ref(true)
+const sttModel = ref('small')
+const sttLanguage = ref('it')
+
+// TTS
+const ttsEnabled = ref(true)
+const ttsEngine = ref('piper')
+const ttsVoice = ref(settingsStore.settings.tts.voice)
+const ttsSpeed = ref(1.0)
+
+// Voice
+const activationMode = ref('push_to_talk')
+const autoTtsResponse = ref(true)
+const wakeWord = ref('omnia')
+
+const sttModels = [
+  { value: 'tiny', label: 'Tiny (veloce, meno preciso)' },
+  { value: 'base', label: 'Base' },
+  { value: 'small', label: 'Small (bilanciato)' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'large-v3', label: 'Large v3 (preciso, lento)' },
+]
 
 const activationModes = [
   { value: 'push_to_talk', label: 'Premi per parlare' },
@@ -41,114 +53,199 @@ const ttsEngines = [
   { value: 'xtts', label: 'XTTS v2 (GPU, clonazione voce)' },
 ]
 
-function save(): void {
-  emit('update', {
-    stt: { enabled: sttEnabled.value },
-    tts: {
-      enabled: ttsEnabled.value,
-      engine: ttsEngine.value,
-      voice: ttsVoice.value,
-      speed: ttsSpeed.value,
-    },
-    voice: {
-      activation_mode: activationMode.value,
-      auto_tts_response: autoTtsResponse.value,
-    },
-  })
+onMounted(async () => {
+  try {
+    const cfg = await api.getConfig()
+    const stt = cfg.stt as Record<string, unknown> | undefined
+    const tts = cfg.tts as Record<string, unknown> | undefined
+    const voice = cfg.voice as Record<string, unknown> | undefined
+    if (stt) {
+      sttEnabled.value = (stt.enabled as boolean) ?? true
+      sttModel.value = (stt.model as string) ?? 'small'
+      sttLanguage.value = (stt.language as string) ?? 'it'
+    }
+    if (tts) {
+      ttsEnabled.value = (tts.enabled as boolean) ?? true
+      ttsEngine.value = (tts.engine as string) ?? 'piper'
+      ttsVoice.value = (tts.voice as string) ?? ttsVoice.value
+      ttsSpeed.value = (tts.speed as number) ?? 1.0
+    }
+    if (voice) {
+      activationMode.value = (voice.activation_mode as string) ?? 'push_to_talk'
+      autoTtsResponse.value = (voice.auto_tts_response as boolean) ?? true
+      wakeWord.value = (voice.wake_word as string) ?? 'omnia'
+    }
+  } catch (err) {
+    console.warn('[VoiceSettings] Failed to load config:', err)
+  }
+  loaded.value = true
+})
+
+async function save(): Promise<void> {
+  saving.value = true
+  saveError.value = ''
+  try {
+    await api.updateConfig({
+      stt: {
+        enabled: sttEnabled.value,
+        model: sttModel.value,
+        language: sttLanguage.value,
+      },
+      tts: {
+        engine: ttsEngine.value,
+        voice: ttsVoice.value,
+        speed: ttsSpeed.value,
+        enabled: ttsEnabled.value,
+      },
+      voice: {
+        auto_tts_response: autoTtsResponse.value,
+        activation_mode: activationMode.value,
+        wake_word: wakeWord.value,
+      },
+    })
+    // Keep settings store in sync
+    settingsStore.settings.tts.engine = ttsEngine.value
+    settingsStore.settings.tts.voice = ttsVoice.value
+    settingsStore.settings.stt.model = sttModel.value
+    settingsStore.settings.stt.language = sttLanguage.value
+    // Keep voice store in sync (used by useVoice composable)
+    voiceStore.activationMode = activationMode.value as typeof voiceStore.activationMode
+    voiceStore.wakeWord = wakeWord.value
+    voiceStore.autoTtsResponse = autoTtsResponse.value
+  } catch (err) {
+    saveError.value = 'Salvataggio fallito'
+    console.warn('[VoiceSettings] Failed to save config:', err)
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
 <template>
-  <div class="vs" role="region" aria-label="Impostazioni voce">
-    <h3 class="vs__title">Impostazioni Voce</h3>
+  <div class="vs" role="region" aria-label="Impostazioni voce e audio">
+    <template v-if="loaded">
+      <!-- STT Section -->
+      <section class="settings-section" aria-labelledby="stt-heading">
+        <h3 id="stt-heading" class="settings-section__title">Riconoscimento Vocale (STT)</h3>
+        <div class="settings-section__grid">
+          <label class="settings-field settings-field--toggle">
+            <span class="settings-field__label">Abilita STT</span>
+            <span class="settings-field__hint">Riconoscimento vocale tramite Whisper</span>
+            <button class="settings-toggle" :class="{ 'settings-toggle--on': sttEnabled }" role="switch"
+              :aria-checked="sttEnabled" @click="sttEnabled = !sttEnabled; save()">
+              <span class="settings-toggle__thumb" />
+            </button>
+          </label>
+          <template v-if="sttEnabled">
+            <label class="settings-field">
+              <span class="settings-field__label">Modello</span>
+              <select v-model="sttModel" class="settings-field__input" aria-label="Modello STT" @change="save">
+                <option v-for="m in sttModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-field__label">Lingua</span>
+              <input v-model="sttLanguage" type="text" class="settings-field__input" placeholder="it"
+                aria-label="Lingua STT" @change="save" />
+            </label>
+          </template>
+        </div>
+      </section>
 
-    <!-- STT Section -->
-    <section class="vs__section" aria-labelledby="stt-heading">
-      <h4 id="stt-heading" class="vs__subtitle">Riconoscimento Vocale (STT)</h4>
-      <label class="vs__toggle">
-        <input
-          v-model="sttEnabled"
-          type="checkbox"
-          aria-label="Abilita riconoscimento vocale"
-          @change="save"
-        />
-        <span>Abilita STT</span>
-      </label>
-      <div v-if="sttEnabled" class="vs__detail">
-        <span class="vs__info">Modello: {{ props.config.stt.model }}</span>
-        <span class="vs__info">Lingua: {{ props.config.stt.language }}</span>
-      </div>
-    </section>
+      <!-- TTS Section -->
+      <section class="settings-section" aria-labelledby="tts-heading">
+        <h3 id="tts-heading" class="settings-section__title">Sintesi Vocale (TTS)</h3>
+        <div class="settings-section__grid">
+          <label class="settings-field settings-field--toggle">
+            <span class="settings-field__label">Abilita TTS</span>
+            <span class="settings-field__hint">Risposte vocali tramite Piper o XTTS</span>
+            <button class="settings-toggle" :class="{ 'settings-toggle--on': ttsEnabled }" role="switch"
+              :aria-checked="ttsEnabled" @click="ttsEnabled = !ttsEnabled; save()">
+              <span class="settings-toggle__thumb" />
+            </button>
+          </label>
+          <template v-if="ttsEnabled">
+            <label class="settings-field">
+              <span class="settings-field__label">Motore</span>
+              <select v-model="ttsEngine" class="settings-field__input" aria-label="Motore TTS" @change="save">
+                <option v-for="e in ttsEngines" :key="e.value" :value="e.value">{{ e.label }}</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-field__label">Voce</span>
+              <input v-model="ttsVoice" type="text" class="settings-field__input"
+                placeholder="models/tts/it_IT-paola-medium" aria-label="Percorso voce TTS" @change="save" />
+            </label>
+            <label class="settings-field settings-field--wide">
+              <span class="settings-field__label">Velocità</span>
+              <div class="vs__range-row">
+                <input v-model.number="ttsSpeed" type="range" min="0.5" max="2.0" step="0.1" class="vs__range"
+                  aria-label="Velocità TTS" @change="save" />
+                <span class="vs__range-value">{{ ttsSpeed.toFixed(1) }}x</span>
+              </div>
+            </label>
+            <label class="settings-field settings-field--toggle">
+              <span class="settings-field__label">Rispondi automaticamente a voce</span>
+              <span class="settings-field__hint">L'assistente legge automaticamente le risposte</span>
+              <button class="settings-toggle" :class="{ 'settings-toggle--on': autoTtsResponse }" role="switch"
+                :aria-checked="autoTtsResponse" @click="autoTtsResponse = !autoTtsResponse; save()">
+                <span class="settings-toggle__thumb" />
+              </button>
+            </label>
+          </template>
+        </div>
+      </section>
 
-    <!-- TTS Section -->
-    <section class="vs__section" aria-labelledby="tts-heading">
-      <h4 id="tts-heading" class="vs__subtitle">Sintesi Vocale (TTS)</h4>
-      <label class="vs__toggle">
-        <input
-          v-model="ttsEnabled"
-          type="checkbox"
-          aria-label="Abilita sintesi vocale"
-          @change="save"
-        />
-        <span>Abilita TTS</span>
-      </label>
-      <div v-if="ttsEnabled" class="vs__fields">
-        <label class="vs__field">
-          <span class="vs__field-label">Motore</span>
-          <select
-            v-model="ttsEngine"
-            class="vs__select"
-            aria-label="Seleziona motore TTS"
-            @change="save"
-          >
-            <option v-for="e in ttsEngines" :key="e.value" :value="e.value">
-              {{ e.label }}
-            </option>
-          </select>
-        </label>
-        <label class="vs__field">
-          <span class="vs__field-label">Velocità</span>
-          <input
-            v-model.number="ttsSpeed"
-            type="range"
-            min="0.5"
-            max="2.0"
-            step="0.1"
-            class="vs__range"
-            aria-label="Velocità sintesi vocale"
-            @change="save"
-          />
-          <span class="vs__range-value">{{ ttsSpeed.toFixed(1) }}x</span>
-        </label>
-        <label class="vs__toggle">
-          <input
-            v-model="autoTtsResponse"
-            type="checkbox"
-            aria-label="Rispondi automaticamente a voce"
-            @change="save"
-          />
-          <span>Rispondi automaticamente a voce</span>
-        </label>
-      </div>
-    </section>
+      <!-- Voice Interaction -->
+      <section class="settings-section" aria-labelledby="voice-heading">
+        <h3 id="voice-heading" class="settings-section__title">Interazione Vocale</h3>
+        <div class="settings-section__grid">
+          <label class="settings-field settings-field--toggle">
+            <span class="settings-field__label">Conferma invio trascrizione</span>
+            <span class="settings-field__hint">Mostra Invia/Annulla dopo la trascrizione vocale</span>
+            <button class="settings-toggle" :class="{ 'settings-toggle--on': voiceStore.confirmTranscript }"
+              role="switch" :aria-checked="voiceStore.confirmTranscript"
+              @click="voiceStore.confirmTranscript = !voiceStore.confirmTranscript">
+              <span class="settings-toggle__thumb" />
+            </button>
+          </label>
+          <label class="settings-field settings-field--toggle">
+            <span class="settings-field__label">Includi allegati con invio vocale</span>
+            <span class="settings-field__hint">Invia anche gli allegati presenti in chat</span>
+            <button class="settings-toggle" :class="{ 'settings-toggle--on': voiceStore.sttIncludeAttachments }"
+              role="switch" :aria-checked="voiceStore.sttIncludeAttachments"
+              @click="voiceStore.sttIncludeAttachments = !voiceStore.sttIncludeAttachments">
+              <span class="settings-toggle__thumb" />
+            </button>
+          </label>
+        </div>
+      </section>
 
-    <!-- Activation Mode -->
-    <section class="vs__section" aria-labelledby="activation-heading">
-      <h4 id="activation-heading" class="vs__subtitle">Modalità Attivazione</h4>
-      <div class="vs__radio-group" role="radiogroup" aria-label="Modalità di attivazione vocale">
-        <label v-for="mode in activationModes" :key="mode.value" class="vs__radio">
-          <input
-            v-model="activationMode"
-            type="radio"
-            :value="mode.value"
-            name="activation-mode"
-            :aria-label="mode.label"
-            @change="save"
-          />
-          <span>{{ mode.label }}</span>
-        </label>
-      </div>
-    </section>
+      <!-- Activation Mode -->
+      <section class="settings-section" aria-labelledby="activation-heading">
+        <h3 id="activation-heading" class="settings-section__title">Modalità Attivazione</h3>
+        <div class="vs__activation-grid">
+          <label v-for="mode in activationModes" :key="mode.value" class="vs__activation-card"
+            :class="{ 'vs__activation-card--active': activationMode === mode.value }">
+            <input v-model="activationMode" type="radio" :value="mode.value" name="activation-mode"
+              class="vs__activation-radio" @change="save" />
+            <span class="vs__activation-label">{{ mode.label }}</span>
+          </label>
+        </div>
+        <div v-if="activationMode === 'wake_word'" class="vs__wake-word-row">
+          <label class="settings-field">
+            <span class="settings-field__label">Parola di attivazione</span>
+            <input v-model="wakeWord" type="text" class="settings-field__input" placeholder="omnia"
+              aria-label="Parola di attivazione" @change="save" />
+          </label>
+        </div>
+      </section>
+
+      <!-- Save feedback -->
+      <div v-if="saveError" class="vs__error">{{ saveError }}</div>
+    </template>
+
+    <div v-else class="vs__loading">Caricamento impostazioni voce...</div>
   </div>
 </template>
 
@@ -156,84 +253,14 @@ function save(): void {
 .vs {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  color: var(--text-primary, #e0e0e0);
+  gap: var(--space-6, 24px);
 }
 
-.vs__title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-  color: var(--accent, #c8a23c);
-}
-
-.vs__section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.vs__subtitle {
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.vs__toggle {
+.vs__range-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-.vs__toggle input[type="checkbox"] {
-  accent-color: var(--accent, #c8a23c);
-}
-
-.vs__detail {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-left: 24px;
-}
-
-.vs__info {
-  font-size: 0.75rem;
-  color: var(--text-secondary, #a0a0a0);
-}
-
-.vs__fields {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-top: 4px;
-}
-
-.vs__field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-}
-
-.vs__field-label {
-  min-width: 60px;
-  color: var(--text-secondary, #a0a0a0);
-}
-
-.vs__select {
+  gap: var(--space-2, 8px);
   flex: 1;
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-  color: var(--text-primary, #e0e0e0);
-  font-size: 0.8rem;
 }
 
 .vs__range {
@@ -244,25 +271,158 @@ function save(): void {
 .vs__range-value {
   min-width: 36px;
   text-align: right;
-  font-size: 0.78rem;
+  font-size: var(--text-sm, 0.8rem);
   color: var(--text-secondary, #a0a0a0);
 }
 
-.vs__radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.vs__loading {
+  font-size: var(--text-sm, 0.82rem);
+  color: var(--text-muted, #808080);
+  padding: var(--space-2, 8px) 0;
 }
 
-.vs__radio {
+.vs__activation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2, 8px);
+}
+
+.vs__activation-card {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.2));
   cursor: pointer;
+  transition: border-color var(--transition-fast, 0.15s), background var(--transition-fast, 0.15s);
+  font-size: var(--text-sm, 0.82rem);
 }
 
-.vs__radio input[type="radio"] {
+.vs__activation-card:hover {
+  border-color: var(--border-hover, rgba(255, 255, 255, 0.2));
+}
+
+.vs__activation-card--active {
+  border-color: var(--accent-border, #c8a23c);
+  background: var(--accent-dim, rgba(200, 162, 60, 0.1));
+}
+
+.vs__activation-radio {
   accent-color: var(--accent, #c8a23c);
+}
+
+.vs__activation-label {
+  color: var(--text-primary, #e0e0e0);
+}
+
+.vs__wake-word-row {
+  margin-top: var(--space-2, 8px);
+}
+
+.vs__error {
+  font-size: var(--text-sm, 0.8rem);
+  color: #e74c3c;
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+}
+
+/* ── Shared settings field styles (scoped, duplicated from SettingsView) ── */
+.settings-section {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.settings-section__title {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--text-md);
+  color: var(--text-primary);
+}
+
+.settings-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings-field__label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.settings-field__input {
+  padding: 7px var(--space-3);
+  background: var(--bg-input, var(--bg-secondary));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.settings-field__input:focus {
+  border-color: var(--accent-border);
+}
+
+.settings-field--toggle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  grid-column: 1 / -1;
+}
+
+.settings-field--wide {
+  grid-column: 1 / -1;
+}
+
+.settings-field__hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.settings-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.settings-toggle--on {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+}
+
+.settings-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.settings-toggle--on .settings-toggle__thumb {
+  transform: translateX(18px);
+  background: var(--accent);
 }
 </style>

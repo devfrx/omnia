@@ -226,5 +226,18 @@ export const api = {
 
   /** Get voice service status (STT/TTS availability). */
   getVoiceStatus: (): Promise<{ stt_available: boolean; tts_available: boolean; active_connections: number }> =>
-    request<{ stt_available: boolean; tts_available: boolean; active_connections: number }>('/voice/status')
+    request<{ stt_available: boolean; tts_available: boolean; active_connections: number }>('/voice/status'),
+
+  // -- Settings -------------------------------------------------------------
+
+  /** Toggle tool confirmations on/off. */
+  setToolConfirmations: (enabled: boolean): Promise<{ confirmations_enabled: boolean }> =>
+    request<{ confirmations_enabled: boolean }>('/settings/tool-confirmations', {
+      method: 'PUT',
+      body: JSON.stringify({ enabled })
+    }),
+
+  /** Read current tool confirmations state from backend. */
+  getToolConfirmations: (): Promise<{ confirmations_enabled: boolean }> =>
+    request<{ confirmations_enabled: boolean }>('/settings/tool-confirmations')
 }

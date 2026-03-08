@@ -12,6 +12,7 @@
 import { computed, onScopeDispose, ref, shallowRef, watch, type ComputedRef, type Ref, type ShallowRef } from 'vue'
 
 import { WebSocketManager } from '../services/ws'
+import { useChatStore } from '../stores/chat'
 import { useVoiceStore } from '../stores/voice'
 
 // ---------------------------------------------------------------------------
@@ -97,6 +98,7 @@ const STORAGE_KEY = 'omnia_selected_mic_id'
 
 export function useVoice(): UseVoiceReturn {
   const store = useVoiceStore()
+  const chatStore = useChatStore()
 
   // -- Local state --
   const isConnected = ref(false)
@@ -125,6 +127,13 @@ export function useVoice(): UseVoiceReturn {
   let levelTimer: ReturnType<typeof setInterval> | null = null
   let workletBlobUrl: string | null = null
 
+  // -- Silence-based auto-stop (continuous modes) --
+  const SILENCE_THRESHOLD = 0.04        // normalised level below which we consider silence
+  const SPEECH_THRESHOLD = 0.06         // level above which we consider speech started
+  const SILENCE_TIMEOUT_MS = 1500       // ms of continuous silence before auto-stop
+  let speechDetected = false            // has the user started speaking this recording?
+  let silenceSince: number | null = null // timestamp when silence started
+
   // -- STT processing timeout --
   let sttTimeoutTimer: ReturnType<typeof setTimeout> | null = null
   const STT_TIMEOUT_MS = 135_000 // slightly above backend's 120s limit
@@ -150,8 +159,15 @@ export function useVoice(): UseVoiceReturn {
     store.connected = false
     if (store.isListening) stopListening()
   }
+  // -- Retry timer for when STT is not yet available at connection time --
+  let sttRetryTimer: ReturnType<typeof setTimeout> | null = null
+
   const onVoiceReady = (data: unknown): void => {
-    const d = data as { stt_available: boolean; tts_available: boolean; sample_rate?: number; stt_model?: string; stt_engine?: string; tts_engine?: string }
+    const d = data as {
+      stt_available: boolean; tts_available: boolean; sample_rate?: number;
+      stt_model?: string; stt_engine?: string; tts_engine?: string;
+      activation_mode?: string; wake_word?: string; auto_tts_response?: boolean;
+    }
     console.log('[OMNIA Voice] voice_ready:', d)
     voiceAvailable.value = d.stt_available || d.tts_available
     store.sttAvailable = d.stt_available
@@ -161,13 +177,69 @@ export function useVoice(): UseVoiceReturn {
     store.sttModel = d.stt_model ?? ''
     store.sttEngine = d.stt_engine ?? ''
     store.ttsEngine = d.tts_engine ?? ''
+    if (d.activation_mode) store.activationMode = d.activation_mode as typeof store.activationMode
+    if (d.wake_word !== undefined) store.wakeWord = d.wake_word
+    if (d.auto_tts_response !== undefined) store.autoTtsResponse = d.auto_tts_response
+
+    // Clear any pending retry
+    if (sttRetryTimer) { clearTimeout(sttRetryTimer); sttRetryTimer = null }
+
+    // Auto-start recording in continuous modes
+    if (d.stt_available && (store.activationMode === 'always_on' || store.activationMode === 'wake_word')) {
+      scheduleAutoRestart()
+    }
+
+    // If STT is not yet available but we're in continuous mode, retry connection
+    // after a delay (STT may still be loading after a config save).
+    if (!d.stt_available && (store.activationMode === 'always_on' || store.activationMode === 'wake_word')) {
+      console.log('[OMNIA Voice] STT not available yet, will retry connection in 5s')
+      sttRetryTimer = setTimeout(() => {
+        sttRetryTimer = null
+        if (!store.sttAvailable && voiceWs.isConnected) {
+          console.log('[OMNIA Voice] Reconnecting voice WS to pick up STT service...')
+          voiceWs.disconnect()
+          setTimeout(() => voiceWs.connect(), 500)
+        }
+      }, 5000)
+    }
   }
   const onTranscript = (data: unknown): void => {
     const d = data as { text: string }
-    console.log('[OMNIA Voice] Transcript received:', d.text)
+    console.log('[OMNIA Voice] Transcript received:', d.text, '| mode:', store.activationMode)
     clearSttTimeout()
-    store.transcript = d.text
+
+    let text = d.text
+
+    // In wake_word mode, only accept transcripts starting with the wake word
+    if (store.activationMode === 'wake_word') {
+      const ww = store.wakeWord.toLowerCase().trim()
+      const lower = text.toLowerCase().trim()
+      // Strip leading punctuation/symbols that STT may prepend (e.g. "..." or "-")
+      const cleaned = lower.replace(/^[^a-zA-Z\u00C0-\u024F]+/, '')
+      if (!cleaned.startsWith(ww)) {
+        console.log(`[OMNIA Voice] Wake word "${ww}" not found in "${cleaned}", discarding`)
+        store.isProcessing = false
+        scheduleAutoRestart()
+        return
+      }
+      // Strip the wake word prefix from the cleaned text, then recover rest
+      const afterWw = cleaned.slice(ww.length).replace(/^[,.:;!?\s]+/, '').trim()
+      if (!afterWw) {
+        console.log('[OMNIA Voice] Only wake word spoken, no command')
+        store.isProcessing = false
+        scheduleAutoRestart()
+        return
+      }
+      text = afterWw
+      console.log(`[OMNIA Voice] Wake word matched, command: "${text}"`)
+    }
+
+    store.transcript = text
     store.isProcessing = false
+
+    // Always schedule restart for continuous modes — the repeating check
+    // will wait until LLM streaming and TTS finish before actually starting.
+    scheduleAutoRestart()
   }
   const onSttProcessing = (): void => {
     console.log('[OMNIA Voice] STT processing...')
@@ -175,7 +247,12 @@ export function useVoice(): UseVoiceReturn {
     startSttTimeout()
   }
   const onTtsStart = (): void => { store.isSpeaking = true }
-  const onTtsDone = (): void => { store.isSpeaking = false }
+  const onTtsDone = (): void => {
+    store.isSpeaking = false
+    audioConvertChain = Promise.resolve()
+    // Auto-restart recording in continuous modes after TTS finishes
+    scheduleAutoRestart()
+  }
 
   // Binary audio chunks arrive as Blob in browsers — convert and queue sequentially.
   let audioConvertChain: Promise<void> = Promise.resolve()
@@ -184,29 +261,37 @@ export function useVoice(): UseVoiceReturn {
       const buf = data instanceof Blob ? await data.arrayBuffer() : data as ArrayBuffer
       audioQueue.push(buf)
       if (!isPlayingQueue) playNextChunk()
+    }).catch((err) => {
+      console.error('[OMNIA Voice] Audio convert error:', err)
     })
   }
   const onVoiceError = (data: unknown): void => {
     const d = data as { message: string }
     console.error('[OMNIA Voice] Error:', d.message)
     clearSttTimeout()
-    cleanupAudioResources()
+    cleanupRecordingResources()
     store.isListening = false
     store.isProcessing = false
     store.audioLevel = 0
     store.stopRecordingTimer()
+    // In continuous modes, attempt recovery after an error
+    scheduleAutoRestart()
   }
   const onRecordingStopped = (data: unknown): void => {
     const d = data as { empty?: boolean }
     if (d.empty) {
       clearSttTimeout()
       store.isProcessing = false
+      // Empty recording — schedule restart for continuous modes
+      scheduleAutoRestart()
     }
   }
   const onTtsCancelled = (): void => {
     store.isSpeaking = false
     audioQueue.length = 0
     isPlayingQueue = false
+    audioConvertChain = Promise.resolve()
+    scheduleAutoRestart()
   }
 
   // Register handlers (guarded to prevent duplicate registration on singleton)
@@ -238,6 +323,7 @@ export function useVoice(): UseVoiceReturn {
       store.isProcessing = false
       store.audioLevel = 0
       store.stopRecordingTimer()
+      scheduleAutoRestart()
     }, STT_TIMEOUT_MS)
   }
 
@@ -249,18 +335,78 @@ export function useVoice(): UseVoiceReturn {
   }
 
   // -----------------------------------------------------------------------
+  // Auto-restart (always_on / wake_word)
+  // -----------------------------------------------------------------------
+
+  let autoRestartTimer: ReturnType<typeof setTimeout> | null = null
+  const AUTO_RESTART_INTERVAL_MS = 1500
+  const AUTO_RESTART_INITIAL_MS = 800
+
+  /**
+   * Schedule auto-restart for continuous modes (always_on / wake_word).
+   *
+   * Uses REPEATING checks: if conditions aren't met yet (e.g. LLM still
+   * streaming, TTS still speaking), the timer retries every 1.5 s until
+   * recording can actually start.  This prevents the continuous mode from
+   * stalling after tool calls, images, or errors.
+   */
+  function scheduleAutoRestart(): void {
+    if (autoRestartTimer) return
+    const mode = store.activationMode
+    if (mode !== 'always_on' && mode !== 'wake_word') return
+
+    const attempt = async (): Promise<void> => {
+      autoRestartTimer = null
+      // Bail out if mode changed, WS dropped, or STT gone
+      const currentMode = store.activationMode
+      if (currentMode !== 'always_on' && currentMode !== 'wake_word') return
+      if (!voiceWs.isConnected || !store.sttAvailable) return
+
+      // Still busy — retry later instead of giving up
+      if (store.isListening || store.isProcessing || store.isSpeaking || chatStore.isStreaming) {
+        autoRestartTimer = setTimeout(attempt, AUTO_RESTART_INTERVAL_MS)
+        return
+      }
+      try {
+        await startListening()
+      } catch (err) {
+        console.warn('[OMNIA Voice] Auto-restart failed:', err)
+        // Retry even on failure (e.g. mic permission popup)
+        autoRestartTimer = setTimeout(attempt, AUTO_RESTART_INTERVAL_MS)
+      }
+    }
+
+    autoRestartTimer = setTimeout(attempt, AUTO_RESTART_INITIAL_MS)
+  }
+
+  function cancelAutoRestart(): void {
+    if (autoRestartTimer) {
+      clearTimeout(autoRestartTimer)
+      autoRestartTimer = null
+    }
+  }
+
+  // -----------------------------------------------------------------------
   // Audio resource cleanup (idempotent — safe to call multiple times)
   // -----------------------------------------------------------------------
 
-  function cleanupAudioResources(): void {
+  function cleanupRecordingResources(): void {
     if (levelTimer) { clearInterval(levelTimer); levelTimer = null }
     if (workletNode) { workletNode.disconnect(); workletNode = null }
     if (analyserNode) { analyserNode.disconnect(); analyserNode = null }
     if (audioContext) { audioContext.close(); audioContext = null }
     if (mediaStream) { mediaStream.getTracks().forEach((t) => t.stop()); mediaStream = null }
+  }
+
+  function cleanupPlaybackResources(): void {
     if (playbackCtx) { playbackCtx.close(); playbackCtx = null }
     audioQueue.length = 0
     isPlayingQueue = false
+  }
+
+  function cleanupAudioResources(): void {
+    cleanupRecordingResources()
+    cleanupPlaybackResources()
   }
 
   // -----------------------------------------------------------------------
@@ -332,11 +478,31 @@ export function useVoice(): UseVoiceReturn {
     analyserNode = audioContext.createAnalyser()
     analyserNode.fftSize = 256
     source.connect(analyserNode)
+    speechDetected = false
+    silenceSince = null
     levelTimer = setInterval(() => {
       if (!analyserNode) return
       const buf = new Uint8Array(analyserNode.frequencyBinCount)
       analyserNode.getByteFrequencyData(buf)
-      store.audioLevel = buf.reduce((a, b) => a + b, 0) / buf.length / 255
+      const level = buf.reduce((a, b) => a + b, 0) / buf.length / 255
+      store.audioLevel = level
+
+      // Silence-based auto-stop for continuous modes
+      const mode = store.activationMode
+      if (mode !== 'always_on' && mode !== 'wake_word') return
+      if (!store.isListening) return
+
+      if (level >= SPEECH_THRESHOLD) {
+        speechDetected = true
+        silenceSince = null
+      } else if (speechDetected && level < SILENCE_THRESHOLD) {
+        if (silenceSince === null) {
+          silenceSince = Date.now()
+        } else if (Date.now() - silenceSince >= SILENCE_TIMEOUT_MS) {
+          console.log('[OMNIA Voice] Silence detected, auto-stopping recording')
+          stopListening()
+        }
+      }
     }, 100)
 
     // PCM capture via AudioWorklet (loaded from inline blob URL)
@@ -359,7 +525,6 @@ export function useVoice(): UseVoiceReturn {
       voiceWs.sendBinary(e.data)
     }
     source.connect(workletNode)
-    workletNode.connect(audioContext.destination)
 
     // Tell backend to start recording (include actual sample rate)
     voiceWs.send({ type: 'voice_start', sample_rate: actualSampleRate })
@@ -378,8 +543,8 @@ export function useVoice(): UseVoiceReturn {
     // Tell backend to stop recording and process STT
     voiceWs.send({ type: 'voice_stop' })
 
-    // Release audio resources
-    cleanupAudioResources()
+    // Release recording resources (keep playback alive for TTS)
+    cleanupRecordingResources()
   }
 
   // -----------------------------------------------------------------------
@@ -445,6 +610,8 @@ export function useVoice(): UseVoiceReturn {
   }
   function disconnect(): void {
     clearSttTimeout()
+    cancelAutoRestart()
+    if (sttRetryTimer) { clearTimeout(sttRetryTimer); sttRetryTimer = null }
     stopListening()
     cancelSpeak()
     voiceWs.disconnect()

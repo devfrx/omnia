@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { api } from '../services/api'
 import type { DownloadStatusResponse, LMStudioModel, ModelOperationResponse } from '../types/settings'
 
@@ -26,16 +26,16 @@ export interface OmniaSettings {
 export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<OmniaSettings>({
     llm: {
-      model: 'qwen3.5:9b',
+      model: 'mistralai/ministral-3-14b-reasoning',
       temperature: 0.7,
-      maxTokens: 4096
+      maxTokens: 30311
     },
     stt: {
       language: 'it',
-      model: 'large-v3'
+      model: 'small'
     },
     tts: {
-      voice: 'it_IT-riccardo-x_low',
+      voice: 'models/tts/it_IT-paola-medium',
       engine: 'piper'
     },
     ui: {
@@ -43,6 +43,91 @@ export const useSettingsStore = defineStore('settings', () => {
       language: 'it'
     }
   })
+
+  /** Whether tool executions require user confirmation before running. */
+  const toolConfirmations = ref<boolean>(loadToolConfirmations())
+
+  function loadToolConfirmations(): boolean {
+    try {
+      const stored = localStorage.getItem('omnia_tool_confirmations')
+      return stored === null ? true : stored === 'true'
+    } catch {
+      return true
+    }
+  }
+
+  watch(toolConfirmations, (val) => {
+    localStorage.setItem('omnia_tool_confirmations', String(val))
+    api.setToolConfirmations(val).catch(console.error)
+  })
+
+  // Sync backend state on startup — push local preference to backend
+  api.setToolConfirmations(toolConfirmations.value).catch(console.error)
+
+  /** Load settings from the backend. */
+  async function loadSettings(): Promise<void> {
+    try {
+      const config = await api.getConfig()
+      if (config.llm) {
+        const llm = config.llm as Record<string, unknown>
+        settings.value.llm.model = (llm.model as string) ?? settings.value.llm.model
+        settings.value.llm.temperature = (llm.temperature as number) ?? settings.value.llm.temperature
+        settings.value.llm.maxTokens = (llm.max_tokens as number) ?? settings.value.llm.maxTokens
+      }
+      if (config.stt) {
+        const stt = config.stt as Record<string, unknown>
+        settings.value.stt.language = (stt.language as string) ?? settings.value.stt.language
+        settings.value.stt.model = (stt.model as string) ?? settings.value.stt.model
+      }
+      if (config.tts) {
+        const tts = config.tts as Record<string, unknown>
+        settings.value.tts.engine = (tts.engine as string) ?? settings.value.tts.engine
+        settings.value.tts.voice = (tts.voice as string) ?? settings.value.tts.voice
+      }
+      if (config.ui) {
+        const ui = config.ui as Record<string, unknown>
+        settings.value.ui.theme = (ui.theme as 'dark' | 'light') ?? settings.value.ui.theme
+        settings.value.ui.language = (ui.language as string) ?? settings.value.ui.language
+      }
+    } catch (err) {
+      console.warn('[settings store] loadSettings failed:', err)
+    }
+  }
+
+  /** Save current settings to the backend. */
+  async function saveSettings(): Promise<void> {
+    try {
+      await api.updateConfig({
+        llm: {
+          temperature: settings.value.llm.temperature,
+          max_tokens: settings.value.llm.maxTokens
+        },
+        stt: {
+          language: settings.value.stt.language,
+          model: settings.value.stt.model
+        },
+        tts: {
+          engine: settings.value.tts.engine,
+          voice: settings.value.tts.voice
+        },
+        ui: {
+          theme: settings.value.ui.theme,
+          language: settings.value.ui.language
+        }
+      })
+    } catch (err) {
+      console.warn('[settings store] saveSettings failed:', err)
+    }
+  }
+
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+  watch(settings, () => {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => saveSettings(), 1000)
+  }, { deep: true })
+
+  // Load settings from backend on startup
+  loadSettings()
 
   /** All models available on the backend. */
   const models = ref<LMStudioModel[]>([])
@@ -341,6 +426,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     settings,
+    toolConfirmations,
     models,
     isLoadingModels,
     isLoadingModel,
@@ -368,6 +454,8 @@ export const useSettingsStore = defineStore('settings', () => {
     operationDescription,
     startOperationPolling,
     stopOperationPolling,
-    resumeOperationTracking
+    resumeOperationTracking,
+    loadSettings,
+    saveSettings
   }
 })

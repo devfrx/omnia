@@ -221,12 +221,13 @@ class ToolRegistry:
                     # --- collision detection ---
                     if ns_name in new_tools:
                         existing_plugin = new_map[ns_name]
-                        raise ValueError(
-                            f"Tool name collision: '{ns_name}' "
-                            f"registered by both "
-                            f"'{existing_plugin}' and "
-                            f"'{plugin_name}'"
+                        self._logger.error(
+                            "Tool name collision: '{}' registered by "
+                            "both '{}' and '{}' — keeping first, "
+                            "skipping duplicate",
+                            ns_name, existing_plugin, plugin_name,
                         )
+                        continue
 
                     new_tools[ns_name] = tool_def
                     new_map[ns_name] = plugin_name
@@ -261,10 +262,11 @@ class ToolRegistry:
         return list(self._openai_cache)
 
     async def get_available_tools(self) -> list[dict[str, Any]]:
-        """Return tools whose owning plugin is not in ERROR state.
+        """Return tools whose owning plugin is CONNECTED or DEGRADED.
 
-        Plugins with ``ConnectionStatus.ERROR`` are filtered out so
-        the LLM is not offered tools that would certainly fail.
+        Plugins with ``ConnectionStatus.DISCONNECTED`` or ``ERROR``
+        are filtered out so the LLM is not offered tools that would
+        certainly fail at execution time.
 
         Returns:
             Filtered list of OpenAI-format tool dicts.
@@ -286,7 +288,7 @@ class ToolRegistry:
                 status = await plugin.get_connection_status()
             except Exception:
                 continue
-            if status != ConnectionStatus.ERROR:
+            if status in (ConnectionStatus.CONNECTED, ConnectionStatus.DEGRADED, ConnectionStatus.UNKNOWN):
                 available.append(entry)
         return available
 
@@ -392,6 +394,26 @@ class ToolRegistry:
                     tool_name,
                 )
 
+        # --- pre-execution hook ---
+        try:
+            should_proceed = await plugin.pre_execution_hook(
+                tool_def.name, args,
+            )
+            if not should_proceed:
+                self._logger.info(
+                    "Tool '{}' blocked by pre_execution_hook of '{}'",
+                    tool_name, plugin_name,
+                )
+                return ToolResult.error(
+                    f"Tool '{tool_name}' blocked by plugin pre-execution hook"
+                )
+        except Exception as hook_exc:
+            self._logger.warning(
+                "pre_execution_hook error for '{}': {}",
+                tool_name, hook_exc,
+            )
+            # Don't block execution if the hook itself fails
+
         start = time.perf_counter()
         timeout_s = tool_def.timeout_ms / 1000.0
 
@@ -404,6 +426,22 @@ class ToolRegistry:
             )
         except asyncio.TimeoutError:
             elapsed_ms = (time.perf_counter() - start) * 1000
+            # Attempt cleanup via cancel_tool if the plugin supports it
+            if tool_def.supports_cancellation:
+                try:
+                    await asyncio.wait_for(
+                        plugin.cancel_tool(tool_def.name, context),
+                        timeout=5.0,
+                    )
+                    self._logger.info(
+                        "Tool '{}' cancelled successfully after timeout",
+                        tool_name,
+                    )
+                except Exception as cancel_exc:
+                    self._logger.warning(
+                        "cancel_tool failed for '{}': {}",
+                        tool_name, cancel_exc,
+                    )
             result = ToolResult.error(
                 f"Tool '{tool_name}' timed out after "
                 f"{tool_def.timeout_ms}ms",
@@ -443,8 +481,12 @@ class ToolRegistry:
             elif isinstance(result.content, dict):
                 result.content = _sanitise_dict(result.content)
 
-        # --- truncate (always active) ---
-        if isinstance(result.content, str):
+        # --- truncate (always active, except binary content) ---
+        is_binary = (
+            result.content_type is not None
+            and result.content_type.startswith("image/")
+        )
+        if isinstance(result.content, str) and not is_binary:
             if len(result.content) > MAX_TOOL_RESULT_LENGTH:
                 result.content = (
                     result.content[:MAX_TOOL_RESULT_LENGTH - 30]

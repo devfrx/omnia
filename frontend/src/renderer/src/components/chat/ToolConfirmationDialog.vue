@@ -5,7 +5,7 @@
  * Shows a centered dialog with tool name, arguments, and approve/reject buttons.
  * Keyboard shortcuts: Enter = approve, Escape = reject.
  */
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import type { ConfirmationRequest } from '../../types/chat'
 
@@ -19,6 +19,25 @@ const emit = defineEmits<{
 }>()
 
 const dialogRoot = ref<HTMLElement | null>(null)
+
+/* ── Countdown timer ── */
+const TIMEOUT_S = 60
+const remainingSeconds = ref(TIMEOUT_S)
+let timerInterval: ReturnType<typeof setInterval> | null = null
+
+const timerColor = computed(() => {
+    if (remainingSeconds.value <= 10) return 'var(--error, #e74c3c)'
+    if (remainingSeconds.value <= 20) return 'var(--warning, #d4a843)'
+    return 'var(--text-secondary, #8a8a8a)'
+})
+
+const formattedTime = computed(() => {
+    const s = remainingSeconds.value
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+})
+
+/* ── Reasoning toggle ── */
+const showReasoning = ref(false)
 
 function approve(): void {
     emit('respond', props.confirmation.executionId, true)
@@ -53,6 +72,20 @@ onMounted(() => {
         const firstBtn = dialogRoot.value?.querySelector('.confirm-card__btn--reject') as HTMLElement | null
         firstBtn?.focus()
     })
+    timerInterval = setInterval(() => {
+        if (remainingSeconds.value > 0) {
+            remainingSeconds.value--
+        } else {
+            emit('respond', props.confirmation.executionId, false)
+        }
+    }, 1000)
+})
+
+onUnmounted(() => {
+    if (timerInterval) {
+        clearInterval(timerInterval)
+        timerInterval = null
+    }
 })
 </script>
 
@@ -60,7 +93,13 @@ onMounted(() => {
     <Teleport to="body">
         <div ref="dialogRoot" class="confirm-overlay" tabindex="-1" @click.self="reject" @keydown="handleKeydown">
             <div class="confirm-card" role="dialog" aria-modal="true" aria-label="Conferma strumento">
-                <h3 class="confirm-card__title">Conferma esecuzione</h3>
+                <div class="confirm-card__header">
+                    <h3 class="confirm-card__title">Conferma esecuzione</h3>
+                    <div class="confirm-card__timer" :style="{ color: timerColor }">
+                        <span class="timer-icon">⏱</span>
+                        <span class="timer-value">{{ formattedTime }}</span>
+                    </div>
+                </div>
 
                 <div class="confirm-card__tool">
                     <span class="confirm-card__badge">{{ confirmation.toolName }}</span>
@@ -76,6 +115,17 @@ onMounted(() => {
                 <p v-if="confirmation.description" class="confirm-card__desc">
                     {{ confirmation.description }}
                 </p>
+
+                <!-- LLM Reasoning (collapsible) -->
+                <div v-if="confirmation.reasoning" class="confirm-card__reasoning">
+                    <button class="reasoning-toggle" type="button" @click="showReasoning = !showReasoning">
+                        <span class="toggle-icon">{{ showReasoning ? '▼' : '▶' }}</span>
+                        Ragionamento AI
+                    </button>
+                    <div v-show="showReasoning" class="reasoning-content">
+                        <p>{{ confirmation.reasoning }}</p>
+                    </div>
+                </div>
 
                 <div class="confirm-card__args-wrap">
                     <span class="confirm-card__args-label">Argomenti:</span>
@@ -123,11 +173,34 @@ onMounted(() => {
     animation: cardSlideIn 0.25s ease;
 }
 
+.confirm-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
 .confirm-card__title {
-    margin: 0 0 14px;
+    margin: 0;
     font-size: var(--text-lg);
     font-weight: var(--weight-semibold);
     color: var(--text-primary);
+}
+
+.confirm-card__timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-icon {
+    font-size: 1rem;
+}
+
+.timer-value {
+    min-width: 2.5ch;
 }
 
 .confirm-card__tool {
@@ -182,6 +255,51 @@ onMounted(() => {
     font-size: var(--text-base);
     color: var(--text-secondary);
     line-height: var(--leading-snug);
+}
+
+/* ── Reasoning section ── */
+.confirm-card__reasoning {
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.reasoning-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--accent-light);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: var(--text-xs);
+    text-align: left;
+    transition: background var(--transition-fast);
+}
+
+.reasoning-toggle:hover {
+    background: var(--accent-border);
+}
+
+.toggle-icon {
+    font-size: 0.7rem;
+}
+
+.reasoning-content {
+    padding: 8px 12px;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    line-height: var(--leading-normal);
+}
+
+.reasoning-content p {
+    margin: 0;
 }
 
 .confirm-card__args-wrap {

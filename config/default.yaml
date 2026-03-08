@@ -22,7 +22,6 @@ llm:
   supports_thinking: true    # Enable for reasoning models (QwQ, DeepSeek R1)
   supports_vision: true       # Enable for multimodal models
   max_tool_iterations: 10
-  confirmation_timeout_s: 60
   # Ollama-specific options (ignored by LM Studio)
   num_ctx: 8192
   num_gpu: -1
@@ -56,7 +55,7 @@ database:
 plugins:
   enabled:
     - system_info
-    # - pc_automation    # TODO: implement
+    - pc_automation
     # - web_search       # TODO: implement
     # - calendar         # TODO: implement
     # - home_automation  # TODO: implement (requires Home Assistant)
@@ -77,6 +76,14 @@ voice:
   silence_timeout_ms: 1500
   auto_tts_response: true
   voice_confirmation_enabled: true
+
+pc_automation:
+  enabled: false
+  screenshot_lockout_s: 60
+  command_timeout_s: 30
+  max_command_output_chars: 500
+  confirmations_enabled: true
+  confirmation_timeout_s: 60
 
 vram:
   monitoring_enabled: true

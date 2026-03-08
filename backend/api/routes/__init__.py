@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
-from backend.api.routes import chat, config, models, plugins, voice
+from backend.api.routes import audit, chat, config, models, plugins, settings, voice
 
 router = APIRouter(prefix="/api")
 
+router.include_router(audit.router)
 router.include_router(chat.router)
 router.include_router(config.router)
 router.include_router(models.router)
 router.include_router(plugins.router)
+router.include_router(settings.router)
 router.include_router(voice.router)
 
 

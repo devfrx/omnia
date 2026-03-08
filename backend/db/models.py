@@ -37,7 +37,10 @@ class Conversation(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_utcnow)
 
     # -- relationships ------------------------------------------------------
-    messages: list["Message"] = Relationship(back_populates="conversation")
+    messages: list["Message"] = Relationship(
+        back_populates="conversation",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -49,12 +52,24 @@ class Message(SQLModel, table=True):
     """A single message inside a conversation."""
 
     __tablename__ = "messages"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "role IN ('user', 'assistant', 'system', 'tool')",
+            name="ck_message_role",
+        ),
+    )
 
     id: uuid.UUID = Field(
         default_factory=_new_uuid,
         primary_key=True,
     )
-    conversation_id: uuid.UUID = Field(foreign_key="conversations.id")
+    conversation_id: uuid.UUID = Field(
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey("conversations.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     role: str = Field(
         max_length=16,
         description='One of "user", "assistant", "system", or "tool".',
@@ -75,7 +90,10 @@ class Message(SQLModel, table=True):
     conversation: Optional[Conversation] = Relationship(
         back_populates="messages"
     )
-    attachments: list["Attachment"] = Relationship(back_populates="message")
+    attachments: list["Attachment"] = Relationship(
+        back_populates="message",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +112,11 @@ class Attachment(SQLModel, table=True):
     )
     message_id: Optional[uuid.UUID] = Field(
         default=None,
-        foreign_key="messages.id",
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey("messages.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
         description="Linked after the user message is persisted.",
     )
     filename: str = Field(max_length=256)
@@ -106,3 +128,63 @@ class Attachment(SQLModel, table=True):
 
     # -- relationships ------------------------------------------------------
     message: Optional[Message] = Relationship(back_populates="attachments")
+
+
+# ---------------------------------------------------------------------------
+# Tool Confirmation Audit (Phase 5)
+# ---------------------------------------------------------------------------
+
+
+class ToolConfirmationAudit(SQLModel, table=True):
+    """Audit log for tool confirmation decisions.
+
+    Records every user approval/rejection for tools requiring confirmation,
+    enabling post-hoc security review and compliance tracking.
+    """
+
+    __tablename__ = "tool_confirmation_audit"
+    __table_args__ = (
+        sa.Index("ix_audit_conversation_id", "conversation_id"),
+        sa.Index("ix_audit_tool_name", "tool_name"),
+        sa.Index("ix_audit_created_at", "created_at"),
+        sa.CheckConstraint(
+            "risk_level IN ('safe', 'low', 'medium', 'dangerous', 'forbidden')",
+            name="ck_audit_risk_level",
+        ),
+    )
+
+    id: uuid.UUID = Field(
+        default_factory=_new_uuid,
+        primary_key=True,
+    )
+    conversation_id: uuid.UUID = Field(
+        description="Conversation in which the tool was invoked.",
+    )
+    execution_id: str = Field(
+        max_length=64,
+        description="Unique execution ID for correlation with tool loop.",
+    )
+    tool_name: str = Field(
+        max_length=128,
+        description="Namespaced tool name (e.g. pc_automation_take_screenshot).",
+    )
+    args_json: str = Field(
+        default="{}",
+        description="JSON-serialized tool arguments.",
+    )
+    risk_level: str = Field(
+        max_length=16,
+        description="Risk level at time of invocation (safe/medium/dangerous/forbidden).",
+    )
+    user_approved: bool = Field(
+        description="Whether the user approved the execution.",
+    )
+    rejection_reason: Optional[str] = Field(
+        default=None,
+        description="Reason for rejection: 'user_rejected', 'timeout', 'cancelled'.",
+    )
+    thinking_content: Optional[str] = Field(
+        default=None,
+        description="LLM reasoning/thinking content at time of tool invocation.",
+    )
+    created_at: datetime = Field(default_factory=_utcnow)

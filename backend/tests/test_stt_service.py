@@ -4,12 +4,24 @@ from __future__ import annotations
 
 import math
 import struct
+import sys
 import time
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from backend.core.config import STTConfig
+
+
+# ---------------------------------------------------------------------------
+# Mock faster_whisper module (avoids needing the real native package)
+# ---------------------------------------------------------------------------
+
+def _mock_faster_whisper_module() -> MagicMock:
+    """Build a mock ``faster_whisper`` module so ``from faster_whisper import
+    WhisperModel`` resolves to a MagicMock class without the real package."""
+    mod = MagicMock()
+    return mod
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +78,19 @@ def mock_whisper_model():
     return _make_mock_model()
 
 
+@pytest.fixture
+def mock_fw():
+    """Inject a mock ``faster_whisper`` module into ``sys.modules``.
+
+    Yields the mock ``WhisperModel`` class so tests can configure
+    return values and assert calls — without needing the real native
+    package installed.
+    """
+    fw = _mock_faster_whisper_module()
+    with patch.dict(sys.modules, {"faster_whisper": fw}):
+        yield fw.WhisperModel
+
+
 # ---------------------------------------------------------------------------
 # Lifecycle
 # ---------------------------------------------------------------------------
@@ -73,23 +98,21 @@ def mock_whisper_model():
 class TestSTTServiceLifecycle:
     """Test start / stop / health_check."""
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_start_loads_model(self, mock_cls, stt_config):
+    async def test_start_loads_model(self, mock_fw, stt_config):
         """Starting the service should trigger model loading."""
         from backend.services.stt_service import STTService
 
         svc = STTService(stt_config)
         await svc.start()
 
-        mock_cls.assert_called_once_with(
+        mock_fw.assert_called_once_with(
             stt_config.model,
             device=stt_config.device,
             compute_type=stt_config.compute_type,
         )
         assert await svc.health_check() is True
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_stop_unloads_model(self, mock_cls, stt_config):
+    async def test_stop_unloads_model(self, mock_fw, stt_config):
         """Stopping should release model resources."""
         from backend.services.stt_service import STTService
 
@@ -99,8 +122,7 @@ class TestSTTServiceLifecycle:
 
         assert await svc.health_check() is False
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_health_check_true_when_loaded(self, mock_cls, stt_config):
+    async def test_health_check_true_when_loaded(self, mock_fw, stt_config):
         """health_check returns True when model is loaded."""
         from backend.services.stt_service import STTService
 
@@ -123,14 +145,13 @@ class TestSTTServiceLifecycle:
 class TestSTTTranscribe:
     """Test transcription."""
 
-    @patch("faster_whisper.WhisperModel")
     async def test_transcribe_returns_result(
-        self, mock_cls, stt_config, mock_whisper_model
+        self, mock_fw, stt_config, mock_whisper_model
     ):
         """Basic transcription returns a TranscriptResult."""
         from backend.services.stt_service import STTService, TranscriptResult
 
-        mock_cls.return_value = mock_whisper_model
+        mock_fw.return_value = mock_whisper_model
         svc = STTService(stt_config)
         await svc.start()
 
@@ -144,28 +165,26 @@ class TestSTTTranscribe:
         assert result.confidence == pytest.approx(expected_conf, rel=1e-3)
         assert result.duration_s == pytest.approx(2.5)
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_transcribe_lazy_loads_model(self, mock_cls, stt_config):
+    async def test_transcribe_lazy_loads_model(self, mock_fw, stt_config):
         """Transcribe should auto-load the model if not yet started."""
         from backend.services.stt_service import STTService
 
-        mock_cls.return_value = _make_mock_model(
+        mock_fw.return_value = _make_mock_model(
             text=" Test", avg_logprob=-0.2, duration=1.0,
         )
 
         svc = STTService(stt_config)
         result = await svc.transcribe(_make_wav())
 
-        mock_cls.assert_called_once()
+        mock_fw.assert_called_once()
         assert result.text.strip() == "Test"
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_transcribe_segment_confidence(self, mock_cls, stt_config):
+    async def test_transcribe_segment_confidence(self, mock_fw, stt_config):
         """Per-segment confidence should use math.exp(avg_logprob)."""
         from backend.services.stt_service import STTService
 
         logprob = -0.5
-        mock_cls.return_value = _make_mock_model(avg_logprob=logprob)
+        mock_fw.return_value = _make_mock_model(avg_logprob=logprob)
         svc = STTService(stt_config)
         await svc.start()
 
@@ -175,16 +194,15 @@ class TestSTTTranscribe:
         seg = result.segments[0]
         assert seg.confidence == pytest.approx(math.exp(logprob), rel=1e-3)
 
-    @patch("faster_whisper.WhisperModel")
     @patch("backend.services.stt_service.TRANSCRIPTION_TIMEOUT_S", 1)
-    async def test_transcribe_timeout(self, mock_cls, stt_config):
+    async def test_transcribe_timeout(self, mock_fw, stt_config):
         """Should raise RuntimeError on transcription timeout."""
         from backend.services.stt_service import STTService
 
         def _hang(*_a, **_kw):
             time.sleep(10)
 
-        mock_cls.return_value.transcribe.side_effect = _hang
+        mock_fw.return_value.transcribe.side_effect = _hang
 
         svc = STTService(stt_config)
         await svc.start()
@@ -228,24 +246,22 @@ class TestSTTValidation:
         with pytest.raises(ValueError, match="[Ee]mpty"):
             await svc.transcribe(b"")
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_accept_wav_format(self, mock_cls, stt_config, mock_whisper_model):
+    async def test_accept_wav_format(self, mock_fw, stt_config, mock_whisper_model):
         """WAV audio with RIFF header should be accepted."""
         from backend.services.stt_service import STTService
 
-        mock_cls.return_value = mock_whisper_model
+        mock_fw.return_value = mock_whisper_model
         svc = STTService(stt_config)
         await svc.start()
 
         result = await svc.transcribe(_make_wav())
         assert result.text.strip() != ""
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_accept_mp3_format(self, mock_cls, stt_config, mock_whisper_model):
+    async def test_accept_mp3_format(self, mock_fw, stt_config, mock_whisper_model):
         """MP3 magic bytes (ID3 / 0xFFxFB) should pass validation."""
         from backend.services.stt_service import STTService
 
-        mock_cls.return_value = mock_whisper_model
+        mock_fw.return_value = mock_whisper_model
         svc = STTService(stt_config)
         await svc.start()
 
@@ -253,12 +269,11 @@ class TestSTTValidation:
         result = await svc.transcribe(mp3_data)
         assert result is not None
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_accept_ogg_format(self, mock_cls, stt_config, mock_whisper_model):
+    async def test_accept_ogg_format(self, mock_fw, stt_config, mock_whisper_model):
         """OGG magic bytes should pass validation."""
         from backend.services.stt_service import STTService
 
-        mock_cls.return_value = mock_whisper_model
+        mock_fw.return_value = mock_whisper_model
         svc = STTService(stt_config)
         await svc.start()
 
@@ -266,12 +281,11 @@ class TestSTTValidation:
         result = await svc.transcribe(ogg_data)
         assert result is not None
 
-    @patch("faster_whisper.WhisperModel")
-    async def test_accept_flac_format(self, mock_cls, stt_config, mock_whisper_model):
+    async def test_accept_flac_format(self, mock_fw, stt_config, mock_whisper_model):
         """FLAC magic bytes should pass validation."""
         from backend.services.stt_service import STTService
 
-        mock_cls.return_value = mock_whisper_model
+        mock_fw.return_value = mock_whisper_model
         svc = STTService(stt_config)
         await svc.start()
 

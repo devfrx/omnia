@@ -8,7 +8,7 @@ Settings v2 for validation and env parsing.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from loguru import logger
@@ -135,9 +135,6 @@ class LLMConfig(BaseSettings):
     """Enable for multimodal models (LLaVA, Qwen2-VL) that accept images."""
     max_tool_iterations: int = 10
     """Maximum number of tool calling rounds before forcing a final answer."""
-    confirmation_timeout_s: int = 60
-    """Seconds to wait for user confirmation on dangerous tools."""
-
     # -- Ollama-specific options (ignored by other providers) --
     num_ctx: int = 8192
     """Context window size. Ollama defaults to 2048; 8192 is better for 9B+ models."""
@@ -167,7 +164,7 @@ class STTConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="OMNIA_STT__")
 
-    engine: str = "faster-whisper"
+    engine: Literal["faster-whisper"] = "faster-whisper"
     model: str = "small"
     language: str = "it"
     device: str = "cuda"
@@ -187,12 +184,12 @@ class TTSConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="OMNIA_TTS__")
 
-    engine: str = "piper"
+    engine: Literal["piper", "xtts"] = "piper"
     voice: str = "models/tts/it_IT-paola-medium"
     sample_rate: int = 22050
     enabled: bool = False
     """Whether TTS is enabled."""
-    speed: float = 1.0
+    speed: float = Field(default=1.0, ge=0.5, le=2.0)
     """Playback speed multiplier (0.5 to 2.0)."""
     # XTTS-specific options (ignored when engine == "piper")
     xtts_model: str = "tts_models/multilingual/multi-dataset/xtts_v2"
@@ -257,6 +254,25 @@ class VoiceConfig(BaseSettings):
     """Use voice for tool confirmation (say 'sì'/'no')."""
 
 
+class PcAutomationConfig(BaseSettings):
+    """PC Automation plugin configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="OMNIA_PC_AUTOMATION__")
+
+    enabled: bool = False
+    """Whether PC automation tools are available."""
+    screenshot_lockout_s: int = 60
+    """Seconds to block dangerous tools after a screenshot."""
+    command_timeout_s: int = 30
+    """Maximum seconds a command can run."""
+    max_command_output_chars: int = 500
+    """Maximum characters of command output to return."""
+    confirmations_enabled: bool = True
+    """Whether tool confirmations are required (safety feature)."""
+    confirmation_timeout_s: int = 60
+    """Seconds to wait for user confirmation on dangerous tools."""
+
+
 class VRAMConfig(BaseSettings):
     """VRAM monitoring configuration."""
 
@@ -308,6 +324,9 @@ class OmniaConfig(BaseSettings):
     )
     mqtt: MQTTConfig = Field(default_factory=MQTTConfig)
     voice: VoiceConfig = Field(default_factory=VoiceConfig)
+    pc_automation: PcAutomationConfig = Field(
+        default_factory=PcAutomationConfig
+    )
     vram: VRAMConfig = Field(default_factory=VRAMConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
 

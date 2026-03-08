@@ -22,7 +22,7 @@ from loguru import logger
 # ---------------------------------------------------------------------------
 
 MAX_AUDIO_DURATION_S: int = 300  # 5 minutes
-MAX_AUDIO_SIZE_BYTES: int = 50 * 1024 * 1024  # 50 MB
+MAX_AUDIO_SIZE_BYTES: int = 20 * 1024 * 1024  # 20 MB (5 min @ 16kHz 16-bit mono ≈ 9.6 MB)
 TEMP_FILE_TTL_S: int = 60  # Auto-delete after 60 seconds
 
 SUPPORTED_FORMATS: dict[str, list[bytes]] = {
@@ -78,34 +78,37 @@ def validate_audio_buffer(data: bytes) -> AudioValidation:
     """Validate an audio buffer against size, format, and duration limits.
 
     Checks performed (in order):
-    1. Buffer size ≤ ``MAX_AUDIO_SIZE_BYTES`` (50 MB).
-    2. Magic-byte format detection (must be a supported format).
-    3. For WAV files, header-based duration ≤ ``MAX_AUDIO_DURATION_S``.
+    1. Non-empty buffer.
+    2. Buffer size ≤ ``MAX_AUDIO_SIZE_BYTES``.
+    3. Magic-byte format detection (must be a supported format).
+    4. For WAV files, header-based duration ≤ ``MAX_AUDIO_DURATION_S``.
 
     Args:
         data: Raw audio bytes to validate.
 
     Returns:
         An :class:`AudioValidation` with the outcome.
+
+    Raises:
+        ValueError: On any validation failure.
     """
+    if not data:
+        raise ValueError("Empty audio data")
+
     if len(data) > MAX_AUDIO_SIZE_BYTES:
-        return AudioValidation(
-            valid=False,
-            format="unknown",
-            error=f"Audio size {len(data)} bytes exceeds limit of {MAX_AUDIO_SIZE_BYTES} bytes",
+        raise ValueError(
+            f"Audio size {len(data)} bytes exceeds limit of {MAX_AUDIO_SIZE_BYTES} bytes"
         )
 
     fmt = detect_audio_format(data)
     if fmt == "unknown":
-        return AudioValidation(valid=False, format="unknown", error="Unsupported audio format")
+        raise ValueError("Unsupported audio format — expected WAV, MP3, OGG, or FLAC")
 
     if fmt == "wav":
         duration = estimate_audio_duration_s(data)
         if duration > MAX_AUDIO_DURATION_S:
-            return AudioValidation(
-                valid=False,
-                format=fmt,
-                error=f"Audio duration {duration:.1f}s exceeds limit of {MAX_AUDIO_DURATION_S}s",
+            raise ValueError(
+                f"Audio duration {duration:.1f}s exceeds limit of {MAX_AUDIO_DURATION_S}s"
             )
 
     return AudioValidation(valid=True, format=fmt)
@@ -116,10 +119,42 @@ def validate_audio_buffer(data: bytes) -> AudioValidation:
 # ---------------------------------------------------------------------------
 
 
+def _find_data_chunk(audio_data: bytes) -> tuple[int, int]:
+    """Find the ``data`` chunk in a WAV file.
+
+    Walks the RIFF chunk list starting after the 12-byte RIFF header
+    to locate the ``data`` sub-chunk, handling non-standard chunks
+    (LIST, INFO, etc.) that may appear before it.
+
+    Args:
+        audio_data: Raw WAV bytes (must start with ``RIFF``).
+
+    Returns:
+        ``(data_offset, data_size)`` — byte offset of the PCM payload
+        and its declared size.
+
+    Raises:
+        ValueError: If no ``data`` chunk is found.
+    """
+    pos = 12  # skip RIFF header (4 'RIFF' + 4 filesize + 4 'WAVE')
+    while pos + 8 <= len(audio_data):
+        chunk_id = audio_data[pos:pos + 4]
+        chunk_size = struct.unpack_from("<I", audio_data, pos + 4)[0]
+        if chunk_id == b"data":
+            return pos + 8, chunk_size
+        pos += 8 + chunk_size
+        # WAV chunks are word-aligned
+        if chunk_size % 2 != 0:
+            pos += 1
+    raise ValueError("No 'data' chunk found in WAV file")
+
+
 def estimate_audio_duration_s(data: bytes, sample_rate: int = 16000) -> float:
     """Estimate audio duration in seconds.
 
-    For WAV files the header is parsed (byte-rate + data chunk size).
+    For WAV files the header is parsed (byte-rate from ``fmt`` chunk +
+    data size from the ``data`` chunk, which is located by scanning
+    rather than assuming a fixed offset).
     For other formats a rough estimate is derived from *sample_rate* and
     16-bit mono assumptions.
 
@@ -129,14 +164,20 @@ def estimate_audio_duration_s(data: bytes, sample_rate: int = 16000) -> float:
 
     Returns:
         Estimated duration in seconds (``0.0`` on parse failure).
+
+    Raises:
+        ValueError: If a WAV file has an invalid byte_rate (≤ 0).
     """
     if len(data) >= 44 and data[:4] == b"RIFF":
         try:
             byte_rate = struct.unpack_from("<I", data, 28)[0]
-            data_size = struct.unpack_from("<I", data, 40)[0]
-            if byte_rate > 0:
-                return data_size / byte_rate
-        except struct.error:
+            if byte_rate <= 0:
+                raise ValueError("Invalid WAV: byte_rate must be > 0")
+            _, data_size = _find_data_chunk(data)
+            return data_size / byte_rate
+        except ValueError:
+            raise
+        except (struct.error, Exception):
             logger.warning("Failed to parse WAV header for duration estimation")
             return 0.0
 

@@ -71,7 +71,7 @@ async def _cancel_tts(
     if tts_task and not tts_task.done():
         tts_task.cancel()
         try:
-            await asyncio.wait_for(asyncio.shield(tts_task), timeout=1.0)
+            await asyncio.wait_for(tts_task, timeout=1.0)
         except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
             pass
     return asyncio.Event()
@@ -127,18 +127,16 @@ async def ws_voice(websocket: WebSocket) -> None:
     tts_task: asyncio.Task | None = None
 
     try:
+        # Read services dynamically from ctx so that config-driven
+        # restarts are picked up within the same WS session.
         stt = ctx.stt_service
         tts = ctx.tts_service
 
-        # Inform client about service availability (graceful degradation).
+        # Log unavailable services (voice_ready already carries the flags).
         if not stt:
-            await _send_json(websocket, {
-                "type": "voice_error", "message": "STT service not available",
-            })
+            logger.warning("Voice WS {}: STT service not available at connect time", session_id)
         if not tts:
-            await _send_json(websocket, {
-                "type": "voice_error", "message": "TTS service not available",
-            })
+            logger.warning("Voice WS {}: TTS service not available at connect time", session_id)
         await _send_json(websocket, {
             "type": "voice_ready",
             "stt_available": stt is not None,
@@ -147,6 +145,9 @@ async def ws_voice(websocket: WebSocket) -> None:
             "stt_engine": stt.engine if stt else None,
             "tts_engine": tts.engine if tts else None,
             "sample_rate": tts.sample_rate if tts else None,
+            "activation_mode": ctx.config.voice.activation_mode,
+            "wake_word": ctx.config.voice.wake_word,
+            "auto_tts_response": ctx.config.voice.auto_tts_response,
         })
 
         while True:
@@ -154,6 +155,11 @@ async def ws_voice(websocket: WebSocket) -> None:
 
             if message.get("type") == "websocket.disconnect":
                 break
+
+            # Re-read services on each iteration so config-driven
+            # restarts (via PUT /config) are picked up immediately.
+            stt = ctx.stt_service
+            tts = ctx.tts_service
 
             # --- Binary frame: audio data ----------------------------------
             if "bytes" in message:
@@ -222,49 +228,47 @@ async def ws_voice(websocket: WebSocket) -> None:
                     wf.writeframes(audio_copy)
                 wav_bytes = wav_buf.getvalue()
 
-                try:
-                    await ctx.event_bus.emit(OmniaEvent.STT_STARTED, session_id=session_id)
-                    result = await stt.transcribe(wav_bytes)
-                    logger.debug(
-                        "STT result: text={!r} lang={} conf={:.3f} dur={:.1f}s",
-                        result.text, result.language,
-                        result.confidence, result.duration_s,
-                    )
-                    await ctx.event_bus.emit(
-                        OmniaEvent.STT_RESULT,
-                        session_id=session_id, text=result.text,
-                    )
-                    await _send_json(websocket, {
-                        "type": "transcript",
-                        "text": result.text,
-                        "language": result.language,
-                        "confidence": result.confidence,
-                        "duration_s": result.duration_s,
-                    })
-                except RuntimeError as exc:
-                    logger.error(
-                        "STT RuntimeError (model will reload on next call): {}",
-                        exc,
-                    )
-                    await ctx.event_bus.emit(
-                        OmniaEvent.STT_ERROR,
-                        session_id=session_id, error=str(exc),
-                    )
-                    await _send_json(websocket, {
-                        "type": "voice_error",
-                        "message": f"Transcription failed: {type(exc).__name__}. "
-                                   "The model will reload on the next attempt.",
-                    })
-                except Exception as exc:
-                    logger.exception("STT transcription failed: {}", exc)
-                    await ctx.event_bus.emit(
-                        OmniaEvent.STT_ERROR,
-                        session_id=session_id, error=str(exc),
-                    )
-                    await _send_json(websocket, {
-                        "type": "voice_error",
-                        "message": f"Transcription failed: {type(exc).__name__}",
-                    })
+                # Offload STT to a task so the WS loop stays responsive
+                async def _run_stt(wav_data: bytes, sid: str) -> None:
+                    try:
+                        await ctx.event_bus.emit(OmniaEvent.STT_STARTED, session_id=sid)
+                        result = await stt.transcribe(wav_data)
+                        logger.debug(
+                            "STT result: text={!r} lang={} conf={:.3f} dur={:.1f}s",
+                            result.text, result.language,
+                            result.confidence, result.duration_s,
+                        )
+                        await ctx.event_bus.emit(
+                            OmniaEvent.STT_RESULT, session_id=sid, text=result.text,
+                        )
+                        await _send_json(websocket, {
+                            "type": "transcript",
+                            "text": result.text,
+                            "language": result.language,
+                            "confidence": result.confidence,
+                            "duration_s": result.duration_s,
+                        })
+                    except RuntimeError as exc:
+                        logger.error("STT RuntimeError: {}", exc)
+                        await ctx.event_bus.emit(
+                            OmniaEvent.STT_ERROR, session_id=sid, error=str(exc),
+                        )
+                        await _send_json(websocket, {
+                            "type": "voice_error",
+                            "message": f"Transcription failed: {type(exc).__name__}. "
+                                       "The model will reload on the next attempt.",
+                        })
+                    except Exception as exc:
+                        logger.exception("STT transcription failed: {}", exc)
+                        await ctx.event_bus.emit(
+                            OmniaEvent.STT_ERROR, session_id=sid, error=str(exc),
+                        )
+                        await _send_json(websocket, {
+                            "type": "voice_error",
+                            "message": f"Transcription failed: {type(exc).__name__}",
+                        })
+
+                asyncio.create_task(_run_stt(wav_bytes, session_id))
 
             elif msg_type == "tts_speak":
                 text = data.get("text", "").strip()
@@ -292,6 +296,13 @@ async def ws_voice(websocket: WebSocket) -> None:
     except Exception as exc:
         logger.error("Voice WS error [{}]: {}", session_id, exc)
     finally:
+        # Cancel any running TTS task
+        if tts_task and not tts_task.done():
+            tts_task.cancel()
+            try:
+                await tts_task
+            except (asyncio.CancelledError, Exception):
+                pass
         async with _voice_lock:
             _voice_connections[client_ip] = max(
                 0, _voice_connections.get(client_ip, 1) - 1,
@@ -299,8 +310,6 @@ async def ws_voice(websocket: WebSocket) -> None:
             if _voice_connections.get(client_ip, 0) <= 0:
                 _voice_connections.pop(client_ip, None)
         cancel_event.set()
-        if tts_task and not tts_task.done():
-            tts_task.cancel()
         try:
             await ctx.event_bus.emit(
                 OmniaEvent.VOICE_SESSION_END, session_id=session_id,

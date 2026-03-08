@@ -21,49 +21,30 @@
         </div>
       </section>
 
-      <!-- STT Settings -->
-      <section class="settings-section">
-        <h3 class="settings-section__title">Speech-to-Text</h3>
-        <div class="settings-section__grid">
-          <label class="settings-field">
-            <span class="settings-field__label">Lingua</span>
-            <input v-model="settingsStore.settings.stt.language" type="text" class="settings-field__input" />
-          </label>
-          <label class="settings-field">
-            <span class="settings-field__label">Modello</span>
-            <input v-model="settingsStore.settings.stt.model" type="text" class="settings-field__input" />
-          </label>
-        </div>
-      </section>
+      <!-- Voice & STT/TTS Settings (unified) -->
+      <VoiceSettings />
 
-      <!-- TTS Settings -->
-      <section class="settings-section">
-        <h3 class="settings-section__title">Text-to-Speech</h3>
-        <div class="settings-section__grid">
-          <label class="settings-field">
-            <span class="settings-field__label">Engine</span>
-            <input v-model="settingsStore.settings.tts.engine" type="text" class="settings-field__input" />
-          </label>
-          <label class="settings-field">
-            <span class="settings-field__label">Voce</span>
-            <input v-model="settingsStore.settings.tts.voice" type="text" class="settings-field__input" />
-          </label>
-        </div>
-      </section>
+      <!-- Plugin Management -->
+      <PluginManagement />
 
-      <!-- Voice Settings -->
+      <!-- Security Settings -->
       <section class="settings-section">
-        <h3 class="settings-section__title">Voce</h3>
+        <h3 class="settings-section__title">Sicurezza</h3>
         <div class="settings-section__grid">
           <label class="settings-field settings-field--toggle">
-            <span class="settings-field__label">Conferma invio trascrizione</span>
-            <span class="settings-field__hint">Mostra i pulsanti Invia/Annulla dopo la trascrizione vocale</span>
-            <button class="settings-toggle" :class="{ 'settings-toggle--on': voiceStore.confirmTranscript }"
-              role="switch" :aria-checked="voiceStore.confirmTranscript"
-              @click="voiceStore.confirmTranscript = !voiceStore.confirmTranscript">
+            <span class="settings-field__label">Conferme strumenti</span>
+            <span class="settings-field__hint">Richiedi conferma prima di eseguire strumenti</span>
+            <button class="settings-toggle" :class="{ 'settings-toggle--on': settingsStore.toolConfirmations }"
+              role="switch" :aria-checked="settingsStore.toolConfirmations"
+              @click="settingsStore.toolConfirmations = !settingsStore.toolConfirmations">
               <span class="settings-toggle__thumb" />
             </button>
           </label>
+          <div v-if="!settingsStore.toolConfirmations" class="settings-warning">
+            <span class="settings-warning__icon">⚠️</span>
+            <span class="settings-warning__text">Disabilitare le conferme riduce la sicurezza. Gli strumenti pericolosi
+              verranno eseguiti senza approvazione, sia da input testuale che vocale.</span>
+          </div>
         </div>
       </section>
 
@@ -90,11 +71,11 @@
 
 <script setup lang="ts">
 import ModelManager from '../components/settings/ModelManager.vue'
+import VoiceSettings from '../components/voice/VoiceSettings.vue'
+import PluginManagement from '../components/settings/PluginManagement.vue'
 import { useSettingsStore } from '../stores/settings'
-import { useVoiceStore } from '../stores/voice'
 
 const settingsStore = useSettingsStore()
-const voiceStore = useVoiceStore()
 </script>
 
 <style scoped>
@@ -227,5 +208,27 @@ const voiceStore = useVoiceStore()
 .settings-toggle--on .settings-toggle__thumb {
   transform: translateX(18px);
   background: var(--accent);
+}
+
+.settings-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 170, 0, 0.08);
+  border: 1px solid rgba(255, 170, 0, 0.25);
+  border-radius: var(--radius-sm);
+  grid-column: 1 / -1;
+}
+
+.settings-warning__icon {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+}
+
+.settings-warning__text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 </style>

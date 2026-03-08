@@ -54,7 +54,14 @@ export const useVoiceStore = defineStore('voice', () => {
   /** TTS engine name (e.g. "piper"). */
   const ttsEngine = ref('')
 
+  /** Voice activation mode. */
+  const activationMode = ref<'push_to_talk' | 'wake_word' | 'always_on'>('push_to_talk')
 
+  /** Wake word for wake_word activation mode. */
+  const wakeWord = ref('omnia')
+
+  /** Whether LLM responses should be read aloud automatically. */
+  const autoTtsResponse = ref(true)
 
   /** Recording duration in seconds. */
   const recordingDuration = ref(0)
@@ -65,6 +72,9 @@ export const useVoiceStore = defineStore('voice', () => {
   /** Recording duration update timer. */
   let durationTimer: ReturnType<typeof setInterval> | null = null
 
+  /** Whether to include pending chat attachments when sending via voice. Default: true. */
+  const sttIncludeAttachments = ref<boolean>(loadSttIncludeAttachments())
+
   function loadConfirmTranscript(): boolean {
     try {
       return localStorage.getItem('omnia_voice_confirm_transcript') === 'true'
@@ -73,8 +83,21 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
+  function loadSttIncludeAttachments(): boolean {
+    try {
+      const stored = localStorage.getItem('omnia_stt_include_attachments')
+      return stored === null ? true : stored === 'true'
+    } catch {
+      return true
+    }
+  }
+
   watch(confirmTranscript, (val) => {
     localStorage.setItem('omnia_voice_confirm_transcript', String(val))
+  })
+
+  watch(sttIncludeAttachments, (val) => {
+    localStorage.setItem('omnia_stt_include_attachments', String(val))
   })
 
   // ---------------------------------------------------------------------------
@@ -156,10 +179,14 @@ export const useVoiceStore = defineStore('voice', () => {
     micPermission,
     connected,
     confirmTranscript,
+    sttIncludeAttachments,
     recordingDuration,
     sttModel,
     sttEngine,
     ttsEngine,
+    activationMode,
+    wakeWord,
+    autoTtsResponse,
 
     // Computed
     isActive,

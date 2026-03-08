@@ -261,8 +261,8 @@ class TestValidation:
 class TestCollisionDetection:
 
     @pytest.mark.asyncio
-    async def test_collision_raises_error(self, event_bus):
-        """Single plugin registering two tools with the same name → collision."""
+    async def test_collision_skips_duplicate(self, event_bus):
+        """Single plugin registering two tools with the same name → skip duplicate."""
         # Both tools have name "action" under the same plugin key "alpha"
         # → both produce namespaced name "alpha_action" → collision
         p1 = MockPlugin(
@@ -272,8 +272,9 @@ class TestCollisionDetection:
         pm = MockPluginManager({"alpha": p1})
         reg = ToolRegistry(pm, event_bus)
 
-        with pytest.raises((ValueError, RuntimeError)):
-            await reg.refresh()
+        await reg.refresh()
+        # Should register only the first one, not raise
+        assert reg.get_tool_definition("alpha_action") is not None
 
 
 # ---------------------------------------------------------------------------
@@ -370,6 +371,21 @@ class TestDynamicAvailability:
 
         available = await registry.get_available_tools()
         assert len(available) == 1
+
+    @pytest.mark.asyncio
+    async def test_available_tools_excludes_disconnected(self, make_registry):
+        """Plugin DISCONNECTED → its tools are NOT available."""
+        plugin = MockPlugin(
+            tools=[_make_tool("action")],
+            name="offline",
+            status=ConnectionStatus.DISCONNECTED,
+        )
+        registry = make_registry({"offline": plugin})
+        await registry.refresh()
+
+        assert len(registry.get_all_tools()) == 1
+        available = await registry.get_available_tools()
+        assert len(available) == 0
 
 
 # ---------------------------------------------------------------------------

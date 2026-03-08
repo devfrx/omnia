@@ -22,6 +22,9 @@ const chatStore = useChatStore()
 const chatApi = inject(ChatApiKey)!
 const { sendMessage: send, isConnected, stopGeneration } = chatApi
 
+/** Template ref to access ChatInput's pending files for voice sends. */
+const chatInputRef = ref<InstanceType<typeof ChatInput> | null>(null)
+
 // Voice composable — manages mic capture + TTS playback
 const {
   startListening, stopListening, cancelProcessing, connect: connectVoice, transcript,
@@ -33,7 +36,7 @@ const voiceStore = useVoiceStore()
 
 /** Pending confirmations as an array for template iteration. */
 const pendingConfirmationsList = computed(() =>
-  Array.from(chatStore.pendingConfirmations.values())
+  Object.values(chatStore.pendingConfirmations)
 )
 
 /** Template ref for the scrollable message container. */
@@ -69,7 +72,13 @@ function handleScroll(): void {
 
 function handleTranscriptSend(text: string): void {
   voiceStore.clearTranscript()
-  send(text).then(() => scrollToBottom(true)).catch(console.error)
+  const files = voiceStore.sttIncludeAttachments
+    ? [...(chatInputRef.value?.pendingFiles ?? [])]
+    : undefined
+  send(text, undefined, files).then(() => {
+    if (files?.length) chatInputRef.value?.clearPendingFiles()
+    scrollToBottom(true)
+  }).catch(console.error)
 }
 
 function handleTranscriptDismiss(): void {
@@ -84,7 +93,13 @@ watch(
     if (voiceStore.confirmTranscript) return
     const toSend = text.trim()
     voiceStore.clearTranscript()
-    send(toSend).then(() => scrollToBottom(true)).catch(console.error)
+    const files = voiceStore.sttIncludeAttachments
+      ? [...(chatInputRef.value?.pendingFiles ?? [])]
+      : undefined
+    send(toSend, undefined, files).then(() => {
+      if (files?.length) chatInputRef.value?.clearPendingFiles()
+      scrollToBottom(true)
+    }).catch(console.error)
   }
 )
 
@@ -95,7 +110,13 @@ watch(
     if (!confirm && voiceStore.transcript.trim()) {
       const t = voiceStore.transcript.trim()
       voiceStore.clearTranscript()
-      send(t).then(() => scrollToBottom(true)).catch(console.error)
+      const files = voiceStore.sttIncludeAttachments
+        ? [...(chatInputRef.value?.pendingFiles ?? [])]
+        : undefined
+      send(t, undefined, files).then(() => {
+        if (files?.length) chatInputRef.value?.clearPendingFiles()
+        scrollToBottom(true)
+      }).catch(console.error)
     }
   }
 )
@@ -111,6 +132,7 @@ watch(
       wasStreamingHere = true
     } else if (wasStreamingHere) {
       wasStreamingHere = false
+      if (!voiceStore.autoTtsResponse) return
       if (!voiceStore.ttsAvailable || !voiceStore.connected) return
       const msgs = chatStore.messages
       const lastMsg = msgs[msgs.length - 1]
@@ -214,7 +236,7 @@ onUnmounted(() => {
         :is-recording="voiceStore.isListening" :audio-level="voiceStore.audioLevel"
         :duration="voiceStore.formattedDuration" :auto-send="!voiceStore.confirmTranscript" @send="handleTranscriptSend"
         @dismiss="handleTranscriptDismiss" class="transcript-overlay" />
-      <ChatInput :disabled="chatStore.isStreamingCurrentConversation" :is-connected="isConnected"
+      <ChatInput ref="chatInputRef" :disabled="chatStore.isStreamingCurrentConversation" :is-connected="isConnected"
         :is-streaming="chatStore.isStreamingCurrentConversation" :audio-devices="audioDevices"
         :selected-device-id="selectedDeviceId" @send="handleSend" @stop="stopGeneration" @voice-start="startListening"
         @voice-stop="stopListening" @voice-cancel-processing="cancelProcessing" @refresh-devices="refreshDevices"

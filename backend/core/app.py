@@ -25,6 +25,7 @@ from backend.services.vram_monitor import VRAMMonitor
 from backend.core.plugin_manager import PluginManager
 from backend.core.tool_registry import ToolRegistry
 from backend.api.middleware.exception_handler import UnhandledExceptionMiddleware
+from backend.api.middleware.origin_guard import OriginGuardMiddleware
 from backend.api.middleware.rate_limit import setup_rate_limiting
 
 __version__ = "0.1.0"
@@ -126,23 +127,45 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     # -- VRAM event handlers ------------------------------------------------
     if ctx.vram_monitor:
         async def _handle_vram_warning(**kwargs):
-            """React to VRAM pressure by logging and suggesting degradation."""
+            """React to VRAM pressure — downgrade STT compute type."""
             usage = kwargs.get("usage")
             if usage:
                 logger.warning(
-                    "VRAM warning handler: {}MB used / {}MB total — "
-                    "consider switching to a smaller STT model or disabling XTTS",
+                    "VRAM warning: {}MB used / {}MB total",
                     usage.used_mb, usage.total_mb,
                 )
+            # Downgrade STT compute type if available
+            if ctx.stt_service and hasattr(ctx.stt_service, '_config'):
+                stt_cfg = ctx.stt_service._config
+                if stt_cfg.compute_type == "float16":
+                    logger.info("VRAM pressure: downgrading STT compute_type to int8")
+                    object.__setattr__(stt_cfg, "compute_type", "int8")
 
         async def _handle_vram_critical(**kwargs):
-            """React to critical VRAM pressure."""
+            """React to critical VRAM — switch TTS to lightweight engine."""
             usage = kwargs.get("usage")
             if usage:
                 logger.error(
-                    "VRAM critical handler: {}MB used / {}MB total",
+                    "VRAM critical: {}MB used / {}MB total",
                     usage.used_mb, usage.total_mb,
                 )
+            # Switch TTS engine to Piper (CPU-based, no VRAM)
+            if ctx.tts_service and hasattr(ctx.tts_service, '_config'):
+                tts_cfg = ctx.tts_service._config
+                if tts_cfg.engine != "piper":
+                    logger.warning(
+                        "VRAM critical: switching TTS from '{}' to 'piper'",
+                        tts_cfg.engine,
+                    )
+                    object.__setattr__(tts_cfg, "engine", "piper")
+            # Disable VRAM-heavy STT if possible
+            if ctx.stt_service and hasattr(ctx.stt_service, '_config'):
+                stt_cfg = ctx.stt_service._config
+                if stt_cfg.device == "cuda":
+                    logger.warning("VRAM critical: switching STT device from 'cuda' to 'cpu'")
+                    object.__setattr__(stt_cfg, "device", "cpu")
+                    if stt_cfg.compute_type == "float16":
+                        object.__setattr__(stt_cfg, "compute_type", "int8")
 
         ctx.event_bus.subscribe(OmniaEvent.VRAM_WARNING, _handle_vram_warning)
         ctx.event_bus.subscribe(OmniaEvent.VRAM_CRITICAL, _handle_vram_critical)
@@ -239,6 +262,8 @@ def create_app(testing: bool = False) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    app.add_middleware(OriginGuardMiddleware)
 
     # Rate limiting (slowapi).
     setup_rate_limiting(app, config.server.rate_limit)

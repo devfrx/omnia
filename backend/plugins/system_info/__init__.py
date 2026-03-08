@@ -4,5 +4,8 @@ Importing this module registers :class:`SystemInfoPlugin` in the
 static ``PLUGIN_REGISTRY`` so the plugin manager can discover it.
 """
 
+from backend.core.plugin_manager import PLUGIN_REGISTRY
 from backend.plugins.system_info.plugin import SystemInfoPlugin  # noqa: F401
+
+PLUGIN_REGISTRY["system_info"] = SystemInfoPlugin
 
