@@ -126,9 +126,13 @@ async def get_config(request: Request) -> dict[str, Any]:
         "tts": {
             "engine": cfg.tts.engine,
             "voice": cfg.tts.voice,
-            "sample_rate": cfg.tts.sample_rate,
+            "sample_rate": ctx.tts_service.sample_rate if ctx.tts_service else cfg.tts.sample_rate,
             "enabled": cfg.tts.enabled,
             "speed": cfg.tts.speed,
+            "kokoro_model": cfg.tts.kokoro_model,
+            "kokoro_voices": cfg.tts.kokoro_voices,
+            "kokoro_voice": cfg.tts.kokoro_voice,
+            "kokoro_language": cfg.tts.kokoro_language,
         },
         "ui": {
             "theme": cfg.ui.theme,
@@ -328,9 +332,9 @@ async def update_config(request: Request) -> dict[str, Any]:
             object.__setattr__(cfg.tts, "enabled", tts_updates["enabled"])
         if "engine" in tts_updates:
             engine = str(tts_updates["engine"]).strip()
-            if engine not in ("piper", "xtts"):
+            if engine not in ("piper", "xtts", "kokoro"):
                 raise HTTPException(
-                    400, "TTS engine must be 'piper' or 'xtts'",
+                    400, "TTS engine must be 'piper', 'xtts', or 'kokoro'",
                 )
             object.__setattr__(cfg.tts, "engine", engine)
         if "voice" in tts_updates:
@@ -355,12 +359,32 @@ async def update_config(request: Request) -> dict[str, Any]:
                 sr = int(tts_updates["sample_rate"])
             except (TypeError, ValueError):
                 raise HTTPException(400, "sample_rate must be an integer")
-            if sr not in (16000, 22050, 44100, 48000):
+            if sr not in (16000, 22050, 24000, 44100, 48000):
                 raise HTTPException(
                     400,
-                    "sample_rate must be one of: 16000, 22050, 44100, 48000",
+                    "sample_rate must be one of: 16000, 22050, 24000, 44100, 48000",
                 )
             object.__setattr__(cfg.tts, "sample_rate", sr)
+        if "kokoro_voice" in tts_updates:
+            kv = str(tts_updates["kokoro_voice"]).strip()
+            if not kv or len(kv) > 100:
+                raise HTTPException(400, "kokoro_voice must be non-empty (max 100 chars)")
+            object.__setattr__(cfg.tts, "kokoro_voice", kv)
+        if "kokoro_language" in tts_updates:
+            kl = str(tts_updates["kokoro_language"]).strip()
+            if not kl or len(kl) > 10:
+                raise HTTPException(400, "kokoro_language must be non-empty (max 10 chars)")
+            object.__setattr__(cfg.tts, "kokoro_language", kl)
+        if "kokoro_model" in tts_updates:
+            km = str(tts_updates["kokoro_model"]).strip()
+            if not km or len(km) > 256:
+                raise HTTPException(400, "kokoro_model must be non-empty (max 256 chars)")
+            object.__setattr__(cfg.tts, "kokoro_model", km)
+        if "kokoro_voices" in tts_updates:
+            kvf = str(tts_updates["kokoro_voices"]).strip()
+            if not kvf or len(kvf) > 256:
+                raise HTTPException(400, "kokoro_voices must be non-empty (max 256 chars)")
+            object.__setattr__(cfg.tts, "kokoro_voices", kvf)
 
     if "voice" in body:
         voice_updates = body["voice"]
@@ -490,7 +514,10 @@ async def _apply_tts_changes(ctx: AppContext, tts_updates: dict) -> None:
 
     # Engine, voice, or speed changed → restart service
     needs_restart = any(
-        k in tts_updates for k in ("enabled", "engine", "voice", "speed")
+        k in tts_updates for k in (
+            "enabled", "engine", "voice", "speed",
+            "kokoro_model", "kokoro_voices", "kokoro_voice", "kokoro_language",
+        )
     )
     if not needs_restart:
         return

@@ -87,6 +87,10 @@ tts-piper = [
 tts-xtts = [
     "TTS>=0.22",
 ]
+tts-kokoro = [
+    "kokoro-onnx>=0.4",
+    "soundfile>=0.12",
+]
 # VRAM monitoring
 vram = [
     "pynvml>=12.0,<13",
@@ -96,6 +100,8 @@ voice = [
     "faster-whisper>=1.1,<2",
     "numpy>=1.26",
     "piper-tts>=1.2,<2",
+    "kokoro-onnx>=0.4",
+    "soundfile>=0.12",
     "pynvml>=12.0,<13",
 ]
 # Voice with GPU acceleration (adds CUDA libraries)
@@ -103,6 +109,8 @@ voice-gpu = [
     "faster-whisper>=1.1,<2",
     "numpy>=1.26",
     "piper-tts>=1.2,<2",
+    "kokoro-onnx>=0.4",
+    "soundfile>=0.12",
     "pynvml>=12.0,<13",
     "nvidia-cublas-cu12>=12.4,<13",
     "nvidia-cudnn-cu12>=9.0,<10",

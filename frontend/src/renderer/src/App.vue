@@ -1,19 +1,25 @@
 <script setup lang="ts">
 // O.M.N.I.A. — Root App Component
-import { onMounted, provide } from 'vue'
+import { onMounted, provide, computed } from 'vue'
 
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
 import ModalContainer from './components/ModalContainer.vue'
+import ModeSwitcher from './components/assistant/ModeSwitcher.vue'
 import { useChat, ChatApiKey } from './composables/useChat'
 import { usePluginComponents } from './composables/usePluginComponents'
 import { useSettingsStore } from './stores/settings'
+import { useUIStore } from './stores/ui'
 
 const chatApi = useChat()
 provide(ChatApiKey, chatApi)
 
 const settingsStore = useSettingsStore()
+const uiStore = useUIStore()
 const { toolbarComponents } = usePluginComponents()
+
+/** Show sidebar in chat + hybrid modes, hide in pure assistant mode. */
+const showSidebar = computed(() => uiStore.mode !== 'assistant')
 
 onMounted(() => {
   settingsStore.resumeOperationTracking()
@@ -21,15 +27,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="omnia-app">
+  <div id="omnia-app" :class="`omnia-app--${uiStore.mode}`">
     <TitleBar />
     <!-- Plugin toolbar mount point -->
     <div v-if="toolbarComponents.length" class="plugin-toolbar">
-      <component
-        v-for="entry in toolbarComponents"
-        :is="entry.component"
-        :key="entry.name"
-      />
+      <component v-for="entry in toolbarComponents" :is="entry.component" :key="entry.name" />
     </div>
     <div v-if="settingsStore.isAnyOperationInProgress" class="global-operation-bar">
       <div class="global-operation-bar__track" role="progressbar" aria-label="Operazione modello in corso">
@@ -38,11 +40,12 @@ onMounted(() => {
       <span class="global-operation-bar__text">{{ settingsStore.operationDescription }}</span>
     </div>
     <div class="app-body">
-      <AppSidebar />
+      <AppSidebar v-if="showSidebar" />
       <main class="app-content">
         <router-view />
       </main>
     </div>
+    <ModeSwitcher />
     <ModalContainer />
   </div>
 </template>
@@ -123,5 +126,16 @@ onMounted(() => {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+/* ── Mode-specific adjustments ──────────────────────────────────── */
+.omnia-app--assistant .app-body {
+  background: var(--bg-primary);
+}
+
+.omnia-app--assistant .app-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

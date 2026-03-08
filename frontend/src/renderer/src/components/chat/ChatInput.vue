@@ -356,25 +356,43 @@ defineExpose({
 
 <style scoped>
 /* ============================================================
-   Root container
+   Root container — Glass-morphism floating input
    ============================================================ */
 .ci {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  border-top: 1px solid var(--border);
-  background: var(--bg-primary);
-  padding: var(--space-2-5) var(--space-4) var(--space-3);
+  background: rgba(19, 22, 28, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(201, 168, 76, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4) var(--space-3);
+  box-shadow:
+    0 -4px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+
+.ci:focus-within {
+  border-color: rgba(201, 168, 76, 0.18);
+  box-shadow:
+    0 -4px 32px rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(201, 168, 76, 0.06),
+    0 0 0 1px rgba(201, 168, 76, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* ============================================================
-   Thumbnail strip
+   Thumbnail strip — Polished thumbnails
    ============================================================ */
 .ci__thumbs {
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
-  padding-bottom: var(--space-0-5);
+  padding-bottom: var(--space-1);
   scrollbar-width: none;
 }
 
@@ -385,11 +403,18 @@ defineExpose({
 .ci__thumb {
   position: relative;
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.ci__thumb:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
 }
 
 .ci__thumb img {
@@ -403,11 +428,13 @@ defineExpose({
   position: absolute;
   top: 3px;
   right: 3px;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: var(--radius-full);
-  background: rgba(0, 0, 0, 0.72);
-  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
   display: flex;
   align-items: center;
@@ -415,7 +442,7 @@ defineExpose({
   cursor: pointer;
   padding: 0;
   opacity: 0;
-  transition: opacity var(--transition-fast), background var(--transition-fast);
+  transition: opacity var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
 }
 
 .ci__thumb:hover .ci__thumb-rm {
@@ -424,6 +451,7 @@ defineExpose({
 
 .ci__thumb-rm:hover {
   background: rgba(196, 92, 92, 0.85);
+  transform: scale(1.1);
 }
 
 /* ============================================================
@@ -447,7 +475,7 @@ defineExpose({
 
 .dot--ok {
   background: var(--success);
-  box-shadow: 0 0 5px var(--success-glow);
+  box-shadow: 0 0 6px var(--success-glow);
   animation: dot-pulse 3s ease-in-out infinite;
 }
 
@@ -455,17 +483,17 @@ defineExpose({
 
   0%,
   100% {
-    box-shadow: 0 0 5px var(--success-glow);
+    box-shadow: 0 0 6px var(--success-glow);
   }
 
   50% {
-    box-shadow: 0 0 10px var(--success-glow), 0 0 3px var(--success);
+    box-shadow: 0 0 12px var(--success-glow), 0 0 4px var(--success);
   }
 }
 
 .dot--err {
   background: var(--danger);
-  box-shadow: 0 0 5px var(--danger-glow);
+  box-shadow: 0 0 6px var(--danger-glow);
   animation: dot-blink 2s ease-in-out infinite;
 }
 
@@ -481,7 +509,7 @@ defineExpose({
   }
 }
 
-/* Capability badges */
+/* Capability badges — Glass-morphism pills */
 .ci__badges {
   display: flex;
   align-items: center;
@@ -492,16 +520,19 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-muted);
   transition:
     color var(--transition-fast),
     border-color var(--transition-fast),
-    background var(--transition-fast);
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .ci__badge svg {
@@ -513,6 +544,7 @@ defineExpose({
   color: var(--accent);
   border-color: var(--accent-border);
   background: var(--accent-dim);
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.1);
 }
 
 /* Flex spacer */
@@ -526,25 +558,33 @@ defineExpose({
 .ci__body {
   display: flex;
   align-items: flex-end;
-  gap: var(--space-0-5);
-  border: 1px solid var(--border);
+  gap: var(--space-1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-lg);
-  background: var(--bg-input);
-  padding: 3px var(--space-1);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px var(--space-1-5);
   transition:
     border-color var(--transition-normal),
-    box-shadow var(--transition-normal);
+    box-shadow var(--transition-normal),
+    background var(--transition-normal);
 }
 
 .ci__body:focus-within {
-  border-color: var(--accent-border);
-  box-shadow: 0 0 0 1px var(--accent-border), inset 0 0 16px var(--accent-glow);
+  border-color: rgba(201, 168, 76, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.1),
+    0 0 20px rgba(201, 168, 76, 0.04),
+    inset 0 0 16px rgba(201, 168, 76, 0.03);
 }
 
 /* Drag-over: glow the input border gold */
 .ci--drag .ci__body {
-  border-color: var(--accent-border);
-  box-shadow: 0 0 0 2px var(--accent-border), inset 0 0 24px var(--accent-glow);
+  border-color: rgba(201, 168, 76, 0.3);
+  box-shadow:
+    0 0 0 2px rgba(201, 168, 76, 0.15),
+    0 0 32px rgba(201, 168, 76, 0.08),
+    inset 0 0 24px rgba(201, 168, 76, 0.04);
 }
 
 /* Hidden file input */
@@ -558,19 +598,20 @@ defineExpose({
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
 }
 
 .ci__attach:hover:not(:disabled) {
-  background: var(--white-light);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--accent);
+  transform: translateY(-1px);
 }
 
 .ci__attach:disabled {
@@ -578,13 +619,13 @@ defineExpose({
   cursor: not-allowed;
 }
 
-/* Textarea */
+/* Textarea — Warmer, inviting feel */
 .ci__textarea {
   flex: 1;
   min-width: 0;
-  min-height: 34px;
+  min-height: 36px;
   max-height: 120px;
-  padding: 7px 4px;
+  padding: 8px 6px;
   background: transparent;
   border: none;
   color: var(--text-primary);
@@ -593,10 +634,13 @@ defineExpose({
   line-height: var(--leading-normal);
   resize: none;
   outline: none !important;
+  letter-spacing: 0.01em;
 }
 
 .ci__textarea::placeholder {
   color: var(--text-muted);
+  opacity: 0.7;
+  letter-spacing: 0.02em;
 }
 
 .ci__textarea:disabled {
@@ -610,14 +654,14 @@ defineExpose({
   gap: var(--space-3);
 }
 
-/* Send button */
+/* Send button — Gold accent glow on hover */
 .ci__send {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   border: 1px solid var(--accent-border);
   background: var(--accent-dim);
@@ -626,17 +670,38 @@ defineExpose({
   transition:
     background var(--transition-fast),
     color var(--transition-fast),
-    opacity var(--transition-fast);
+    opacity var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .ci__send:hover:not(:disabled) {
-  background: var(--accent-strong);
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.2), rgba(212, 182, 94, 0.15));
   color: var(--accent-hover);
+  box-shadow: 0 0 16px rgba(201, 168, 76, 0.2), 0 0 4px rgba(201, 168, 76, 0.15);
+  transform: translateY(-1px);
+}
+
+.ci__send:not(:disabled) {
+  animation: sendReady 2.5s ease-in-out infinite;
 }
 
 .ci__send:disabled {
   opacity: var(--opacity-disabled);
   cursor: not-allowed;
+  animation: none;
+}
+
+@keyframes sendReady {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 8px rgba(201, 168, 76, 0.12);
+  }
 }
 
 /* Stop button (pulsing danger ring) */
@@ -645,8 +710,8 @@ defineExpose({
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   border: 1px solid var(--danger-strong);
   background: var(--danger-light);
@@ -666,7 +731,7 @@ defineExpose({
   }
 
   70% {
-    box-shadow: 0 0 0 5px rgba(196, 92, 92, 0);
+    box-shadow: 0 0 0 6px rgba(196, 92, 92, 0);
   }
 
   100% {
@@ -690,5 +755,22 @@ defineExpose({
 .btn-swap-leave-to {
   opacity: 0;
   transform: scale(0.8);
+}
+
+/* ============================================================
+   Reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .ci {
+    transition: none;
+  }
+
+  .ci__send:not(:disabled) {
+    animation: none;
+  }
+
+  .ci__thumb {
+    transition: none;
+  }
 }
 </style>

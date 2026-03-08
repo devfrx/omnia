@@ -143,6 +143,8 @@ export function useVoice(): UseVoiceReturn {
   let ttsSampleRate = 22050
   const audioQueue: ArrayBuffer[] = []
   let isPlayingQueue = false
+  /** True once backend sent tts_done but frontend audio queue hasn't drained yet. */
+  let ttsBackendDone = false
 
   // -----------------------------------------------------------------------
   // WS event handlers
@@ -246,11 +248,21 @@ export function useVoice(): UseVoiceReturn {
     store.isProcessing = true
     startSttTimeout()
   }
-  const onTtsStart = (): void => { store.isSpeaking = true }
+  const onTtsStart = (): void => { store.isSpeaking = true; ttsBackendDone = false }
   const onTtsDone = (): void => {
-    store.isSpeaking = false
+    ttsBackendDone = true
     audioConvertChain = Promise.resolve()
-    // Auto-restart recording in continuous modes after TTS finishes
+    // If the audio queue is already empty, finalise immediately.
+    // Otherwise playNextChunk will call finalizeTtsPlayback when draining.
+    if (!isPlayingQueue) {
+      finalizeTtsPlayback()
+    }
+  }
+
+  /** Reset speaking state and schedule mic restart once all audio has been played. */
+  function finalizeTtsPlayback(): void {
+    ttsBackendDone = false
+    store.isSpeaking = false
     scheduleAutoRestart()
   }
 
@@ -287,6 +299,7 @@ export function useVoice(): UseVoiceReturn {
     }
   }
   const onTtsCancelled = (): void => {
+    ttsBackendDone = false
     store.isSpeaking = false
     audioQueue.length = 0
     isPlayingQueue = false
@@ -402,6 +415,7 @@ export function useVoice(): UseVoiceReturn {
     if (playbackCtx) { playbackCtx.close(); playbackCtx = null }
     audioQueue.length = 0
     isPlayingQueue = false
+    ttsBackendDone = false
   }
 
   function cleanupAudioResources(): void {
@@ -572,17 +586,36 @@ export function useVoice(): UseVoiceReturn {
   // -----------------------------------------------------------------------
 
   function speak(text: string): void {
+    if (!voiceWs.isConnected) return
+    // Set isSpeaking immediately to close the timing gap between calling
+    // speak() and receiving the backend's tts_start event.  Without this,
+    // scheduleAutoRestart can start recording in that window.
+    store.isSpeaking = true
     voiceWs.send({ type: 'tts_speak', text })
   }
 
   function cancelSpeak(): void {
     voiceWs.send({ type: 'tts_cancel' })
+    // Stop the currently playing audio by closing the playback context.
+    // This immediately silences any AudioBufferSourceNode in flight.
+    if (playbackCtx) {
+      playbackCtx.close().catch(() => { /* already closed */ })
+      playbackCtx = null
+    }
     audioQueue.length = 0
+    isPlayingQueue = false
+    ttsBackendDone = false
+    audioConvertChain = Promise.resolve()
     store.isSpeaking = false
   }
 
   async function playNextChunk(): Promise<void> {
-    if (audioQueue.length === 0) { isPlayingQueue = false; return }
+    if (audioQueue.length === 0) {
+      isPlayingQueue = false
+      // Backend already signalled tts_done — now the queue is drained.
+      if (ttsBackendDone) finalizeTtsPlayback()
+      return
+    }
     isPlayingQueue = true
     if (!playbackCtx) playbackCtx = new AudioContext({ sampleRate: ttsSampleRate })
     const chunk = audioQueue.shift()!

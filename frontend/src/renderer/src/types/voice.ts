@@ -75,7 +75,7 @@ export interface STTResult {
 /** Configuration for text-to-speech. */
 export interface TTSConfig {
   enabled: boolean
-  engine: 'piper' | 'xtts'
+  engine: 'piper' | 'xtts' | 'kokoro'
   voice: string
   speed: number
   sample_rate: number

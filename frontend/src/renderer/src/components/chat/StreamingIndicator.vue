@@ -76,7 +76,7 @@ const chatStore = useChatStore()
 
 .streaming-bubble {
   max-width: 82%;
-  padding: var(--space-3) 14px var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
   background: transparent;
   border: none;
   border-left: 3px solid var(--accent-medium);
@@ -86,10 +86,8 @@ const chatStore = useChatStore()
   font-size: var(--text-md);
   word-break: break-word;
   position: relative;
-  animation: borderPulse 2.5s ease-in-out infinite;
+  animation: borderGradientPulse 3s ease-in-out infinite;
 }
-
-/* ----- Thinking section — now rendered by ThinkingSection.vue */
 
 /* ----- markdown content */
 .streaming-bubble__content {
@@ -108,6 +106,8 @@ const chatStore = useChatStore()
 .streaming-bubble__content :deep(a) {
   color: var(--accent);
   text-decoration: underline;
+  text-decoration-color: rgba(201, 168, 76, 0.3);
+  text-underline-offset: 2px;
 }
 
 /* ----- Code block styles are in assets/styles/code-blocks.css */
@@ -117,7 +117,11 @@ const chatStore = useChatStore()
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
-  margin-bottom: var(--space-1-5);
+  margin-bottom: var(--space-2);
+  padding: var(--space-1-5) var(--space-2-5);
+  background: rgba(201, 168, 76, 0.04);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(201, 168, 76, 0.08);
 }
 
 .streaming-bubble__brain-icon {
@@ -125,6 +129,7 @@ const chatStore = useChatStore()
   opacity: var(--opacity-visible);
   animation: brainPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.3));
 }
 
 .streaming-bubble__thinking-label {
@@ -132,19 +137,25 @@ const chatStore = useChatStore()
   font-style: italic;
   color: var(--accent);
   opacity: var(--opacity-medium);
-  animation: thinkingFade 2s ease-in-out infinite;
+  animation: thinkingShimmer 2.5s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--accent), rgba(212, 182, 94, 0.8), var(--accent));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* ------------------------------------------------------ Blinking cursor */
+/* ------------------------------------------------------ Blinking cursor — Elegant line */
 .streaming-bubble__cursor {
   display: inline-block;
-  width: 3px;
-  height: 1em;
-  background: linear-gradient(180deg, var(--accent), var(--accent-hover));
+  width: 2px;
+  height: 1.1em;
+  background: linear-gradient(180deg, var(--accent), rgba(201, 168, 76, 0.5));
   margin-left: var(--space-0-5);
   vertical-align: text-bottom;
   border-radius: 1px;
-  animation: blink 0.8s step-end infinite, cursorFadeIn 0.3s ease both;
+  box-shadow: 0 0 6px rgba(201, 168, 76, 0.3);
+  animation: cursorBlink 1s ease-in-out infinite, cursorFadeIn 0.3s ease both;
 }
 
 /* ------------------------------------------------- Content transition */
@@ -157,7 +168,7 @@ const chatStore = useChatStore()
   transform: translateY(4px);
 }
 
-@keyframes blink {
+@keyframes cursorBlink {
 
   0%,
   100% {
@@ -165,7 +176,7 @@ const chatStore = useChatStore()
   }
 
   50% {
-    opacity: 0;
+    opacity: 0.15;
   }
 }
 
@@ -179,15 +190,17 @@ const chatStore = useChatStore()
   }
 }
 
-@keyframes thinkingFade {
+@keyframes thinkingShimmer {
 
   0%,
   100% {
+    background-position: 0% 50%;
     opacity: 0.7;
   }
 
   50% {
-    opacity: 0.3;
+    background-position: 100% 50%;
+    opacity: 0.5;
   }
 }
 
@@ -195,25 +208,31 @@ const chatStore = useChatStore()
 
   0%,
   100% {
-    opacity: 0.8;
+    opacity: 0.85;
     transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.3));
   }
 
   50% {
-    opacity: 0.4;
-    transform: scale(0.92);
+    opacity: 0.5;
+    transform: scale(0.93);
+    filter: drop-shadow(0 0 8px rgba(201, 168, 76, 0.5));
   }
 }
 
-@keyframes borderPulse {
+@keyframes borderGradientPulse {
 
   0%,
   100% {
     border-left-color: var(--accent-medium);
   }
 
-  50% {
-    border-left-color: rgba(201, 168, 76, 0.45);
+  33% {
+    border-left-color: rgba(201, 168, 76, 0.35);
+  }
+
+  66% {
+    border-left-color: rgba(212, 182, 94, 0.25);
   }
 }
 

@@ -48,6 +48,10 @@ tts:
   xtts_model: "tts_models/multilingual/multi-dataset/xtts_v2"
   xtts_speaker_wav: ""
   xtts_language: "it"
+  kokoro_model: "models/tts/kokoro-v1.0.onnx"
+  kokoro_voices: "models/tts/voices-v1.0.bin"
+  kokoro_voice: "if_sara"
+  kokoro_language: "it"
 
 database:
   url: "sqlite+aiosqlite:///data/omnia.db"

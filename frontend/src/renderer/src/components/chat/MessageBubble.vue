@@ -141,7 +141,7 @@ onUnmounted(() => {
 
 /* ------------------------------------------------------------- Bubble base */
 .bubble {
-  padding: var(--space-2-5) 14px;
+  padding: var(--space-3) var(--space-4);
   line-height: var(--leading-loose);
   font-size: var(--text-md);
   position: relative;
@@ -151,11 +151,22 @@ onUnmounted(() => {
 /* ------------------------------------------------------------- User bubble */
 .bubble--user {
   max-width: 65%;
-  background: linear-gradient(135deg, var(--accent-light), var(--accent-faint));
-  border: 1px solid var(--accent-medium);
-  border-radius: 16px 16px var(--radius-sm) 16px;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.14), rgba(201, 168, 76, 0.06));
+  border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 18px 18px var(--radius-sm) 18px;
   color: var(--text-primary);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(201, 168, 76, 0.05);
   animation: slideInUser 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.bubble--user:hover {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 0 20px rgba(201, 168, 76, 0.06);
+  transform: translateY(-1px);
 }
 
 /* --------------------------------------------------------- Assistant bubble */
@@ -165,34 +176,44 @@ onUnmounted(() => {
   border: none;
   border-left: 3px solid var(--accent-medium);
   border-radius: 0;
-  padding: var(--space-3) 14px var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
   color: var(--text-primary);
   animation: slideInAssistant 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: border-left-color var(--transition-fast);
+  transition: border-left-color var(--transition-fast), background var(--transition-fast);
 }
 
 .bubble--assistant:hover {
   border-left-color: var(--accent-border);
+  background: rgba(255, 255, 255, 0.015);
 }
 
 /* ------------------------------------------------------------- Tool bubble */
 .bubble--tool {
   max-width: 78%;
-  background: var(--bg-tool);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: rgba(30, 34, 42, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--text-muted);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   animation: slideInAssistant 0.35s ease-out both;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.bubble--tool:hover {
+  background: rgba(30, 34, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* -------------------------------------------------------- Attachments */
 .bubble__attachments {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1-5);
-  margin-bottom: var(--space-2);
+  gap: var(--space-2);
+  margin-bottom: var(--space-2-5);
 }
 
 .bubble__attachment {
@@ -201,12 +222,15 @@ onUnmounted(() => {
   border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
-  border: 1px solid var(--border);
-  transition: border-color var(--transition-fast);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .bubble__attachment:hover {
   border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(201, 168, 76, 0.1);
 }
 
 .bubble__attachment img {
@@ -233,6 +257,13 @@ onUnmounted(() => {
 .bubble__content :deep(a) {
   color: var(--accent);
   text-decoration: underline;
+  text-decoration-color: rgba(201, 168, 76, 0.3);
+  text-underline-offset: 2px;
+  transition: text-decoration-color var(--transition-fast);
+}
+
+.bubble__content :deep(a:hover) {
+  text-decoration-color: var(--accent);
 }
 
 /* ----- Code block styles are in assets/styles/code-blocks.css */
@@ -255,13 +286,14 @@ onUnmounted(() => {
   display: block;
   font-size: var(--text-xs);
   color: var(--text-muted);
-  margin-top: 5px;
+  margin-top: 6px;
   opacity: 0;
+  letter-spacing: 0.03em;
   transition: opacity var(--transition-fast);
 }
 
 .bubble:hover .bubble__time {
-  opacity: 1;
+  opacity: 0.7;
 }
 
 .row--user .bubble__time {
@@ -281,32 +313,35 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--black-overlay);
-  backdrop-filter: blur(var(--blur-md));
-  -webkit-backdrop-filter: blur(var(--blur-md));
-  animation: fadeIn 0.2s ease;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: fadeIn 0.25s ease;
 }
 
 .image-overlay__close {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: var(--white-medium);
-  border: 1px solid var(--white-strong);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-full);
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--text-primary);
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .image-overlay__close:hover {
-  background: var(--white-heavy);
-  border-color: var(--white-dim);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
 }
 
 .image-overlay__img {
@@ -314,7 +349,9 @@ onUnmounted(() => {
   max-height: 90vh;
   object-fit: contain;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
   animation: overlayZoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -334,7 +371,7 @@ onUnmounted(() => {
 @keyframes slideInAssistant {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: translateY(10px) scale(0.98);
   }
 
   to {
@@ -342,8 +379,6 @@ onUnmounted(() => {
     transform: translateY(0) scale(1);
   }
 }
-
-
 
 @keyframes fadeIn {
   from {
@@ -374,6 +409,10 @@ onUnmounted(() => {
   .bubble--assistant,
   .bubble--tool {
     animation: none;
+  }
+
+  .bubble--user:hover {
+    transform: none;
   }
 
   .image-overlay {

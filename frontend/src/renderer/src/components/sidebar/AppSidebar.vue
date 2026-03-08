@@ -10,24 +10,26 @@
  * The component owns no data — it reads from the Pinia chat store
  * and delegates mutations back through events / store actions.
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useChatStore } from '../../stores/chat'
+import { useUIStore } from '../../stores/ui'
 import { useModal } from '../../composables/useModal'
 import { api } from '../../services/api'
 import ConversationList from './ConversationList.vue'
 
 const chatStore = useChatStore()
+const uiStore = useUIStore()
 const router = useRouter()
 const { confirm } = useModal()
 
-/** Whether the sidebar is expanded. */
-const isOpen = ref(true)
+/** Whether the sidebar is expanded (wired to central UI store). */
+const isOpen = computed(() => uiStore.sidebarOpen)
 
-/** Toggle collapsed state. */
+/** Toggle collapsed state via central UI store. */
 function toggle(): void {
-  isOpen.value = !isOpen.value
+  uiStore.toggleSidebar()
 }
 
 /** Load conversations on mount so the sidebar is populated immediately. */
@@ -135,6 +137,28 @@ async function onOpenFile(id: string): Promise<void> {
         </span>
         <span class="sidebar__link-label">Impostazioni</span>
       </router-link>
+
+      <router-link to="/assistant" class="sidebar__link" active-class="sidebar__link--active" title="Assistente">
+        <span class="sidebar__link-bar" aria-hidden="true" />
+        <span class="sidebar__link-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="4" />
+          </svg>
+        </span>
+        <span class="sidebar__link-label">Assistente</span>
+      </router-link>
+
+      <router-link to="/hybrid" class="sidebar__link" active-class="sidebar__link--active" title="Ibrido">
+        <span class="sidebar__link-bar" aria-hidden="true" />
+        <span class="sidebar__link-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="6" />
+            <path d="M4 20h16" opacity="0.5" />
+          </svg>
+        </span>
+        <span class="sidebar__link-label">Ibrido</span>
+      </router-link>
     </nav>
 
     <!-- Conversations section — only shown when expanded -->
@@ -174,8 +198,10 @@ async function onOpenFile(id: string): Promise<void> {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-right: 1px solid var(--glass-border);
   box-shadow: var(--shadow-sidebar);
   transition:
     width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -201,6 +227,7 @@ async function onOpenFile(id: string): Promise<void> {
       var(--white-faint) 1px,
       transparent 1px);
   background-size: 18px 18px;
+  opacity: 0.3;
   -webkit-mask-image: linear-gradient(to bottom,
       transparent 0%,
       rgba(0, 0, 0, 0.4) 12%,
@@ -337,8 +364,9 @@ async function onOpenFile(id: string): Promise<void> {
 }
 
 .sidebar__link:hover {
-  background: var(--white-subtle);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
+  backdrop-filter: blur(4px);
 }
 
 .sidebar__link:hover .sidebar__link-icon {
@@ -353,11 +381,13 @@ async function onOpenFile(id: string): Promise<void> {
 .sidebar__link--active {
   color: var(--accent);
   background: var(--accent-dim);
+  box-shadow: inset 0 0 20px rgba(201, 168, 76, 0.04);
 }
 
 .sidebar__link--active .sidebar__link-bar {
   background: linear-gradient(180deg, var(--accent-hover), var(--accent));
-  box-shadow: 0 0 10px rgba(201, 168, 76, 0.35);
+  box-shadow: 0 0 14px rgba(201, 168, 76, 0.45);
+  width: 3px;
 }
 
 .sidebar__link--active .sidebar__link-icon {
@@ -418,8 +448,10 @@ async function onOpenFile(id: string): Promise<void> {
   width: 30px;
   height: 30px;
   border-radius: var(--radius-full);
-  border: 1px solid var(--border);
-  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;

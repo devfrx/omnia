@@ -184,7 +184,7 @@ class TTSConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="OMNIA_TTS__")
 
-    engine: Literal["piper", "xtts"] = "piper"
+    engine: Literal["piper", "xtts", "kokoro"] = "piper"
     voice: str = "models/tts/it_IT-paola-medium"
     sample_rate: int = 22050
     enabled: bool = False
@@ -198,6 +198,15 @@ class TTSConfig(BaseSettings):
     """Path to reference WAV for voice cloning (XTTS only)."""
     xtts_language: str = "it"
     """Language for XTTS synthesis."""
+    # Kokoro-specific options (ignored when engine != "kokoro")
+    kokoro_model: str = "models/tts/kokoro-v1.0.onnx"
+    """Path to the Kokoro ONNX model file."""
+    kokoro_voices: str = "models/tts/voices-v1.0.bin"
+    """Path to the Kokoro voices binary."""
+    kokoro_voice: str = "if_sara"
+    """Kokoro voice name (e.g. 'if_sara', 'im_nicola', 'if_lucia')."""
+    kokoro_language: str = "it"
+    """Language code for Kokoro (e.g. 'it', 'en', 'fr')."""
 
 
 class DatabaseConfig(BaseSettings):

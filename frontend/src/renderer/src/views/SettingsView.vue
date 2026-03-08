@@ -122,10 +122,17 @@ const settingsStore = useSettingsStore()
 }
 
 .settings-section {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
+  transition: border-color var(--transition-fast);
+}
+
+.settings-section:hover {
+  border-color: var(--glass-border-hover);
 }
 
 .settings-section__title {
@@ -165,6 +172,7 @@ const settingsStore = useSettingsStore()
 
 .settings-field__input:focus {
   border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--accent-glow), 0 0 12px var(--accent-glow);
 }
 
 .settings-field--toggle {
@@ -195,8 +203,9 @@ const settingsStore = useSettingsStore()
 }
 
 .settings-toggle--on {
-  background: var(--accent-dim);
-  border-color: var(--accent-border);
+  background: rgba(201, 168, 76, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.1);
 }
 
 .settings-toggle__thumb {

@@ -136,9 +136,11 @@ onUnmounted(() => {
   align-items: center;
   height: var(--titlebar-height, 34px);
   min-height: var(--titlebar-height, 34px);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
   z-index: var(--z-sticky);
   user-select: none;
 }
@@ -156,8 +158,9 @@ onUnmounted(() => {
 .titlebar__title {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  letter-spacing: 2px;
-  color: var(--text-muted);
+  letter-spacing: 2.5px;
+  color: var(--text-secondary);
+  text-shadow: 0 0 20px rgba(201, 168, 76, 0.08);
 }
 
 /* Separator between title and model info */
@@ -187,6 +190,7 @@ onUnmounted(() => {
 
 .titlebar__status-dot--connected {
   background: var(--success);
+  box-shadow: 0 0 6px var(--success-glow);
 }
 
 .titlebar__status-dot--loading {
@@ -265,7 +269,7 @@ onUnmounted(() => {
 }
 
 .titlebar__btn:hover {
-  background: var(--white-medium);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
@@ -274,12 +278,13 @@ onUnmounted(() => {
 }
 
 .titlebar__btn--close:hover {
-  background: var(--danger);
+  background: rgba(232, 17, 35, 0.85);
   color: #ffffff;
+  transition: background 0.2s ease, color 0.15s ease;
 }
 
 .titlebar__btn--close:active {
-  background: rgba(180, 60, 60, 0.9);
+  background: rgba(232, 17, 35, 0.7);
   color: #ffffff;
 }
 </style>

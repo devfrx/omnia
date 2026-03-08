@@ -28,6 +28,8 @@ const ttsEnabled = ref(true)
 const ttsEngine = ref('piper')
 const ttsVoice = ref(settingsStore.settings.tts.voice)
 const ttsSpeed = ref(1.0)
+const kokoroVoice = ref('if_sara')
+const kokoroLanguage = ref('it')
 
 // Voice
 const activationMode = ref('push_to_talk')
@@ -50,6 +52,7 @@ const activationModes = [
 
 const ttsEngines = [
   { value: 'piper', label: 'Piper (CPU, veloce)' },
+  { value: 'kokoro', label: 'Kokoro (CPU/GPU, alta qualità)' },
   { value: 'xtts', label: 'XTTS v2 (GPU, clonazione voce)' },
 ]
 
@@ -69,6 +72,8 @@ onMounted(async () => {
       ttsEngine.value = (tts.engine as string) ?? 'piper'
       ttsVoice.value = (tts.voice as string) ?? ttsVoice.value
       ttsSpeed.value = (tts.speed as number) ?? 1.0
+      kokoroVoice.value = (tts.kokoro_voice as string) ?? 'if_sara'
+      kokoroLanguage.value = (tts.kokoro_language as string) ?? 'it'
     }
     if (voice) {
       activationMode.value = (voice.activation_mode as string) ?? 'push_to_talk'
@@ -96,6 +101,8 @@ async function save(): Promise<void> {
         voice: ttsVoice.value,
         speed: ttsSpeed.value,
         enabled: ttsEnabled.value,
+        kokoro_voice: kokoroVoice.value,
+        kokoro_language: kokoroLanguage.value,
       },
       voice: {
         auto_tts_response: autoTtsResponse.value,
@@ -158,7 +165,7 @@ async function save(): Promise<void> {
         <div class="settings-section__grid">
           <label class="settings-field settings-field--toggle">
             <span class="settings-field__label">Abilita TTS</span>
-            <span class="settings-field__hint">Risposte vocali tramite Piper o XTTS</span>
+            <span class="settings-field__hint">Sintesi vocale delle risposte</span>
             <button class="settings-toggle" :class="{ 'settings-toggle--on': ttsEnabled }" role="switch"
               :aria-checked="ttsEnabled" @click="ttsEnabled = !ttsEnabled; save()">
               <span class="settings-toggle__thumb" />
@@ -171,11 +178,34 @@ async function save(): Promise<void> {
                 <option v-for="e in ttsEngines" :key="e.value" :value="e.value">{{ e.label }}</option>
               </select>
             </label>
-            <label class="settings-field">
+            <label v-if="ttsEngine !== 'kokoro'" class="settings-field">
               <span class="settings-field__label">Voce</span>
               <input v-model="ttsVoice" type="text" class="settings-field__input"
                 placeholder="models/tts/it_IT-paola-medium" aria-label="Percorso voce TTS" @change="save" />
             </label>
+            <template v-if="ttsEngine === 'kokoro'">
+              <label class="settings-field">
+                <span class="settings-field__label">Voce Kokoro</span>
+                <select v-model="kokoroVoice" class="settings-field__input" aria-label="Voce Kokoro" @change="save">
+                  <option value="if_sara">Sara (italiana, femminile)</option>
+                  <option value="im_nicola">Nicola (italiano, maschile)</option>
+                </select>
+              </label>
+              <label class="settings-field">
+                <span class="settings-field__label">Lingua Kokoro</span>
+                <select v-model="kokoroLanguage" class="settings-field__input" aria-label="Lingua Kokoro"
+                  @change="save">
+                  <option value="it">Italiano</option>
+                  <option value="en-us">English (US)</option>
+                  <option value="en-gb">English (UK)</option>
+                  <option value="fr">Français</option>
+                  <option value="es">Español</option>
+                  <option value="de">Deutsch</option>
+                  <option value="ja">日本語</option>
+                  <option value="zh">中文</option>
+                </select>
+              </label>
+            </template>
             <label class="settings-field settings-field--wide">
               <span class="settings-field__label">Velocità</span>
               <div class="vs__range-row">

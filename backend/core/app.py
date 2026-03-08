@@ -152,7 +152,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             # Switch TTS engine to Piper (CPU-based, no VRAM)
             if ctx.tts_service and hasattr(ctx.tts_service, '_config'):
                 tts_cfg = ctx.tts_service._config
-                if tts_cfg.engine != "piper":
+                if tts_cfg.engine not in ("piper", "kokoro"):
                     logger.warning(
                         "VRAM critical: switching TTS from '{}' to 'piper'",
                         tts_cfg.engine,

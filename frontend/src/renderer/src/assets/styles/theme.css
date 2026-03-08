@@ -233,6 +233,38 @@
   --color-background-mute: #1a1e26;
 }
 
+/* ── Glass Morphism ────────────────────────────────────── */
+:root {
+  --glass-bg: rgba(19, 22, 28, 0.65);
+  --glass-bg-light: rgba(19, 22, 28, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border-hover: rgba(255, 255, 255, 0.1);
+  --glass-blur: 16px;
+  --glass-blur-heavy: 24px;
+}
+
+/* ── Gradient Accents ──────────────────────────────────── */
+:root {
+  --gradient-gold: linear-gradient(135deg, rgba(201, 168, 76, 0.15), rgba(201, 168, 76, 0.05));
+  --gradient-gold-strong: linear-gradient(135deg, rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.1));
+  --gradient-crimson: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.05));
+  --gradient-emerald: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.05));
+  --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+}
+
+/* ── State Colors ──────────────────────────────────────── */
+:root {
+  --listening: #e74c3c;
+  --listening-dim: rgba(231, 76, 60, 0.12);
+  --listening-border: rgba(231, 76, 60, 0.25);
+  --speaking: #2ecc71;
+  --speaking-dim: rgba(46, 204, 113, 0.12);
+  --speaking-border: rgba(46, 204, 113, 0.25);
+  --thinking: #c9a84c;
+  --thinking-dim: rgba(201, 168, 76, 0.12);
+  --thinking-border: rgba(201, 168, 76, 0.25);
+}
+
 /*
  * ═══════════════════════════════════════════════════════════════
  *  Global Reset

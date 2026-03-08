@@ -520,23 +520,25 @@ function timeAgo(iso: string): string {
 }
 
 .conv-item:hover {
-  background: var(--bg-input);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(4px);
 }
 
 .conv-item:hover .conv-item__bar {
   background: var(--accent-border);
 }
 
-/* Active state — gold tint background + solid gradient bar */
+/* Active state — gold tint background + solid gradient bar + glow */
 .conv-item--active {
   background: var(--accent-dim);
+  box-shadow: inset 0 0 20px rgba(201, 168, 76, 0.04);
 }
 
 .conv-item--active .conv-item__bar {
   top: 8%;
   bottom: 8%;
   background: linear-gradient(180deg, var(--accent-hover), var(--accent));
-  box-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
+  box-shadow: 0 0 14px rgba(201, 168, 76, 0.4);
 }
 
 .conv-item--active:hover {

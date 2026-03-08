@@ -1,7 +1,8 @@
 """O.M.N.I.A. — Text-to-Speech service.
 
-Supports **Piper TTS** (CPU-only, low RAM) as primary engine and
-**XTTS v2** (GPU, voice-cloning) as optional alternative.  Both engines
+Supports **Piper TTS** (CPU-only, low RAM) as primary engine,
+**XTTS v2** (GPU, voice-cloning) and **Kokoro** (ONNX, CPU-friendly,
+high-quality) as optional alternatives.  Both engines
 run blocking synthesis in a thread pool to keep the async loop free.
 Audio is returned as WAV-formatted audio bytes at the configured
 sample rate.
@@ -180,6 +181,59 @@ class _XTTSEngine:
 
 
 # ---------------------------------------------------------------------------
+# Kokoro engine (lazy import, ONNX-based)
+# ---------------------------------------------------------------------------
+
+
+class _KokoroEngine:
+    """Wrapper around ``kokoro_onnx.Kokoro`` for high-quality TTS."""
+
+    def __init__(
+        self, model_path: str, voices_path: str, voice: str,
+        language: str, speed: float = 1.0,
+    ) -> None:
+        import kokoro_onnx  # lazy
+
+        # Resolve relative paths to project root
+        project_root = Path(__file__).resolve().parent.parent.parent
+        model_resolved = Path(model_path)
+        voices_resolved = Path(voices_path)
+        if not model_resolved.is_absolute():
+            model_resolved = project_root / model_resolved
+        if not voices_resolved.is_absolute():
+            voices_resolved = project_root / voices_resolved
+
+        logger.info("Loading Kokoro model: {}", model_resolved)
+        self._kokoro = kokoro_onnx.Kokoro(
+            str(model_resolved), str(voices_resolved),
+        )
+        self._voice = voice
+        self._language = language
+        self._speed = speed
+        self._sample_rate = 24000  # Kokoro outputs 24kHz
+
+    @property
+    def sample_rate(self) -> int:
+        return self._sample_rate
+
+    def synthesize(self, text: str) -> bytes:
+        """Synthesize *text* and return WAV-formatted audio bytes (blocking)."""
+        import soundfile as sf
+
+        samples, sr = self._kokoro.create(
+            text, voice=self._voice, speed=self._speed, lang=self._language,
+        )
+        buf = io.BytesIO()
+        sf.write(buf, samples, sr, format="WAV", subtype="PCM_16")
+        buf.seek(0)
+        return buf.getvalue()
+
+    def close(self) -> None:
+        """Release resources."""
+        self._kokoro = None  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
 # Public service
 # ---------------------------------------------------------------------------
 
@@ -195,7 +249,7 @@ class TTSService:
 
     def __init__(self, config: TTSConfig) -> None:
         self._config = config
-        self._engine: _PiperEngine | _XTTSEngine | None = None
+        self._engine: _PiperEngine | _XTTSEngine | _KokoroEngine | None = None
         self._started = False
         self._synth_lock = asyncio.Lock()
 
@@ -236,6 +290,46 @@ class TTSService:
                         logger.exception("Piper fallback also failed")
                 except Exception:
                     logger.warning("XTTS failed to load, falling back to Piper")
+                    try:
+                        self._engine = await asyncio.to_thread(
+                            _PiperEngine,
+                            self._config.voice,
+                            self._config.sample_rate,
+                            self._config.speed,
+                        )
+                        self._started = True
+                        logger.info("TTS fallback to Piper successful")
+                    except Exception:
+                        logger.exception("Piper fallback also failed")
+            elif engine == "kokoro":
+                try:
+                    self._engine = await asyncio.to_thread(
+                        _KokoroEngine,
+                        self._config.kokoro_model,
+                        self._config.kokoro_voices,
+                        self._config.kokoro_voice,
+                        self._config.kokoro_language,
+                        self._config.speed,
+                    )
+                    self._started = True
+                except ImportError as exc:
+                    logger.warning(
+                        "Kokoro not available ({}): falling back to Piper engine",
+                        exc,
+                    )
+                    try:
+                        self._engine = await asyncio.to_thread(
+                            _PiperEngine,
+                            self._config.voice,
+                            self._config.sample_rate,
+                            self._config.speed,
+                        )
+                        self._started = True
+                        logger.info("TTS fallback to Piper successful")
+                    except Exception:
+                        logger.exception("Piper fallback also failed")
+                except Exception:
+                    logger.warning("Kokoro failed to load, falling back to Piper")
                     try:
                         self._engine = await asyncio.to_thread(
                             _PiperEngine,
@@ -340,4 +434,6 @@ class TTSService:
     @property
     def sample_rate(self) -> int:
         """Configured audio sample rate in Hz."""
+        if isinstance(self._engine, _KokoroEngine):
+            return self._engine.sample_rate
         return self._config.sample_rate

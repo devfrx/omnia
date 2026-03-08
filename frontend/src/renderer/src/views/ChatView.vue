@@ -298,6 +298,18 @@ onUnmounted(() => {
   color: var(--accent);
   opacity: var(--opacity-soft);
   animation: emptyBreathing 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(201, 168, 76, 0.2));
+  position: relative;
+}
+
+.chat-view__empty-icon::after {
+  content: '';
+  position: absolute;
+  inset: -16px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, rgba(201, 168, 76, 0.08), transparent 70%);
+  pointer-events: none;
+  animation: orbGlow 3s ease-in-out infinite;
 }
 
 .chat-view__empty-title {
@@ -325,21 +337,28 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-full);
-  border: 1px solid var(--border-hover);
-  background: var(--bg-tertiary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(19, 22, 28, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--accent);
   cursor: pointer;
-  box-shadow: var(--shadow-md);
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
   z-index: var(--z-sticky);
 }
 
 .chat-view__scroll-btn:hover {
-  background: var(--bg-secondary);
-  border-color: var(--accent-border);
+  background: rgba(19, 22, 28, 0.85);
+  border-color: rgba(201, 168, 76, 0.2);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 12px rgba(201, 168, 76, 0.1);
 }
 
 /* Scroll button enter/leave transition */
@@ -358,6 +377,11 @@ onUnmounted(() => {
 .chat-view__input-wrapper {
   position: relative;
   flex-shrink: 0;
+  background: rgba(19, 22, 28, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: var(--space-3) var(--space-4);
 }
 
 .transcript-overlay {
@@ -444,6 +468,20 @@ onUnmounted(() => {
   50% {
     transform: translateY(-4px);
     opacity: 0.9;
+  }
+}
+
+@keyframes orbGlow {
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.15);
   }
 }
 </style>

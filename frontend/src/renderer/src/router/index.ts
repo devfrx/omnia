@@ -1,4 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { useUIStore, type UIMode } from '../stores/ui'
+
+/** Route names that correspond to a UI mode. */
+const MODE_ROUTES = new Set<string>(['chat', 'assistant', 'hybrid'])
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -14,11 +18,38 @@ const router = createRouter({
       component: () => import('../views/ChatView.vue')
     },
     {
+      path: '/assistant',
+      name: 'assistant',
+      component: () => import('../views/AssistantView.vue')
+    },
+    {
+      path: '/hybrid',
+      name: 'hybrid',
+      component: () => import('../views/HybridView.vue')
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('../views/SettingsView.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ]
+})
+
+// Keep UI mode store in sync with the current route.
+// This ensures that navigating via sidebar <router-link>, browser back/forward,
+// or programmatic router.push all update the mode — not just the ModeSwitcher.
+router.afterEach((to) => {
+  const name = to.name as string | undefined
+  if (name && MODE_ROUTES.has(name)) {
+    const uiStore = useUIStore()
+    if (uiStore.mode !== name) {
+      uiStore.setMode(name as UIMode)
+    }
+  }
 })
 
 // Retry failed dynamic imports once (handles Vite HMR / dep optimisation races).
