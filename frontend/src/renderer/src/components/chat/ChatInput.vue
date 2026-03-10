@@ -362,27 +362,18 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  background: rgba(19, 22, 28, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(201, 168, 76, 0.1);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-4) var(--space-3);
-  box-shadow:
-    0 -4px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+  box-shadow: var(--shadow-elevated);
+  transition: box-shadow var(--duration-normal) var(--ease-out-expo),
+    border-color var(--duration-normal) var(--ease-out-expo);
 }
 
 .ci:focus-within {
-  border-color: rgba(201, 168, 76, 0.18);
-  box-shadow:
-    0 -4px 32px rgba(0, 0, 0, 0.3),
-    0 0 24px rgba(201, 168, 76, 0.06),
-    0 0 0 1px rgba(201, 168, 76, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-elevated), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 /* ============================================================
@@ -413,7 +404,7 @@ defineExpose({
 }
 
 .ci__thumb:hover {
-  border-color: var(--accent-border);
+  border-color: rgba(255, 255, 255, 0.18);
   transform: translateY(-1px);
 }
 
@@ -431,10 +422,8 @@ defineExpose({
   width: 18px;
   height: 18px;
   border-radius: var(--radius-full);
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface-4);
+  border: 1px solid var(--border);
   color: #fff;
   display: flex;
   align-items: center;
@@ -442,7 +431,7 @@ defineExpose({
   cursor: pointer;
   padding: 0;
   opacity: 0;
-  transition: opacity var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+  transition: opacity 120ms ease, background 120ms ease;
 }
 
 .ci__thumb:hover .ci__thumb-rm {
@@ -523,16 +512,13 @@ defineExpose({
   width: 22px;
   height: 22px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   color: var(--text-muted);
   transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast),
-    box-shadow var(--transition-fast);
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease;
 }
 
 .ci__badge svg {
@@ -541,10 +527,10 @@ defineExpose({
 }
 
 .ci__badge--on {
-  color: var(--accent);
-  border-color: var(--accent-border);
-  background: var(--accent-dim);
-  box-shadow: 0 0 8px rgba(201, 168, 76, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.04);
 }
 
 /* Flex spacer */
@@ -559,32 +545,26 @@ defineExpose({
   display: flex;
   align-items: flex-end;
   gap: var(--space-1);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-inset);
   padding: 4px var(--space-1-5);
   transition:
-    border-color var(--transition-normal),
-    box-shadow var(--transition-normal),
-    background var(--transition-normal);
+    border-color var(--duration-normal) var(--ease-out-expo),
+    box-shadow var(--duration-normal) var(--ease-out-expo),
+    background var(--duration-normal) var(--ease-out-expo);
 }
 
 .ci__body:focus-within {
-  border-color: rgba(201, 168, 76, 0.2);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow:
-    0 0 0 1px rgba(201, 168, 76, 0.1),
-    0 0 20px rgba(201, 168, 76, 0.04),
-    inset 0 0 16px rgba(201, 168, 76, 0.03);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--surface-0);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
-/* Drag-over: glow the input border gold */
+/* Drag-over: subtle glow on the input border */
 .ci--drag .ci__body {
-  border-color: rgba(201, 168, 76, 0.3);
-  box-shadow:
-    0 0 0 2px rgba(201, 168, 76, 0.15),
-    0 0 32px rgba(201, 168, 76, 0.08),
-    inset 0 0 24px rgba(201, 168, 76, 0.04);
+  border-color: rgba(140, 180, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(140, 180, 255, 0.12);
 }
 
 /* Hidden file input */
@@ -605,13 +585,12 @@ defineExpose({
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+  transition: color 120ms ease, background 120ms ease;
 }
 
 .ci__attach:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-hover);
   color: var(--accent);
-  transform: translateY(-1px);
 }
 
 .ci__attach:disabled {
@@ -630,7 +609,7 @@ defineExpose({
   border: none;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   line-height: var(--leading-normal);
   resize: none;
   outline: none !important;
@@ -654,7 +633,7 @@ defineExpose({
   gap: var(--space-3);
 }
 
-/* Send button — Gold accent glow on hover */
+/* Send button — Neutral accent on hover */
 .ci__send {
   display: inline-flex;
   align-items: center;
@@ -663,27 +642,25 @@ defineExpose({
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--accent-border);
-  background: var(--accent-dim);
-  color: var(--accent);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
   cursor: pointer;
   transition:
-    background var(--transition-fast),
-    color var(--transition-fast),
-    opacity var(--transition-fast),
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast);
+    background 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .ci__send:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(201, 168, 76, 0.2), rgba(212, 182, 94, 0.15));
-  color: var(--accent-hover);
-  box-shadow: 0 0 16px rgba(201, 168, 76, 0.2), 0 0 4px rgba(201, 168, 76, 0.15);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.06);
 }
 
 .ci__send:not(:disabled) {
-  animation: sendReady 2.5s ease-in-out infinite;
+  animation: none;
 }
 
 .ci__send:disabled {
@@ -696,11 +673,11 @@ defineExpose({
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
   }
 
   50% {
-    box-shadow: 0 0 8px rgba(201, 168, 76, 0.12);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.06);
   }
 }
 

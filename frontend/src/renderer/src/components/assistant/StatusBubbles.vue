@@ -95,12 +95,10 @@ const showStatus = computed(() => props.state !== 'idle')
     align-items: center;
     gap: 6px;
     padding: 5px 14px 5px 10px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: var(--radius-pill);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    font-size: 12px;
+    font-size: var(--text-2xs);
     font-weight: 500;
     color: var(--text-secondary);
     pointer-events: auto;
@@ -159,12 +157,10 @@ const showStatus = computed(() => props.state !== 'idle')
     align-items: center;
     gap: 5px;
     padding: 3px 10px 3px 7px;
-    background: rgba(201, 168, 76, 0.06);
+    background: var(--surface-2);
     border: 1px solid var(--accent-border);
     border-radius: var(--radius-pill);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    font-size: 11px;
+    font-size: var(--text-2xs);
     color: var(--accent);
     pointer-events: auto;
 }

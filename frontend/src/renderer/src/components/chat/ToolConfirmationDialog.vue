@@ -161,12 +161,12 @@ onUnmounted(() => {
     max-width: 90vw;
     max-height: 80vh;
     overflow-y: auto;
-    background: var(--bg-secondary);
-    border: 1px solid var(--accent-border);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-5) var(--space-6);
-    box-shadow: var(--shadow-lg);
-    animation: cardSlideIn 0.25s ease;
+    box-shadow: var(--shadow-floating);
+    animation: cardSlideIn 0.2s var(--ease-out-expo);
 }
 
 .confirm-card__header {
@@ -267,17 +267,17 @@ onUnmounted(() => {
     gap: 6px;
     width: 100%;
     padding: 8px 12px;
-    background: var(--accent-light);
+    background: var(--surface-2);
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
     font-size: var(--text-xs);
     text-align: left;
-    transition: background var(--transition-fast);
+    transition: background 120ms ease;
 }
 
 .reasoning-toggle:hover {
-    background: var(--accent-border);
+    background: var(--surface-3);
 }
 
 .toggle-icon {
@@ -316,7 +316,7 @@ onUnmounted(() => {
     font-size: var(--text-sm);
     line-height: var(--leading-normal);
     color: var(--text-secondary);
-    background: var(--black-light);
+    background: var(--surface-inset);
     border-radius: var(--radius-sm);
     overflow-x: auto;
     white-space: pre-wrap;

@@ -84,11 +84,11 @@ if (props.autoExpand) {
 .thinking-section {
     margin-bottom: var(--space-2);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--accent-border);
+    border-left: 2px solid var(--accent-border);
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--accent-faint), transparent);
+    background: var(--surface-1);
     overflow: hidden;
-    transition: border-color var(--transition-normal);
+    transition: border-color var(--duration-normal) var(--ease-out-expo);
 }
 
 /* Pulsing left border glow while streaming */
@@ -105,19 +105,19 @@ if (props.autoExpand) {
     background: none;
     border: none;
     color: var(--text-secondary);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     cursor: pointer;
     border-radius: var(--radius-md);
-    transition: color var(--transition-fast), background var(--transition-fast);
+    transition: color 120ms ease, background 120ms ease;
 }
 
 .thinking-section__toggle:hover {
     color: var(--text-primary);
-    background: var(--white-subtle);
+    background: var(--surface-hover);
 }
 
 .thinking-section__toggle:active {
-    background: var(--white-light);
+    background: var(--surface-active);
 }
 
 .thinking-section__icon {
@@ -132,10 +132,10 @@ if (props.autoExpand) {
 }
 
 .thinking-section__badge {
-    font-size: var(--text-xs);
+    font-size: var(--text-2xs);
     color: var(--text-secondary);
     opacity: var(--opacity-dim);
-    background: var(--white-subtle);
+    background: var(--surface-2);
     padding: var(--space-px) var(--space-1-5);
     border-radius: var(--space-2);
     font-style: normal;
@@ -161,13 +161,13 @@ if (props.autoExpand) {
 .thinking-section__body {
     display: grid;
     grid-template-rows: 1fr;
-    transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.3s ease;
+    transition: grid-template-rows 0.3s var(--ease-out-expo),
+        padding 0.3s var(--ease-out-expo),
+        opacity 0.25s ease;
     padding: var(--space-1-5) var(--space-3) var(--space-2-5);
     font-style: italic;
     color: var(--text-secondary);
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     line-height: var(--leading-relaxed);
     opacity: 0.75;
 }

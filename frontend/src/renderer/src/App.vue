@@ -80,7 +80,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: var(--bg-secondary);
+  background: var(--surface-1);
   border-bottom: 1px solid var(--border);
   padding: 0 0 var(--space-1);
   flex-shrink: 0;
@@ -88,8 +88,8 @@ onMounted(() => {
 
 .global-operation-bar__track {
   width: 100%;
-  height: 3px;
-  background: var(--bg-tertiary);
+  height: 2px;
+  background: var(--surface-inset);
   overflow: hidden;
 }
 
@@ -116,9 +116,10 @@ onMounted(() => {
 }
 
 .global-operation-bar__text {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
   margin-top: var(--space-0-5);
+  letter-spacing: var(--tracking-tight);
 }
 
 /* ── Plugin toolbar mount point ─────────────────────────────────── */
@@ -127,7 +128,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-4);
-  background: var(--bg-secondary);
+  background: var(--surface-1);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }

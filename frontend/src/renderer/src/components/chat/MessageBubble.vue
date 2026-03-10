@@ -127,7 +127,7 @@ onUnmounted(() => {
 /* ------------------------------------------------------------------ Row */
 .bubble-row {
   display: flex;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .row--user {
@@ -142,8 +142,8 @@ onUnmounted(() => {
 /* ------------------------------------------------------------- Bubble base */
 .bubble {
   padding: var(--space-3) var(--space-4);
-  line-height: var(--leading-loose);
-  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  font-size: var(--text-sm);
   position: relative;
   word-break: break-word;
 }
@@ -151,22 +151,15 @@ onUnmounted(() => {
 /* ------------------------------------------------------------- User bubble */
 .bubble--user {
   max-width: 65%;
-  background: linear-gradient(135deg, rgba(201, 168, 76, 0.14), rgba(201, 168, 76, 0.06));
-  border: 1px solid rgba(201, 168, 76, 0.18);
-  border-radius: 18px 18px var(--radius-sm) 18px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
   color: var(--text-primary);
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(201, 168, 76, 0.05);
-  animation: slideInUser 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  animation: slideInUser 250ms var(--ease-out-expo, cubic-bezier(0.19, 1, 0.22, 1)) both;
 }
 
 .bubble--user:hover {
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.25),
-    0 0 20px rgba(201, 168, 76, 0.06);
-  transform: translateY(-1px);
+  border-color: var(--border-hover);
 }
 
 /* --------------------------------------------------------- Assistant bubble */
@@ -174,38 +167,27 @@ onUnmounted(() => {
   max-width: 82%;
   background: transparent;
   border: none;
-  border-left: 3px solid var(--accent-medium);
+  border-left: 2px solid var(--accent-medium);
   border-radius: 0;
-  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
+  padding: var(--space-2-5) var(--space-4) var(--space-2-5) var(--space-5);
   color: var(--text-primary);
-  animation: slideInAssistant 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: border-left-color var(--transition-fast), background var(--transition-fast);
+  animation: slideInAssistant 250ms var(--ease-out-expo, cubic-bezier(0.19, 1, 0.22, 1)) both;
 }
 
 .bubble--assistant:hover {
   border-left-color: var(--accent-border);
-  background: rgba(255, 255, 255, 0.015);
 }
 
 /* ------------------------------------------------------------- Tool bubble */
 .bubble--tool {
   max-width: 78%;
-  background: rgba(30, 34, 42, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--text-muted);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  animation: slideInAssistant 0.35s ease-out both;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.bubble--tool:hover {
-  background: rgba(30, 34, 42, 0.65);
-  border-color: rgba(255, 255, 255, 0.08);
+  animation: slideInAssistant 250ms ease-out both;
 }
 
 /* -------------------------------------------------------- Attachments */
@@ -284,12 +266,12 @@ onUnmounted(() => {
 /* --------------------------------------------------------- Timestamp */
 .bubble__time {
   display: block;
-  font-size: var(--text-xs);
+  font-size: var(--text-2xs);
   color: var(--text-muted);
-  margin-top: 6px;
+  margin-top: 4px;
   opacity: 0;
-  letter-spacing: 0.03em;
-  transition: opacity var(--transition-fast);
+  letter-spacing: 0.02em;
+  transition: opacity 120ms ease;
 }
 
 .bubble:hover .bubble__time {

@@ -38,7 +38,7 @@ function switchMode(mode: UIMode): void {
     <div class="mode-switcher" :class="{ 'mode-switcher--collapsed': isCollapsed }" @mouseenter="hovered = true"
         @mouseleave="hovered = false">
         <!-- Sliding active highlight -->
-        <div class="mode-switcher__highlight" :style="{ transform: `translateY(${activeIndex * 38}px)` }" />
+        <div class="mode-switcher__highlight" :style="{ transform: `translateY(${activeIndex * 36}px)` }" />
 
         <button v-for="m in modes" :key="m.id" class="mode-switcher__btn"
             :class="{ 'mode-switcher__btn--active': uiStore.mode === m.id }" @click="switchMode(m.id)">
@@ -74,43 +74,36 @@ function switchMode(mode: UIMode): void {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 4px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 22px;
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    padding: 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elevated);
     transition:
-        width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-        height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-        padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-        border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-        background 0.3s ease,
-        border-color 0.3s ease,
-        box-shadow 0.3s ease,
-        transform 0.2s ease;
+        width 300ms var(--ease-out-expo, ease),
+        height 300ms var(--ease-out-expo, ease),
+        padding 300ms ease,
+        opacity 300ms ease,
+        border-radius 300ms ease,
+        transform 150ms ease;
     overflow: hidden;
 }
 
-/* Collapsed state: compact gold dot with subtle pulse */
+/* Collapsed state: compact dot */
 .mode-switcher--collapsed {
-    padding: 4px;
-    width: 20px;
-    height: 20px;
+    padding: 3px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: var(--accent-dim);
+    background: var(--surface-3);
     border-color: var(--accent-border);
     gap: 0;
-    opacity: 0.7;
-    box-shadow: 0 0 8px rgba(201, 168, 76, 0.15);
-    animation: collapsed-pulse 3s ease-in-out infinite;
+    opacity: 0.6;
 }
 
 .mode-switcher--collapsed:hover {
     opacity: 1;
-    transform: scale(1.15);
-    box-shadow: 0 0 16px rgba(201, 168, 76, 0.35);
+    transform: scale(1.1);
     border-color: var(--accent);
 }
 
@@ -135,15 +128,14 @@ function switchMode(mode: UIMode): void {
 /* Sliding highlight behind active button */
 .mode-switcher__highlight {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    right: 4px;
-    height: 36px;
-    border-radius: 18px;
-    background: var(--accent-dim);
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    height: 34px;
+    border-radius: var(--radius-md);
+    background: var(--surface-selected);
     border: 1px solid var(--accent-border);
-    box-shadow: 0 0 12px rgba(201, 168, 76, 0.1);
-    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: transform 250ms var(--ease-out-expo, ease);
     pointer-events: none;
     z-index: 0;
 }
@@ -151,17 +143,17 @@ function switchMode(mode: UIMode): void {
 .mode-switcher__btn {
     position: relative;
     z-index: 1;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border: none;
-    border-radius: 18px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s ease;
+    transition: color 120ms ease;
     padding: 0;
 }
 
@@ -180,18 +172,16 @@ function switchMode(mode: UIMode): void {
 /* Label tooltip to the right */
 .mode-switcher__label {
     position: absolute;
-    left: calc(100% + 10px);
+    left: calc(100% + 8px);
     white-space: nowrap;
-    font-size: 12px;
+    font-size: var(--text-2xs);
     color: var(--text-primary);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    padding: 4px 10px;
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    background: var(--surface-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
     pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-elevated);
 }
 
 /* ── Label slide transition (150ms enter delay to prevent flash) ── */

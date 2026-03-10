@@ -58,13 +58,11 @@ const audioBarWidth = computed(() => Math.min(props.audioLevel * 100, 100))
     max-width: 420px;
     width: 100%;
     padding: var(--space-3, 12px) var(--space-4, 16px);
-    background: var(--glass-bg, rgba(19, 22, 28, 0.65));
-    backdrop-filter: blur(var(--glass-blur, 16px));
-    -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
-    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+    background: var(--surface-1, #13161e);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
     border-radius: var(--radius-lg, 12px);
     overflow: hidden;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: border-color 0.25s var(--ease-out-expo), box-shadow 0.25s var(--ease-out-expo);
 }
 
 /* ── Phase: Listening ── */

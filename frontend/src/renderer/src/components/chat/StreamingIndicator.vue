@@ -71,19 +71,19 @@ const chatStore = useChatStore()
 .bubble-row {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .streaming-bubble {
   max-width: 82%;
-  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
+  padding: var(--space-2-5) var(--space-4) var(--space-2-5) var(--space-5);
   background: transparent;
   border: none;
-  border-left: 3px solid var(--accent-medium);
+  border-left: 2px solid var(--accent-border);
   border-radius: 0;
   color: var(--text-primary);
   line-height: var(--leading-relaxed);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   word-break: break-word;
   position: relative;
   animation: borderGradientPulse 3s ease-in-out infinite;
@@ -119,9 +119,9 @@ const chatStore = useChatStore()
   gap: var(--space-1-5);
   margin-bottom: var(--space-2);
   padding: var(--space-1-5) var(--space-2-5);
-  background: rgba(201, 168, 76, 0.04);
+  background: var(--surface-1);
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(201, 168, 76, 0.08);
+  border: 1px solid var(--border);
 }
 
 .streaming-bubble__brain-icon {

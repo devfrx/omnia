@@ -192,14 +192,12 @@ async function onOpenFile(id: string): Promise<void> {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-right: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-sidebar);
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
+  box-shadow: 1px 0 12px rgba(0, 0, 0, 0.25);
   transition:
-    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width var(--duration-moderate) var(--ease-out-expo),
+    min-width var(--duration-moderate) var(--ease-out-expo);
   overflow: hidden;
   position: relative;
   z-index: var(--z-sticky);
@@ -210,27 +208,26 @@ async function onOpenFile(id: string): Promise<void> {
   min-width: var(--sidebar-collapsed);
 }
 
-/* ------------------------------------------------- Dot-grid texture overlay
-   Repeating radial dots at 18px spacing, faded at top/bottom edges */
+/* ------------------------------------------------- Subtle texture overlay */
 .sidebar__texture {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: var(--z-base);
   background-image: radial-gradient(circle,
-      var(--white-faint) 1px,
+      rgba(255, 255, 255, 0.015) 1px,
       transparent 1px);
-  background-size: 18px 18px;
-  opacity: 0.3;
+  background-size: 20px 20px;
+  opacity: 0.25;
   -webkit-mask-image: linear-gradient(to bottom,
       transparent 0%,
-      rgba(0, 0, 0, 0.4) 12%,
-      rgba(0, 0, 0, 0.4) 88%,
+      rgba(0, 0, 0, 0.3) 15%,
+      rgba(0, 0, 0, 0.3) 85%,
       transparent 100%);
   mask-image: linear-gradient(to bottom,
       transparent 0%,
-      rgba(0, 0, 0, 0.4) 12%,
-      rgba(0, 0, 0, 0.4) 88%,
+      rgba(0, 0, 0, 0.3) 15%,
+      rgba(0, 0, 0, 0.3) 85%,
       transparent 100%);
 }
 
@@ -274,12 +271,12 @@ async function onOpenFile(id: string): Promise<void> {
 .sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   padding: var(--space-3) var(--space-2) var(--space-2);
   position: relative;
   z-index: 1;
   flex-shrink: 0;
-  transition: padding var(--transition-normal);
+  transition: padding var(--duration-normal) ease;
 }
 
 .sidebar--collapsed .sidebar__nav {
@@ -292,9 +289,9 @@ async function onOpenFile(id: string): Promise<void> {
   display: flex;
   align-items: center;
   gap: var(--space-2-5);
-  padding: 9px 10px;
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   letter-spacing: 0.01em;
   color: var(--text-secondary);
@@ -302,8 +299,8 @@ async function onOpenFile(id: string): Promise<void> {
   position: relative;
   overflow: hidden;
   transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
+    background 120ms ease,
+    color 120ms ease;
 }
 
 /* Center icons when collapsed */
@@ -371,9 +368,8 @@ async function onOpenFile(id: string): Promise<void> {
 }
 
 .sidebar__link:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-hover);
   color: var(--text-primary);
-  backdrop-filter: blur(4px);
 }
 
 .sidebar__link:hover .sidebar__link-icon {
@@ -384,22 +380,21 @@ async function onOpenFile(id: string): Promise<void> {
   transform: scale(0.97);
 }
 
-/* Active state — gold left bar + gold gradient indicator */
+/* Active state — gold left bar + subtle highlight */
 .sidebar__link--active {
-  color: var(--accent);
-  background: var(--accent-dim);
-  box-shadow: inset 0 0 20px rgba(201, 168, 76, 0.04);
+  color: var(--text-primary);
+  background: var(--surface-selected);
 }
 
 .sidebar__link--active .sidebar__link-bar {
-  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
-  box-shadow: 0 0 14px rgba(201, 168, 76, 0.45);
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.3);
   width: 3px;
 }
 
 .sidebar__link--active .sidebar__link-icon {
   opacity: 1;
-  filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.3));
+  color: var(--accent);
 }
 
 /* ------------------------------------------------- Conversations section */
@@ -452,13 +447,11 @@ async function onOpenFile(id: string): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
@@ -466,27 +459,24 @@ async function onOpenFile(id: string): Promise<void> {
   position: relative;
   z-index: 1;
   transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast),
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast);
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 80ms ease;
 }
 
 .sidebar__toggle:hover {
-  color: var(--accent);
-  border-color: var(--accent-border);
-  background: var(--accent-glow);
-  box-shadow: 0 0 14px rgba(201, 168, 76, 0.12);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  background: var(--surface-3);
 }
 
 .sidebar__toggle:active {
-  transform: scale(0.88);
+  transform: scale(0.9);
 }
 
 .sidebar__toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 /* ------------------------------------------------- Reduced motion */

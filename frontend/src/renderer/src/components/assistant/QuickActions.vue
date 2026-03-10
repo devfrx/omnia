@@ -98,22 +98,20 @@ function toggleExpand(): void {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
     color: var(--text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    transition: all 0.2s var(--ease-out-expo);
 }
 
 .quick-actions__trigger:hover {
     border-color: var(--accent-border);
     color: var(--accent);
-    background: var(--accent-dim);
+    background: var(--surface-3);
 }
 
 .quick-actions__trigger--active {
@@ -128,12 +126,10 @@ function toggleExpand(): void {
     flex-direction: column;
     gap: 3px;
     padding: 5px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-floating);
     min-width: 180px;
 }
 
@@ -144,17 +140,17 @@ function toggleExpand(): void {
     gap: 8px;
     padding: 8px 12px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 120ms ease;
     text-align: left;
     width: 100%;
 }
 
 .quick-actions__item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-hover);
     color: var(--accent);
 }
 

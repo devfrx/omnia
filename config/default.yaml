@@ -173,7 +173,7 @@ news:
 # ──────────────────────────────────────────────────
 
 memory:
-  enabled: false
+  enabled: true
   # db_path: "data/memory.db"  # default, relative to project root
   embedding_model: "text-embedding-mxbai-embed-large-v1"
   embedding_dim: 1024

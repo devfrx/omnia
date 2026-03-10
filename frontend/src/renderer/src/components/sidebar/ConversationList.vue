@@ -316,48 +316,20 @@ function timeAgo(iso: string): string {
   width: 100%;
   padding: var(--space-2-5) 14px;
   margin-bottom: var(--space-0-5);
-  border: 1px solid var(--accent-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg,
-      var(--accent-subtle) 0%,
-      var(--accent-faint) 100%);
-  color: var(--accent);
-  font-size: var(--text-base);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.03em;
   cursor: pointer;
   flex-shrink: 0;
   overflow: hidden;
   transition:
-    background var(--transition-normal),
-    border-color var(--transition-normal),
-    color var(--transition-normal),
-    box-shadow var(--transition-normal),
-    transform var(--transition-fast);
-}
-
-/* Pulsing gold border glow overlay */
-.conv-list__new::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid var(--accent);
-  opacity: 0;
-  animation: newBtnBorderPulse 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes newBtnBorderPulse {
-
-  0%,
-  100% {
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 0.45;
-  }
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
 
 /* Circle container for the plus icon */
@@ -368,13 +340,12 @@ function timeAgo(iso: string): string {
   width: 20px;
   height: 20px;
   border-radius: var(--radius-full);
-  border: 1.5px solid var(--accent-border);
-  background: var(--accent-dim);
+  border: 1.5px solid var(--border);
+  background: var(--surface-3);
   flex-shrink: 0;
   transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    transform var(--transition-fast);
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .conv-list__new-label {
@@ -382,18 +353,14 @@ function timeAgo(iso: string): string {
 }
 
 .conv-list__new:hover {
-  background: linear-gradient(135deg,
-      var(--accent-dim) 0%,
-      var(--accent-subtle) 100%);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-glow);
-  color: var(--accent-hover);
+  background: var(--surface-3);
+  border-color: var(--accent-border);
+  color: var(--accent);
 }
 
 .conv-list__new:hover .conv-list__new-icon {
-  background: var(--accent-strong);
-  border-color: var(--accent);
-  transform: rotate(90deg);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
 }
 
 .conv-list__new:active {
@@ -499,8 +466,8 @@ function timeAgo(iso: string): string {
   right: 0;
   height: 52px;
   transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
+    background 120ms ease,
+    color 120ms ease;
 }
 
 /* ------------------------------------------------- Left accent bar */
@@ -520,29 +487,27 @@ function timeAgo(iso: string): string {
 }
 
 .conv-item:hover {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(4px);
+  background: var(--surface-hover);
 }
 
 .conv-item:hover .conv-item__bar {
   background: var(--accent-border);
 }
 
-/* Active state — gold tint background + solid gradient bar + glow */
+/* Active state — accent tint background + solid bar */
 .conv-item--active {
-  background: var(--accent-dim);
-  box-shadow: inset 0 0 20px rgba(201, 168, 76, 0.04);
+  background: var(--surface-selected);
 }
 
 .conv-item--active .conv-item__bar {
   top: 8%;
   bottom: 8%;
-  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
-  box-shadow: 0 0 14px rgba(201, 168, 76, 0.4);
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.25);
 }
 
 .conv-item--active:hover {
-  background: var(--accent-dim);
+  background: var(--surface-selected);
 }
 
 /* Streaming state — pulsing bar + subtle text glow */
@@ -579,20 +544,19 @@ function timeAgo(iso: string): string {
 
 /* ------------------------------------------------- Title */
 .conv-item__title {
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* Reserve space for slide-in action buttons */
   padding-right: 52px;
   line-height: 1.3;
-  transition: color var(--transition-fast);
+  transition: color 120ms ease;
 }
 
 .conv-item--active .conv-item__title {
-  color: var(--accent-hover);
+  color: var(--text-primary);
 }
 
 /* ------------------------------------------------- Metadata row */
@@ -683,15 +647,15 @@ function timeAgo(iso: string): string {
   display: flex;
   gap: 1px;
   opacity: 0;
-  background: var(--bg-secondary);
+  background: var(--surface-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: var(--space-0-5);
   box-shadow: var(--shadow-md);
   pointer-events: none;
   transition:
-    opacity var(--transition-fast),
-    transform var(--transition-fast);
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
 /* Reveal on hover (slide-in effect) */

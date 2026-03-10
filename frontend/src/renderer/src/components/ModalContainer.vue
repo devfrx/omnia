@@ -126,11 +126,11 @@ onUnmounted(() => {
 .modal-card {
     width: 400px;
     max-width: 90vw;
-    background: var(--bg-secondary);
-    border: 1px solid var(--accent-border);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 22px 26px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-floating);
 }
 
 .modal-card__title {
@@ -175,8 +175,8 @@ onUnmounted(() => {
 
 .modal__btn--cancel:hover {
     color: var(--text-primary);
-    border-color: var(--border-hover);
-    background: var(--white-subtle);
+    border-color: var(--interactive-hover);
+    background: var(--surface-hover);
 }
 
 .modal__btn--confirm,

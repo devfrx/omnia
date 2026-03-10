@@ -211,7 +211,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-primary);
+    background: var(--surface-0);
 }
 
 .assistant-view__center {
@@ -240,23 +240,21 @@ onMounted(() => {
     align-items: center;
     gap: 6px;
     padding: 5px 14px;
-    border: 1px solid var(--accent-border);
+    border: 1px solid var(--border);
     border-radius: 20px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    background: var(--surface-2);
     color: var(--accent);
-    font-size: 12px;
+    font-size: var(--text-2xs);
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    transition: background 120ms ease, border-color 120ms ease;
     z-index: 5;
 }
 
 .assistant-view__stop-hint:hover {
-    background: var(--accent-dim);
-    border-color: var(--accent);
+    background: var(--surface-3);
+    border-color: var(--accent-border);
 }
 
 /* Stop hint transitions */
@@ -297,7 +295,7 @@ onMounted(() => {
 /* Transitions */
 .response-fade-enter-active,
 .response-fade-leave-active {
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    transition: opacity 0.3s var(--ease-out-expo), transform 0.3s var(--ease-out-expo);
 }
 
 .response-fade-enter-from {

@@ -215,7 +215,7 @@ onUnmounted(() => {
     z-index: 2;
     display: flex;
     justify-content: center;
-    padding: var(--space-4) 0;
+    padding: var(--space-3) 0;
     flex-shrink: 0;
 }
 
@@ -231,12 +231,12 @@ onUnmounted(() => {
 .hybrid-view__messages {
     flex: 1;
     overflow-y: auto;
-    padding: var(--space-3) var(--space-6);
+    padding: var(--space-4) var(--space-6);
     scroll-behavior: smooth;
 }
 
 .hybrid-view__messages::-webkit-scrollbar {
-    width: 4px;
+    width: 5px;
 }
 
 .hybrid-view__messages::-webkit-scrollbar-track {
@@ -244,21 +244,26 @@ onUnmounted(() => {
 }
 
 .hybrid-view__messages::-webkit-scrollbar-thumb {
-    background: var(--accent-light);
-    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+}
+
+.hybrid-view__messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .hybrid-view__empty {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100%;
-    opacity: 0.4;
+    gap: var(--space-2);
 }
 
 .hybrid-view__empty-text {
-    font-size: var(--text-md);
-    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
     letter-spacing: var(--tracking-wide);
 }
 
@@ -275,14 +280,22 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: var(--radius-full);
-    border: 1px solid var(--border-hover);
-    background: var(--bg-tertiary);
-    color: var(--accent);
+    border: 1px solid var(--border);
+    background: var(--surface-3);
+    color: var(--text-secondary);
     cursor: pointer;
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-elevated);
+    transition:
+        background 120ms ease,
+        color 120ms ease;
+}
+
+.hybrid-view__scroll-btn:hover {
+    background: var(--surface-4);
+    color: var(--text-primary);
 }
 
 .scroll-btn-enter-active,

@@ -179,8 +179,8 @@ function formatArgs(args: string): string {
     align-items: center;
     gap: 5px;
     padding: 3px 10px 3px 7px;
-    background: var(--accent-faint);
-    border: 1px solid var(--accent-border);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: 20px;
     font-family: var(--font-mono);
     font-size: var(--text-xs);
@@ -223,8 +223,8 @@ function formatArgs(args: string): string {
 
 /* --------------------------------------------------------- Tool call card */
 .tool-section__card {
-    background: rgba(0, 0, 0, 0.22);
-    border: 1px solid var(--white-subtle);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-left: 2px solid var(--accent-border);
     border-radius: var(--radius-sm);
     overflow: hidden;
@@ -235,8 +235,8 @@ function formatArgs(args: string): string {
     align-items: center;
     justify-content: space-between;
     padding: var(--space-1-5) var(--space-2-5) 5px;
-    border-bottom: 1px solid var(--white-subtle);
-    background: var(--accent-faint);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
 }
 
 .tool-section__fn-name {

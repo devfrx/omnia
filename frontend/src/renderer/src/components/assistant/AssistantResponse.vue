@@ -111,15 +111,13 @@ onMounted(() => {
     max-height: 70vh;
     overflow-y: auto;
     padding: var(--space-5, 20px) var(--space-6, 24px);
-    background: var(--glass-bg, rgba(19, 22, 28, 0.65));
-    backdrop-filter: blur(var(--glass-blur, 16px));
-    -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
-    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+    background: var(--surface-1, #13161e);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
     border-radius: var(--radius-xl, 16px);
     color: var(--text-primary, #e8e4de);
-    font-size: var(--text-md, 0.9375rem);
+    font-size: var(--text-sm, 0.8125rem);
     line-height: var(--leading-relaxed, 1.7);
-    transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    transition: border-color 0.3s var(--ease-out-expo), box-shadow 0.3s var(--ease-out-expo);
 }
 
 /* Custom scrollbar */
@@ -153,7 +151,7 @@ onMounted(() => {
 }
 
 .assistant-response--complete {
-    border-color: var(--glass-border, rgba(255, 255, 255, 0.06));
+    border-color: var(--border, rgba(255, 255, 255, 0.06));
     box-shadow: none;
 }
 

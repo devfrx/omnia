@@ -392,36 +392,27 @@ defineExpose({
     max-width: 600px;
     width: auto;
 
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-2) var(--space-3);
 
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        0 0 0 1px rgba(255, 255, 255, 0.03),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: var(--shadow-floating);
     transition:
-        border-color 0.3s ease,
-        box-shadow 0.3s ease,
-        border-radius 0.3s ease,
-        padding 0.3s ease,
-        min-width 0.3s ease,
-        left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-color 0.25s var(--ease-out-expo),
+        box-shadow 0.25s var(--ease-out-expo),
+        border-radius 0.25s var(--ease-out-expo),
+        padding 0.25s var(--ease-out-expo),
+        min-width 0.25s var(--ease-out-expo),
+        left 0.25s var(--ease-out-expo);
 
     /* Prevent layout jump during state/input crossfade */
     display: grid;
 }
 
 .fib:focus-within {
-    border-color: rgba(201, 168, 76, 0.18);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        0 0 24px rgba(201, 168, 76, 0.06),
-        0 0 0 1px rgba(201, 168, 76, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-floating), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 /* Collapsed pill shape */
@@ -465,21 +456,21 @@ defineExpose({
     }
 }
 
-/* Thinking: golden pulse */
+/* Thinking: subtle white pulse */
 .fib--thinking {
-    border-color: var(--accent-border);
-    animation: fib-pulse-gold 2s ease-in-out infinite;
+    border-color: rgba(255, 255, 255, 0.15);
+    animation: fib-pulse-think 2s ease-in-out infinite;
 }
 
-@keyframes fib-pulse-gold {
+@keyframes fib-pulse-think {
 
     0%,
     100% {
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 8px rgba(201, 168, 76, 0.06);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 255, 255, 0.03);
     }
 
     50% {
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(201, 168, 76, 0.14);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.08);
     }
 }
 
@@ -488,12 +479,12 @@ defineExpose({
     border-color: rgba(100, 160, 220, 0.3);
 }
 
-/* Drag over: gold glow */
+/* Drag over: subtle glow */
 .fib--drag {
-    border-color: rgba(201, 168, 76, 0.3);
+    border-color: rgba(140, 180, 255, 0.3);
     box-shadow:
-        0 0 0 2px rgba(201, 168, 76, 0.15),
-        0 0 32px rgba(201, 168, 76, 0.08);
+        0 0 0 2px rgba(140, 180, 255, 0.12),
+        0 0 32px rgba(140, 180, 255, 0.06);
 }
 
 /* ============================================================
@@ -659,18 +650,18 @@ defineExpose({
     width: 30px;
     height: 30px;
     border-radius: var(--radius-full);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
     color: var(--text-secondary);
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
 .fib__stop-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-3);
     color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--interactive-hover);
 }
 
 .fib__stop-btn--rec {
@@ -743,11 +734,11 @@ defineExpose({
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: color 0.2s, background 0.2s;
+    transition: color 120ms ease, background 120ms ease;
 }
 
 .fib__attach:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface-hover);
     color: var(--accent);
 }
 
@@ -771,7 +762,7 @@ defineExpose({
     border: none;
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: var(--text-md);
+    font-size: var(--text-sm);
     line-height: var(--leading-normal);
     resize: none;
     outline: none !important;
@@ -804,18 +795,17 @@ defineExpose({
     width: 34px;
     height: 34px;
     border-radius: var(--radius-md);
-    border: 1px solid var(--accent-border);
-    background: var(--accent-dim);
-    color: var(--accent);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+    transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .fib__send:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(201, 168, 76, 0.2), rgba(212, 182, 94, 0.15));
-    color: var(--accent-hover);
-    box-shadow: 0 0 16px rgba(201, 168, 76, 0.2);
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.06);
 }
 
 .fib__send:disabled {
