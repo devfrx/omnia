@@ -102,7 +102,9 @@ class MockLLM:
             yield {"type": "token", "content": "Final answer."}
             yield {"type": "done"}
 
-    def build_continuation_messages(self, history: list) -> list:
+    def build_continuation_messages(
+        self, history: list, memory_context: str | None = None,
+    ) -> list:
         """Passthrough system prompt + history."""
         return [{"role": "system", "content": "sys"}]
 
