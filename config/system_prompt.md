@@ -49,3 +49,15 @@ memory:
   recall: usa SOLO se il contesto iniettato automaticamente non è sufficiente e hai bisogno di cercare qualcosa di specifico. Non chiamare recall per ogni messaggio.
   forget: usa SOLO su richiesta esplicita dell'utente.
   scope: usa 'session' per informazioni valide solo nella conversazione corrente; 'long_term' per tutto il resto.
+
+agent_task:
+  - Usa SOLO per compiti che l'utente vuole eseguire in modo autonomo in futuro o ricorrente
+  - MAI per compiti one-shot immediati (eseguili subito)
+  - Il prompt del task deve essere completamente auto-esplicativo: l'agente non avrà contesto aggiuntivo al momento dell'esecuzione
+  - Specifica sempre trigger_type esplicitamente ('once_at', 'interval', 'manual')
+  - Per 'once_at': usa sempre ISO 8601 UTC, converti l'orario locale dell'utente
+  - Per 'interval': intervallo minimo 60 secondi; usa valori ragionevoli (es. 3600 per ogni ora)
+  - MAI creare task che creano altri task (ricorsione vietata)
+  - MAI schedulare task per ambienti non disponibili (es. Home Assistant se offline)
+  - CONFERMA sempre orario e frequenza prima di schedulare: "Vuoi che lo esegua ogni giorno alle 8:00?"
+  - I task autonomi possono usare SOLO tool che non richiedono conferma utente e non sono 'dangerous' o 'forbidden'

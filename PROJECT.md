@@ -1596,6 +1596,22 @@ frontend/src/renderer/src/
 > task in background — schedulati o event-driven — senza input utente in tempo reale.
 > Con Fase 9 (memoria) + Fase 10 (autonomia) OMNIA diventa un agente vero.
 
+- [x] AgentTask DB model — §10.1
+- [x] TaskSchedulerConfig in config.py + default.yaml — §10.2
+- [x] TaskScheduler service (asyncio loop) — §10.3
+- [x] run_agent_task() headless runner — §10.4
+- [x] AgentTaskPlugin (4 tool: schedule/cancel/list/get_result) — §10.5
+- [x] WSConnectionManager service — §10.6
+- [x] Endpoint /api/ws/events — §10.7
+- [x] REST API /api/tasks — §10.8
+- [x] OmniaEvent TASK_* events — §10.9
+- [x] System prompt updates — §10.11
+- [x] Frontend types/tasks.ts + stores/tasks.ts + useEventsWebSocket.ts + TaskManager.vue — §10.12
+- [x] Wiring in app.py (WSConnectionManager + TaskScheduler + EventBus bridge) — §10.3/10.6
+- [x] Routes registration (events + tasks) — §10.7/10.8
+- [x] Protocols (TaskSchedulerProtocol + WSConnectionManagerProtocol) + AppContext fields — §10.6
+- [ ] Test suite completa — §10.15
+
 ---
 
 #### 10.0 — Analisi Vincoli e Scelte Architetturali

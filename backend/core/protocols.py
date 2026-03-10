@@ -377,3 +377,55 @@ class MemoryServiceProtocol(Protocol):
     async def close(self) -> None:
         """Shut down the memory service."""
         ...
+
+
+# ---------------------------------------------------------------------------
+# Task scheduler
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class TaskSchedulerProtocol(Protocol):
+    """Protocol for the background autonomous task scheduler."""
+
+    async def start(self, ctx: Any) -> None:
+        """Start the scheduler background loop."""
+        ...
+
+    async def stop(self) -> None:
+        """Stop the scheduler and cancel pending tasks."""
+        ...
+
+    async def schedule(self, task: Any) -> str:
+        """Schedule a task and return its ID as string."""
+        ...
+
+    async def cancel(self, task_id: str) -> bool:
+        """Cancel a scheduled task. Returns True if found and cancelled."""
+        ...
+
+
+# ---------------------------------------------------------------------------
+# WebSocket connection manager
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class WSConnectionManagerProtocol(Protocol):
+    """Protocol for the persistent event WebSocket connection manager."""
+
+    async def connect(self, session_id: str, ws: Any) -> None:
+        """Accept and register a WebSocket connection."""
+        ...
+
+    async def disconnect(self, session_id: str) -> None:
+        """Remove a WebSocket connection."""
+        ...
+
+    async def broadcast(self, event: dict[str, Any]) -> None:
+        """Send an event to all connected clients."""
+        ...
+
+    async def send_to(self, session_id: str, event: dict[str, Any]) -> None:
+        """Send an event to a specific session."""
+        ...

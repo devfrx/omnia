@@ -1,0 +1,51 @@
+"""O.M.N.I.A. — WebSocket endpoint for background event streaming.
+
+Clients connect once at startup to ``/api/events/ws`` and receive
+push notifications whenever a background task completes, fails,
+or changes status.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import uuid
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from loguru import logger
+
+from backend.core.context import AppContext
+
+router = APIRouter(prefix="/events", tags=["events"])
+
+
+@router.websocket("/ws")
+async def ws_events(websocket: WebSocket) -> None:
+    """Persistent push channel for background task events.
+
+    Clients connect once at startup and receive push events whenever
+    a background task completes, fails, or changes status.
+    """
+    ctx: AppContext = websocket.app.state.context
+    if ctx.ws_connection_manager is None:
+        await websocket.close(code=1011, reason="Events service not available")
+        return
+
+    session_id = f"events-{uuid.uuid4().hex[:12]}"
+    await ctx.ws_connection_manager.connect(session_id, websocket)
+
+    try:
+        while True:
+            try:
+                data = await asyncio.wait_for(
+                    websocket.receive_json(), timeout=60.0,
+                )
+                if data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+            except asyncio.TimeoutError:
+                await websocket.send_json({"type": "heartbeat"})
+            except WebSocketDisconnect:
+                break
+    except Exception as exc:
+        logger.debug("Events WS error for {}: {}", session_id, exc)
+    finally:
+        await ctx.ws_connection_manager.disconnect(session_id)

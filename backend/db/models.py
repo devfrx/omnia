@@ -208,3 +208,74 @@ class UserPreference(SQLModel, table=True):
     value: str = Field(default="")  # JSON-encoded value
     updated_at: datetime = Field(default_factory=_utcnow)
 
+
+# ---------------------------------------------------------------------------
+# Agent Task (Phase 10)
+# ---------------------------------------------------------------------------
+
+
+class AgentTask(SQLModel, table=True):
+    """A scheduled or one-shot background task executed autonomously by the agent."""
+
+    __tablename__ = "agent_tasks"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "trigger_type IN ('once_at', 'interval', 'manual')",
+            name="ck_task_trigger_type",
+        ),
+        sa.CheckConstraint(
+            "status IN ('pending', 'running', 'completed', 'failed', 'cancelled')",
+            name="ck_task_status",
+        ),
+        sa.Index("ix_agent_task_status_next_run", "status", "next_run_at"),
+        sa.Index("ix_agent_task_created_at", "created_at"),
+    )
+
+    id: uuid.UUID = Field(default_factory=_new_uuid, primary_key=True)
+
+    prompt: str = Field(
+        description="Natural language instruction for the agent to execute.",
+    )
+
+    trigger_type: str = Field(
+        description="once_at | interval | manual",
+    )
+
+    # -- Trigger scheduling ------------------------------------------------
+    run_at: datetime | None = Field(
+        default=None,
+        description="For trigger_type='once_at': absolute UTC datetime to run.",
+    )
+    interval_seconds: int | None = Field(
+        default=None,
+        description="For trigger_type='interval': repeat every N seconds.",
+    )
+    next_run_at: datetime | None = Field(
+        default=None,
+        description="UTC datetime of the next scheduled execution. NULL = not yet scheduled.",
+    )
+    max_runs: int | None = Field(
+        default=None,
+        description="Max executions for interval tasks. NULL = unlimited.",
+    )
+
+    # -- Execution state ---------------------------------------------------
+    status: str = Field(default="pending")
+    run_count: int = Field(default=0)
+    last_run_at: datetime | None = None
+
+    # -- Result ------------------------------------------------------------
+    result_summary: str | None = Field(
+        default=None,
+        description="LLM-generated summary of what the task accomplished.",
+    )
+    error_message: str | None = None
+
+    # -- Context -----------------------------------------------------------
+    conversation_id: uuid.UUID | None = Field(
+        default=None,
+        description="Optional: conversation from which this task was created.",
+    )
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+

@@ -8,12 +8,16 @@ import ModalContainer from './components/ModalContainer.vue'
 import ModeSwitcher from './components/assistant/ModeSwitcher.vue'
 import { useChat, ChatApiKey } from './composables/useChat'
 import { usePluginComponents } from './composables/usePluginComponents'
+import { useEventsWebSocket } from './composables/useEventsWebSocket'
 import { useSettingsStore } from './stores/settings'
 import { useUIStore } from './stores/ui'
 import { usePluginsStore } from './stores/plugins'
 
 const chatApi = useChat()
 provide(ChatApiKey, chatApi)
+
+// Persistent WebSocket for real-time task events from backend.
+useEventsWebSocket()
 
 const settingsStore = useSettingsStore()
 const uiStore = useUIStore()

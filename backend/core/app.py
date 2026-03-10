@@ -222,6 +222,49 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.error("Tool registry refresh failed: {}", exc)
     ctx.tool_registry = tool_registry
 
+    # -- WebSocket connection manager (Phase 10) ----------------------------
+    from backend.services.ws_connection_manager import WSConnectionManager
+
+    ws_connection_manager = WSConnectionManager()
+    ctx.ws_connection_manager = ws_connection_manager
+
+    # EventBus bridge: forward task events to connected WS clients
+    def _make_task_bridge(event_type: str):
+        async def _bridge(**kwargs):
+            if ctx.ws_connection_manager:
+                await ctx.ws_connection_manager.broadcast({
+                    "type": event_type,
+                    "task_id": kwargs.get("task_id"),
+                    "status": kwargs.get("status"),
+                    "trigger_type": kwargs.get("trigger_type"),
+                    "next_run_at": kwargs.get("next_run_at"),
+                    "result_summary": kwargs.get("result_summary"),
+                    "error_message": kwargs.get("error_message"),
+                })
+        _bridge.__qualname__ = f"_task_bridge[{event_type}]"
+        return _bridge
+
+    ctx.event_bus.subscribe(OmniaEvent.TASK_SCHEDULED, _make_task_bridge("task_scheduled"))
+    ctx.event_bus.subscribe(OmniaEvent.TASK_STARTED, _make_task_bridge("task_started"))
+    ctx.event_bus.subscribe(OmniaEvent.TASK_COMPLETED, _make_task_bridge("task_completed"))
+    ctx.event_bus.subscribe(OmniaEvent.TASK_FAILED, _make_task_bridge("task_failed"))
+    ctx.event_bus.subscribe(OmniaEvent.TASK_CANCELLED, _make_task_bridge("task_cancelled"))
+
+    # -- Task scheduler (Phase 10) -----------------------------------------
+    if config.task_scheduler.enabled:
+        from backend.services.task_scheduler import TaskScheduler
+
+        task_scheduler = TaskScheduler(config.task_scheduler)
+        try:
+            await task_scheduler.start(ctx)
+            ctx.task_scheduler = task_scheduler
+            logger.info(
+                "Task scheduler started (poll={}s)",
+                config.task_scheduler.poll_interval_s,
+            )
+        except Exception as exc:
+            logger.warning("Task scheduler failed to start: {}", exc)
+
     app.state.context = ctx
     app.state.engine = engine
 
@@ -256,6 +299,11 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             await ctx.memory_service.close()
         except Exception as exc:
             logger.error("Memory service shutdown error: {}", exc)
+    if ctx.task_scheduler:
+        try:
+            await ctx.task_scheduler.stop()
+        except Exception as exc:
+            logger.error("Task scheduler shutdown error: {}", exc)
     await engine.dispose()
     logger.info("OMNIA backend stopped")
 

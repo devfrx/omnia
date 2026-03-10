@@ -22,9 +22,11 @@ from backend.core.protocols import (
     PluginManagerProtocol,
     PreferencesServiceProtocol,
     STTServiceProtocol,
+    TaskSchedulerProtocol,
     TTSServiceProtocol,
     ToolRegistryProtocol,
     VRAMMonitorProtocol,
+    WSConnectionManagerProtocol,
 )
 
 
@@ -55,6 +57,12 @@ class AppContext:
 
     memory_service: MemoryServiceProtocol | None = None
     """Persistent semantic memory service."""
+
+    task_scheduler: TaskSchedulerProtocol | None = None
+    """Background autonomous task scheduler."""
+
+    ws_connection_manager: WSConnectionManagerProtocol | None = None
+    """Persistent event WebSocket connection manager."""
 
     plugin_local_state: dict[str, dict] = field(default_factory=dict)
     """Per-plugin local state, keyed by plugin name."""

@@ -70,6 +70,7 @@ plugins:
     - file_search
     - news
     - memory
+    - agent_task       # requires task_scheduler.enabled: true
     # - home_automation  # not implemented yet
 
 home_assistant:
@@ -184,3 +185,13 @@ memory:
   context_max_chars: 2000
   session_ttl_hours: 24
   auto_cleanup_days: 90
+
+# -- Task Scheduler (Phase 10) ---
+task_scheduler:
+  enabled: true
+  poll_interval_s: 30.0
+  max_concurrent_tasks: 2
+  task_timeout_s: 300
+  max_task_prompt_chars: 2000
+  max_runs_safety_cap: 1000
+  result_retention_days: 30
