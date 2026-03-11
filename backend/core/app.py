@@ -202,6 +202,23 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         ctx.event_bus.subscribe(OmniaEvent.VRAM_WARNING, _handle_vram_warning)
         ctx.event_bus.subscribe(OmniaEvent.VRAM_CRITICAL, _handle_vram_critical)
 
+    # -- Task scheduler (Phase 10) -----------------------------------------
+    # Must be initialised before the plugin system so that AgentTaskPlugin
+    # can see ctx.task_scheduler during its initialize() call.
+    if config.task_scheduler.enabled:
+        from backend.services.task_scheduler import TaskScheduler
+
+        task_scheduler = TaskScheduler(config.task_scheduler)
+        try:
+            await task_scheduler.start(ctx)
+            ctx.task_scheduler = task_scheduler
+            logger.info(
+                "Task scheduler started (poll={}s)",
+                config.task_scheduler.poll_interval_s,
+            )
+        except Exception as exc:
+            logger.warning("Task scheduler failed to start: {}", exc)
+
     # -- Plugin system ------------------------------------------------------
     plugin_manager = PluginManager(ctx)
     ctx.plugin_manager = plugin_manager
@@ -249,21 +266,6 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     ctx.event_bus.subscribe(OmniaEvent.TASK_COMPLETED, _make_task_bridge("task_completed"))
     ctx.event_bus.subscribe(OmniaEvent.TASK_FAILED, _make_task_bridge("task_failed"))
     ctx.event_bus.subscribe(OmniaEvent.TASK_CANCELLED, _make_task_bridge("task_cancelled"))
-
-    # -- Task scheduler (Phase 10) -----------------------------------------
-    if config.task_scheduler.enabled:
-        from backend.services.task_scheduler import TaskScheduler
-
-        task_scheduler = TaskScheduler(config.task_scheduler)
-        try:
-            await task_scheduler.start(ctx)
-            ctx.task_scheduler = task_scheduler
-            logger.info(
-                "Task scheduler started (poll={}s)",
-                config.task_scheduler.poll_interval_s,
-            )
-        except Exception as exc:
-            logger.warning("Task scheduler failed to start: {}", exc)
 
     app.state.context = ctx
     app.state.engine = engine
