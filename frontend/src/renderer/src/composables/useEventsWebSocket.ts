@@ -8,6 +8,7 @@
 
 import { onScopeDispose, ref } from 'vue'
 import { useTasksStore } from '../stores/tasks'
+import { useCalendarStore } from '../stores/calendar'
 import { BACKEND_HOST } from '../services/api'
 import type { TaskActivityEvent } from '../types/tasks'
 
@@ -16,6 +17,7 @@ const WS_URL = `${BACKEND_HOST.replace(/^http/, 'ws')}/api/events/ws`
 export function useEventsWebSocket() {
   const isConnected = ref(false)
   const tasksStore = useTasksStore()
+  const calendarStore = useCalendarStore()
 
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -68,6 +70,11 @@ export function useEventsWebSocket() {
             timestamp: new Date().toISOString(),
           }
           tasksStore.onTaskEvent(taskEvent)
+        }
+
+        // Forward calendar change events to the store
+        if (data.type === 'calendar_changed') {
+          void calendarStore.refresh()
         }
       } catch {
         console.warn('[OMNIA Events WS] Failed to parse message')

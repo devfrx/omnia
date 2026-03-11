@@ -6,7 +6,7 @@ Provides CRUD endpoints for :class:`AgentTask` resources.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Request
@@ -42,8 +42,10 @@ class TaskCreateRequest(BaseModel):
     """Request body for creating a new task."""
 
     prompt: str = Field(max_length=2000)
-    trigger_type: Literal["once_at", "interval", "manual"]
+    trigger_type: Literal["once_at", "interval", "daily_at", "manual"]
     run_at: datetime | None = None
+    time_utc: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    time_local: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     interval_seconds: int | None = Field(default=None, ge=60)
     max_runs: int | None = Field(default=None, ge=1)
 
@@ -56,6 +58,8 @@ class TaskResponse(BaseModel):
     trigger_type: str
     status: str
     run_at: str | None
+    time_utc: str | None
+    time_local: str | None
     interval_seconds: int | None
     next_run_at: str | None
     max_runs: int | None
@@ -75,6 +79,8 @@ class TaskResponse(BaseModel):
             trigger_type=task.trigger_type,
             status=task.status,
             run_at=_utc_iso(task.run_at),
+            time_utc=task.time_utc,
+            time_local=task.time_local,
             interval_seconds=task.interval_seconds,
             next_run_at=_utc_iso(task.next_run_at),
             max_runs=task.max_runs,
@@ -199,6 +205,19 @@ async def create_task(request: Request, body: TaskCreateRequest) -> TaskResponse
                 detail="run_at is required for once_at triggers",
             )
         next_run_at = body.run_at
+    elif body.trigger_type == "daily_at":
+        if not body.time_utc:
+            raise HTTPException(
+                status_code=400,
+                detail="time_utc (HH:MM) is required for daily_at triggers",
+            )
+        hh, mm = int(body.time_utc[:2]), int(body.time_utc[3:5])
+        candidate = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if candidate <= now:
+            # Time already passed today — run ASAP for first time.
+            next_run_at = now
+        else:
+            next_run_at = candidate
     elif body.trigger_type == "interval":
         if body.interval_seconds is None:
             raise HTTPException(
@@ -211,6 +230,8 @@ async def create_task(request: Request, body: TaskCreateRequest) -> TaskResponse
         prompt=body.prompt,
         trigger_type=body.trigger_type,
         run_at=body.run_at if body.trigger_type == "once_at" else None,
+        time_utc=body.time_utc if body.trigger_type == "daily_at" else None,
+        time_local=body.time_local if body.trigger_type == "daily_at" else None,
         interval_seconds=body.interval_seconds if body.trigger_type == "interval" else None,
         next_run_at=next_run_at,
         max_runs=body.max_runs,

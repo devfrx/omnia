@@ -2,35 +2,25 @@
 /**
  * CalendarView.vue — Weekly/monthly calendar with full CRUD support.
  *
- * Displays events in a week or month grid. Inline modal for
- * creating, editing, and deleting events via REST API.
+ * Displays events in a week or month grid. Event create/edit
+ * is handled by CalendarEventModal via the UiModal system.
  */
-import { ref } from 'vue'
 import {
   useCalendar,
   HOURS, DAY_NAMES,
   type CalendarEvent, type EventFormData
 } from '../../composables/useCalendar'
+import { useModal } from '../../composables/useModal'
+import CalendarEventModal from '../calendar/CalendarEventModal.vue'
 
 const {
   viewMode, loading, error, headerLabel, events,
   visibleDays, isToday, isCurrentMonth, eventsForDay,
   eventStyle, eventColor, eventColumnStyle, formatTime,
-  navigate, goToday, fetchEvents, createEvent, updateEvent, deleteEvent
+  navigate, goToday, fetchEvents
 } = useCalendar()
 
-const showModal = ref(false)
-const editingEvent = ref<CalendarEvent | null>(null)
-const saveError = ref<string | null>(null)
-const form = ref<EventFormData>({
-  title: '',
-  description: '',
-  start: '',
-  end: '',
-  reminder_minutes: null,
-  recurrence_rule: '',
-})
-const saving = ref(false)
+const { openCustom } = useModal()
 
 /** Convert Date to datetime-local input value (YYYY-MM-DDTHH:mm). */
 function toLocalISOString(d: Date): string {
@@ -43,94 +33,61 @@ function toDatetimeLocalValue(iso: string): string {
   return toLocalISOString(new Date(iso))
 }
 
+async function openEventModal(
+  editingEvent: CalendarEvent | null,
+  initialForm: EventFormData,
+  title: string,
+): Promise<void> {
+  const saved = await openCustom({
+    component: CalendarEventModal,
+    props: { editingEvent, initialForm },
+    title,
+    width: '480px',
+  })
+  if (saved) await fetchEvents()
+}
+
 function handleDayClick(day: Date): void {
-  editingEvent.value = null
   const clickDate = new Date(day)
   clickDate.setHours(9, 0, 0, 0)
   const endDate = new Date(clickDate)
   endDate.setHours(10, 0, 0, 0)
-  form.value = {
+  openEventModal(null, {
     title: '',
     description: '',
     start: toLocalISOString(clickDate),
     end: toLocalISOString(endDate),
     reminder_minutes: null,
     recurrence_rule: '',
-  }
-  showModal.value = true
+  }, 'Nuovo Evento')
 }
 
 /** Week-view: open create form with the clicked hour pre-filled. */
 function handleHourClick(day: Date, hour: number): void {
-  editingEvent.value = null
   const clickDate = new Date(day)
   clickDate.setHours(hour, 0, 0, 0)
   const endDate = new Date(day)
   endDate.setHours(hour + 1, 0, 0, 0)
-  form.value = {
+  openEventModal(null, {
     title: '',
     description: '',
     start: toLocalISOString(clickDate),
     end: toLocalISOString(endDate),
     reminder_minutes: null,
     recurrence_rule: '',
-  }
-  showModal.value = true
+  }, 'Nuovo Evento')
 }
 
 function handleEventClick(ev: CalendarEvent, e: MouseEvent): void {
   e.stopPropagation()
-  editingEvent.value = ev
-  form.value = {
+  openEventModal(ev, {
     title: ev.title,
     description: ev.description ?? '',
     start: toDatetimeLocalValue(ev.start_time),
     end: toDatetimeLocalValue(ev.end_time),
     reminder_minutes: ev.reminder_minutes,
     recurrence_rule: ev.recurrence_rule ?? '',
-  }
-  showModal.value = true
-}
-
-async function handleSave(): Promise<void> {
-  saving.value = true
-  saveError.value = null
-  if (new Date(form.value.end) <= new Date(form.value.start)) {
-    saveError.value = 'La fine deve essere dopo l\'inizio'
-    saving.value = false
-    return
-  }
-  const rawReminder: unknown = form.value.reminder_minutes
-  const reminderMinutes = (rawReminder != null && rawReminder !== '' && !Number.isNaN(Number(rawReminder)))
-    ? Number(rawReminder)
-    : null
-  const payload: EventFormData = { ...form.value, reminder_minutes: reminderMinutes }
-  try {
-    if (editingEvent.value) {
-      await updateEvent(editingEvent.value.id, payload)
-    } else {
-      await createEvent(payload)
-    }
-    showModal.value = false
-  } catch (err) {
-    saveError.value = err instanceof Error ? err.message : 'Salvataggio fallito'
-  } finally {
-    saving.value = false
-  }
-}
-
-async function handleDelete(): Promise<void> {
-  if (!editingEvent.value) return
-  saving.value = true
-  saveError.value = null
-  try {
-    await deleteEvent(editingEvent.value.id)
-    showModal.value = false
-  } catch (err) {
-    saveError.value = err instanceof Error ? err.message : 'Eliminazione fallita'
-  } finally {
-    saving.value = false
-  }
+  }, 'Modifica Evento')
 }
 
 /** Extract the effective hour for creating a new event from an event block. */
@@ -219,69 +176,6 @@ function getEventHour(ev: CalendarEvent, day: Date): number {
     <div v-if="!loading && !error && events.length === 0" class="calendar__empty">
       Nessun evento in questo periodo. Clicca su un giorno per crearne uno.
     </div>
-
-    <!-- Event create/edit modal -->
-    <Teleport to="body">
-      <div v-if="showModal" class="cal-modal-overlay" @click.self="showModal = false">
-        <div class="cal-modal">
-          <h3 class="cal-modal__title">{{ editingEvent ? 'Modifica Evento' : 'Nuovo Evento' }}</h3>
-          <p v-if="editingEvent?.recurrence_rule" class="cal-modal__recurrence-warn">
-            Attenzione: le modifiche verranno applicate a tutte le occorrenze.
-          </p>
-          <p v-if="saveError" class="cal-modal__error">{{ saveError }}</p>
-
-          <div class="cal-modal__field">
-            <label>Titolo</label>
-            <input v-model="form.title" type="text" placeholder="Titolo evento" />
-          </div>
-
-          <div class="cal-modal__field">
-            <label>Descrizione</label>
-            <textarea v-model="form.description" rows="3" placeholder="Descrizione (opzionale)" />
-          </div>
-
-          <div class="cal-modal__row">
-            <div class="cal-modal__field">
-              <label>Inizio</label>
-              <input v-model="form.start" type="datetime-local" />
-            </div>
-            <div class="cal-modal__field">
-              <label>Fine</label>
-              <input v-model="form.end" type="datetime-local" />
-            </div>
-          </div>
-
-          <div class="cal-modal__row">
-            <div class="cal-modal__field">
-              <label>Promemoria (minuti prima)</label>
-              <input v-model.number="form.reminder_minutes" type="number" min="1" placeholder="Es. 15" />
-            </div>
-            <div class="cal-modal__field">
-              <label>Ricorrenza (RRULE)</label>
-              <select v-model="form.recurrence_rule">
-                <option value="">Nessuna</option>
-                <option value="FREQ=DAILY">Ogni giorno</option>
-                <option value="FREQ=WEEKLY">Ogni settimana</option>
-                <option value="FREQ=WEEKLY;BYDAY=MO,WE,FR">Lun/Mer/Ven</option>
-                <option value="FREQ=MONTHLY">Ogni mese</option>
-                <option value="FREQ=YEARLY">Ogni anno</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="cal-modal__actions">
-            <button v-if="editingEvent" class="cal-modal__btn cal-modal__btn--danger" :disabled="saving"
-              @click="handleDelete">Elimina</button>
-            <div class="cal-modal__spacer" />
-            <button class="cal-modal__btn cal-modal__btn--secondary" @click="showModal = false">Annulla</button>
-            <button class="cal-modal__btn cal-modal__btn--primary"
-              :disabled="saving || !form.title || !form.start || !form.end" @click="handleSave">
-              {{ saving ? 'Salvataggio...' : (editingEvent ? 'Aggiorna' : 'Crea') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -562,146 +456,4 @@ function getEventHour(ev: CalendarEvent, day: Date): number {
   color: var(--text-secondary);
 }
 
-/* Modal overlay */
-.cal-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.cal-modal {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  width: 480px;
-  max-width: 90vw;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg, 0 20px 60px rgba(0, 0, 0, 0.5));
-}
-
-.cal-modal__title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--space-4);
-}
-
-.cal-modal__recurrence-warn {
-  font-size: 0.8rem;
-  color: var(--accent);
-  margin: 0 0 var(--space-3);
-}
-
-.cal-modal__error {
-  font-size: 0.85rem;
-  color: #e94560;
-  margin: 0 0 var(--space-3);
-  padding: var(--space-2);
-  background: rgba(233, 69, 96, 0.1);
-  border-radius: var(--radius-sm);
-}
-
-.cal-modal__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-bottom: var(--space-3);
-  flex: 1;
-}
-
-.cal-modal__field label {
-  font-size: var(--text-xs);
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.cal-modal__field input,
-.cal-modal__field textarea,
-.cal-modal__field select {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2);
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-
-.cal-modal__field input:focus,
-.cal-modal__field textarea:focus,
-.cal-modal__field select:focus {
-  border-color: var(--accent);
-}
-
-.cal-modal__row {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.cal-modal__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-}
-
-.cal-modal__spacer {
-  flex: 1;
-}
-
-.cal-modal__btn {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  transition: all var(--transition-fast);
-}
-
-.cal-modal__btn--primary {
-  background: var(--accent);
-  color: #1a1a2e;
-  border-color: var(--accent);
-}
-
-.cal-modal__btn--primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.cal-modal__btn--primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.cal-modal__btn--secondary {
-  background: transparent;
-  color: var(--text-secondary);
-}
-
-.cal-modal__btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-}
-
-.cal-modal__btn--danger {
-  background: transparent;
-  color: #e94560;
-  border-color: rgba(233, 69, 96, 0.3);
-}
-
-.cal-modal__btn--danger:hover:not(:disabled) {
-  background: rgba(233, 69, 96, 0.1);
-}
 </style>

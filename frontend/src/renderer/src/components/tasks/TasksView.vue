@@ -7,9 +7,11 @@
  */
 import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useTasksStore } from '../../stores/tasks'
+import { useModal } from '../../composables/useModal'
 import type { TaskStatus } from '../../types/tasks'
 
 const store = useTasksStore()
+const { confirm: modalConfirm } = useModal()
 const filterStatus = ref<TaskStatus | ''>('')
 const expandedTask = ref<string | null>(null)
 
@@ -39,14 +41,22 @@ function toggleExpand(id: string): void {
 }
 
 async function handleCancel(id: string): Promise<void> {
-    if (confirm('Cancellare questo task?')) {
+    const confirmed = await modalConfirm({
+        title: 'Cancella task',
+        message: 'Cancellare questo task? L\'azione è irreversibile.',
+        type: 'danger',
+        confirmText: 'Cancella',
+    })
+    if (confirmed) {
         await store.cancelTask(id)
+        await store.loadStats()
     }
 }
 
 async function handleTrigger(id: string): Promise<void> {
     await store.triggerManual(id)
     await store.loadTasks()
+    await store.loadStats()
 }
 
 function statusLabel(status: string): string {
@@ -80,6 +90,7 @@ function triggerLabel(type: string): string {
     const map: Record<string, string> = {
         once_at: 'Una Tantum',
         interval: 'Ricorrente',
+        daily_at: 'Giornaliero',
         manual: 'Manuale',
     }
     return map[type] || type

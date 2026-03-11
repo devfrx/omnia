@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 
 /** Possible trigger types for a task. */
-export type TaskTriggerType = 'once_at' | 'interval' | 'manual'
+export type TaskTriggerType = 'once_at' | 'interval' | 'daily_at' | 'manual'
 
 /** Possible task statuses. */
 export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
@@ -23,6 +23,8 @@ export interface AgentTask {
   trigger_type: TaskTriggerType
   status: TaskStatus
   run_at: string | null
+  time_utc: string | null
+  time_local: string | null
   interval_seconds: number | null
   next_run_at: string | null
   max_runs: number | null
@@ -77,6 +79,8 @@ export interface TaskCreateRequest {
   prompt: string
   trigger_type: TaskTriggerType
   run_at?: string
+  time_utc?: string
+  time_local?: string
   interval_seconds?: number
   max_runs?: number
 }

@@ -14,6 +14,7 @@ import contextlib
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
+from zoneinfo import ZoneInfo
 
 from loguru import logger
 from sqlmodel import select
@@ -25,6 +26,40 @@ from backend.core.config import TaskSchedulerConfig
 from backend.core.event_bus import OmniaEvent
 from backend.db.models import AgentTask
 from backend.services.task_runner import run_agent_task
+
+
+def _next_daily_at(time_utc: str, time_local: str | None = None) -> datetime:
+    """Compute the next UTC datetime for a daily task.
+
+    When *time_local* is provided (preferred), uses DST-aware conversion
+    so the task always fires at the user's local clock time regardless of
+    DST changes.  Falls back to a fixed-UTC calculation otherwise.
+
+    Args:
+        time_utc: Time string in "HH:MM" format (UTC).
+        time_local: Optional time string in "HH:MM" (user's local time).
+
+    Returns:
+        Timezone-aware UTC datetime of the next occurrence.
+    """
+    if time_local:
+        user_tz = ZoneInfo("Europe/Rome")
+        hh, mm = int(time_local[:2]), int(time_local[3:5])
+        now_local = datetime.now(user_tz)
+        candidate_local = now_local.replace(
+            hour=hh, minute=mm, second=0, microsecond=0,
+        )
+        if candidate_local <= now_local:
+            candidate_local += timedelta(days=1)
+        return candidate_local.astimezone(timezone.utc)
+
+    # Fallback: fixed UTC time.
+    hh, mm = int(time_utc[:2]), int(time_utc[3:5])
+    now = datetime.now(timezone.utc)
+    candidate = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    if candidate <= now:
+        candidate += timedelta(days=1)
+    return candidate
 
 
 class TaskScheduler:
@@ -258,9 +293,9 @@ class TaskScheduler:
             db_task.run_count += 1
             db_task.updated_at = datetime.now(timezone.utc)
 
-            # Reschedule interval tasks (regardless of success/failure).
-            # Anchor to the previous next_run_at to avoid drift; fall back
-            # to now() if the anchor is missing.
+            # Reschedule recurring tasks (regardless of success/failure).
+            reschedule = False
+
             if (
                 db_task.trigger_type == "interval"
                 and db_task.interval_seconds is not None
@@ -268,7 +303,8 @@ class TaskScheduler:
                 cap = self._config.max_runs_safety_cap
                 if db_task.max_runs is None or db_task.run_count < db_task.max_runs:
                     if db_task.run_count < cap:
-                        db_task.status = "pending"
+                        reschedule = True
+                        # Anchor to previous next_run_at to avoid drift.
                         anchor = db_task.next_run_at or datetime.now(timezone.utc)
                         if anchor.tzinfo is None:
                             anchor = anchor.replace(tzinfo=timezone.utc)
@@ -276,5 +312,25 @@ class TaskScheduler:
                             anchor
                             + timedelta(seconds=db_task.interval_seconds)
                         )
+
+            elif (
+                db_task.trigger_type == "daily_at"
+                and db_task.time_utc is not None
+            ):
+                cap = self._config.max_runs_safety_cap
+                if db_task.max_runs is None or db_task.run_count < db_task.max_runs:
+                    if db_task.run_count < cap:
+                        reschedule = True
+                        db_task.next_run_at = _next_daily_at(
+                            db_task.time_utc,
+                            time_local=db_task.time_local,
+                        )
+
+            if reschedule:
+                db_task.status = "pending"
+                logger.info(
+                    "Task {} rescheduled — next_run_at={}",
+                    db_task.id, db_task.next_run_at,
+                )
 
             await session.commit()

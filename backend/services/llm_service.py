@@ -98,6 +98,26 @@ class LLMService:
         self._auto_model_ttl: float = 5.0  # seconds
 
     # ------------------------------------------------------------------
+    # Model resolution helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_embedding_model(item: dict[str, Any]) -> bool:
+        """Check if a model entry represents an embedding model.
+
+        Checks both the explicit ``type`` field (LM Studio v1 API) and
+        the model name/id/path for heuristic detection (OAI-compat API).
+        """
+        if item.get("type") == "embedding":
+            return True
+        # Heuristic: check if name/id/path contains "embed"
+        for key in ("id", "name", "path"):
+            val = item.get(key, "")
+            if val and "embed" in val.lower():
+                return True
+        return False
+
+    # ------------------------------------------------------------------
     # System prompt
     # ------------------------------------------------------------------
 
@@ -147,7 +167,7 @@ class LLMService:
                 # returns "type": "llm" | "embedding" for each entry, and
                 # sending chat/completions to an embedding model will fail).
                 for item in items:
-                    if item.get("type") == "embedding":
+                    if self._is_embedding_model(item):
                         continue
                     state = item.get("state", "")
                     if state in ("loaded", "loading", ""):
@@ -157,13 +177,15 @@ class LLMService:
                 if not resolved:
                     # Fall back to first non-embedding model regardless of state
                     for item in items:
-                        if item.get("type") != "embedding":
+                        if not self._is_embedding_model(item):
                             resolved = item.get("path") or item.get("id") or item.get("name")
                             break
                 if not resolved:
-                    # Last resort: take whatever is there
-                    first = items[0]
-                    resolved = first.get("path") or first.get("id") or first.get("name")
+                    logger.warning(
+                        "All {} model(s) from LM Studio v1 API are embedding "
+                        "models — cannot use for chat",
+                        len(items),
+                    )
         except Exception as exc:
             logger.warning("Auto model resolution failed: {}", exc)
 
@@ -176,8 +198,18 @@ class LLMService:
                 )
                 resp.raise_for_status()
                 items = resp.json().get("data", [])
-                if items:
-                    resolved = items[0].get("id")
+                # Skip embedding models in OAI-compat responses too
+                for item in items:
+                    if not self._is_embedding_model(item):
+                        resolved = item.get("id")
+                        if resolved:
+                            break
+                if not resolved and items:
+                    logger.warning(
+                        "All {} model(s) from OAI-compat API are embedding "
+                        "models — cannot use for chat",
+                        len(items),
+                    )
             except Exception as exc2:
                 logger.warning("OAI-compat auto model resolution failed: {}", exc2)
 

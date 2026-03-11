@@ -560,6 +560,10 @@ class CalendarPlugin(BasePlugin):
 
         if args.get("end_date"):
             range_end = self._parse_to_utc(args["end_date"])
+            # Date-only string (e.g. "2026-03-12") → bump to start of
+            # next day so the range covers the full calendar day.
+            if "T" not in args["end_date"]:
+                range_end += timedelta(days=1)
         else:
             range_end = range_start + timedelta(days=7)
 

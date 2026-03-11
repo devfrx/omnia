@@ -31,8 +31,8 @@ export type ViewMode = 'week' | 'month'
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Visible hours in week view grid (07:00–22:00). */
-export const HOURS = Array.from({ length: 16 }, (_, i) => i + 7)
+/** Visible hours in week view grid (07:00–23:00). */
+export const HOURS = Array.from({ length: 17 }, (_, i) => i + 7)
 export const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 export const MONTH_NAMES = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -304,7 +304,7 @@ export function useCalendar() {
       recurrence_rule: data.recurrence_rule || undefined,
     })
     await fetchEvents()
-    void calendarStore.refresh()
+    await calendarStore.refresh()
   }
 
   async function updateEvent(id: string, data: Partial<EventFormData>): Promise<void> {
@@ -317,13 +317,13 @@ export function useCalendar() {
     if (data.recurrence_rule !== undefined) payload.recurrence_rule = data.recurrence_rule
     await api.updateCalendarEvent(id, payload)
     await fetchEvents()
-    void calendarStore.refresh()
+    await calendarStore.refresh()
   }
 
   async function deleteEvent(id: string): Promise<void> {
     await api.deleteCalendarEvent(id)
     await fetchEvents()
-    void calendarStore.refresh()
+    await calendarStore.refresh()
   }
 
   onMounted(fetchEvents)

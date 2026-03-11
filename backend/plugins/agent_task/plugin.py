@@ -7,10 +7,12 @@ background tasks via the TaskScheduler.
 
 from __future__ import annotations
 
+import re
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
+from zoneinfo import ZoneInfo
 
 from sqlmodel import func, select
 
@@ -75,7 +77,18 @@ class AgentTaskPlugin(BasePlugin):
                 description=(
                     "Schedule an autonomous background task. The agent will execute "
                     "the given prompt at the specified time or interval without user "
-                    "interaction. Use for deferred or recurring work only."
+                    "interaction. Use for deferred or recurring work only.\n"
+                    "TRIGGER TYPES:\n"
+                    "- daily_at: repeat every day at a fixed time (most common). "
+                    "Requires 'time_local' in HH:MM (user's local time, e.g. '09:03'). "
+                    "The server converts to UTC automatically.\n"
+                    "- once_at: execute once at a specific datetime. "
+                    "Requires 'run_at' parameter.\n"
+                    "- interval: repeat every N seconds starting immediately. "
+                    "Requires 'interval_seconds'.\n"
+                    "- manual: execute only on explicit user request.\n"
+                    "NOTE: If the daily time has already passed today, the task "
+                    "runs immediately for the first time, then daily at that time."
                 ),
                 parameters={
                     "type": "object",
@@ -83,33 +96,54 @@ class AgentTaskPlugin(BasePlugin):
                         "prompt": {
                             "type": "string",
                             "description": (
-                                "Complete instruction for the task. Must be "
-                                "self-explanatory — the agent will have no "
-                                "additional context at execution time."
+                                "The SINGLE-RUN action to execute each time. "
+                                "Write ONLY the direct action command — do NOT "
+                                "include scheduling/timing instructions like "
+                                "'every 60 seconds' (that is handled by "
+                                "trigger_type). Example: 'Search the current "
+                                "Bitcoin price using web_search_web_search, "
+                                "then read C:\\\\file.json with "
+                                "file_search_read_text_file, append the new "
+                                "price entry, and write it back with "
+                                "file_search_write_text_file.'"
                             ),
                             "maxLength": 2000,
                         },
                         "trigger_type": {
                             "type": "string",
-                            "enum": ["once_at", "interval", "manual"],
+                            "enum": ["once_at", "interval", "daily_at", "manual"],
                             "description": (
+                                "daily_at: repeat every day at a fixed UTC time "
+                                "(use for 'every day at X'). "
                                 "once_at: execute once at a specific datetime. "
-                                "interval: repeat every N seconds. "
+                                "interval: repeat every N seconds (starts immediately). "
                                 "manual: execute only on explicit request."
                             ),
                         },
                         "run_at": {
                             "type": "string",
                             "description": (
-                                "ISO 8601 UTC datetime. Required if "
-                                "trigger_type='once_at'."
+                                "ISO 8601 UTC datetime. Required only if "
+                                "trigger_type='once_at'. Example: "
+                                "'2026-03-11T06:56:00Z'."
                             ),
                             "format": "date-time",
+                        },
+                        "time_local": {
+                            "type": "string",
+                            "description": (
+                                "Time in HH:MM format in the user's LOCAL time. "
+                                "Required for trigger_type='daily_at'. "
+                                "Pass the user's time directly — the server "
+                                "converts to UTC automatically. "
+                                "Example: '09:03' for 9:03 Italian time."
+                            ),
+                            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
                         },
                         "interval_seconds": {
                             "type": "integer",
                             "description": (
-                                "Repeat interval in seconds. Required if "
+                                "Repeat interval in seconds. Required only if "
                                 "trigger_type='interval'. Minimum: 60."
                             ),
                             "minimum": 60,
@@ -117,8 +151,8 @@ class AgentTaskPlugin(BasePlugin):
                         "max_runs": {
                             "type": "integer",
                             "description": (
-                                "Max executions for interval tasks. "
-                                "Null = unlimited."
+                                "Max executions for recurring tasks "
+                                "(daily_at or interval). Null = unlimited."
                             ),
                             "minimum": 1,
                         },
@@ -253,6 +287,9 @@ class AgentTaskPlugin(BasePlugin):
         # Validate trigger-specific requirements
         run_at_str = args.get("run_at")
         interval_seconds = args.get("interval_seconds")
+        time_local_str = args.get("time_local")
+        # Legacy: also accept time_utc for backward compatibility
+        time_utc_str = args.get("time_utc")
         max_runs = args.get("max_runs")
         run_at: datetime | None = None
 
@@ -273,6 +310,64 @@ class AgentTaskPlugin(BasePlugin):
                     "Invalid run_at format. Use ISO 8601 UTC."
                 )
             next_run_at = run_at
+
+        elif trigger_type == "daily_at":
+            # Accept time_local (preferred) or time_utc (legacy fallback).
+            if not time_local_str and not time_utc_str:
+                return ToolResult.error(
+                    "time_local is required for trigger_type='daily_at'. "
+                    "Format: 'HH:MM' in user's local time (e.g. '09:03')."
+                )
+            time_str = time_local_str or time_utc_str
+            if not re.match(r"^([01]\d|2[0-3]):[0-5]\d$", time_str):
+                return ToolResult.error(
+                    f"Invalid time format: '{time_str}'. "
+                    "Use HH:MM (24h), e.g. '09:03'."
+                )
+            cap = self.ctx.config.task_scheduler.max_runs_safety_cap
+            if max_runs is not None and max_runs > cap:
+                return ToolResult.error(
+                    f"max_runs exceeds safety cap ({cap})."
+                )
+
+            hh, mm = int(time_str[:2]), int(time_str[3:5])
+            user_tz = ZoneInfo("Europe/Rome")
+
+            if time_local_str:
+                # Convert local time → UTC for the next occurrence.
+                now_local = datetime.now(user_tz)
+                candidate_local = now_local.replace(
+                    hour=hh, minute=mm, second=0, microsecond=0,
+                )
+                if candidate_local <= now_local:
+                    # Time already passed today — run ASAP for first time.
+                    next_run_at = now
+                    self.logger.info(
+                        "daily_at {}: time already passed today, "
+                        "scheduling first run ASAP",
+                        time_local_str,
+                    )
+                else:
+                    # Convert today's local time to UTC.
+                    next_run_at = candidate_local.astimezone(timezone.utc)
+                # Compute the stable UTC time for storage and rescheduling.
+                # Use tomorrow's date to get the correct UTC offset.
+                tomorrow_local = (now_local + timedelta(days=1)).replace(
+                    hour=hh, minute=mm, second=0, microsecond=0,
+                )
+                time_utc_str = tomorrow_local.astimezone(
+                    timezone.utc,
+                ).strftime("%H:%M")
+            else:
+                # Legacy: time_utc provided directly.
+                candidate = now.replace(
+                    hour=hh, minute=mm, second=0, microsecond=0,
+                )
+                if candidate <= now:
+                    # Time already passed today — run ASAP for first time.
+                    next_run_at = now
+                else:
+                    next_run_at = candidate
 
         elif trigger_type == "interval":
             if interval_seconds is None:
@@ -296,14 +391,18 @@ class AgentTaskPlugin(BasePlugin):
         else:
             return ToolResult.error(
                 f"Invalid trigger_type: '{trigger_type}'. "
-                "Must be 'once_at', 'interval', or 'manual'."
+                "Must be 'once_at', 'daily_at', 'interval', or 'manual'."
             )
 
         task = AgentTask(
             prompt=prompt,
             trigger_type=trigger_type,
             run_at=run_at if trigger_type == "once_at" else None,
-            interval_seconds=interval_seconds if trigger_type == "interval" else None,
+            interval_seconds=(
+                interval_seconds if trigger_type == "interval" else None
+            ),
+            time_utc=time_utc_str if trigger_type == "daily_at" else None,
+            time_local=time_local_str if trigger_type == "daily_at" else None,
             next_run_at=next_run_at,
             max_runs=max_runs,
             conversation_id=None,
@@ -366,6 +465,8 @@ class AgentTaskPlugin(BasePlugin):
                 "trigger_type": t.trigger_type,
                 "status": t.status,
                 "run_count": t.run_count,
+                "time_utc": t.time_utc,
+                "time_local": t.time_local,
                 "next_run_at": _utc_iso(t.next_run_at),
                 "created_at": _utc_iso(t.created_at),
             }

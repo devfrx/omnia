@@ -142,6 +142,10 @@ async def list_events(
         if end_date
         else start_utc + timedelta(days=7)
     )
+    # Date-only end_date (e.g. "2026-03-12") → bump to start of next
+    # day so the range covers the full calendar day.
+    if end_date and "T" not in end_date:
+        end_utc += timedelta(days=1)
 
     stmt = (
         select(CalendarEvent)
@@ -322,7 +326,14 @@ async def create_event(request: Request) -> dict:
         await session.refresh(event)
 
     logger.info("POST /calendar/events — created '{}'", event.title)
-    return _event_to_dict(event, tz)
+    result = _event_to_dict(event, tz)
+    if ctx.ws_connection_manager:
+        await ctx.ws_connection_manager.broadcast({
+            "type": "calendar_changed",
+            "action": "created",
+            "event_id": str(event.id),
+        })
+    return result
 
 
 @router.put("/events/{event_id}")
@@ -382,7 +393,14 @@ async def update_event(request: Request, event_id: str) -> dict:
         await session.refresh(event)
 
     logger.info("PUT /calendar/events/{} — updated", event_id)
-    return _event_to_dict(event, tz)
+    result = _event_to_dict(event, tz)
+    if ctx.ws_connection_manager:
+        await ctx.ws_connection_manager.broadcast({
+            "type": "calendar_changed",
+            "action": "updated",
+            "event_id": event_id,
+        })
+    return result
 
 
 @router.delete("/events/{event_id}")
@@ -406,4 +424,10 @@ async def delete_event(request: Request, event_id: str) -> dict:
         await session.commit()
 
     logger.info("DELETE /calendar/events/{}", event_id)
+    if ctx.ws_connection_manager:
+        await ctx.ws_connection_manager.broadcast({
+            "type": "calendar_changed",
+            "action": "deleted",
+            "event_id": event_id,
+        })
     return {"deleted": True, "id": event_id}

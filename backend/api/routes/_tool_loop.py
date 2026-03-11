@@ -277,6 +277,10 @@ async def run_tool_loop(
             )
             tasks.append((tc_id, tool_name, args, context))
 
+        # Release the SQLite write lock held by pending flush()es so that
+        # plugin tools can write to the DB on their own connections.
+        await session.commit()
+
         # 3. Execute all tools in parallel.
         results = await asyncio.gather(
             *[_exec_one(ctx, tc_id, name, a, c) for tc_id, name, a, c in tasks],

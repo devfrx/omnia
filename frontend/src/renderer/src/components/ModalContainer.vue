@@ -22,6 +22,11 @@ watch(
     async (visible) => {
         if (!visible) return
         await nextTick()
+        if (state.customComponent) {
+            // For custom modals, focus the card itself so the focus trap works
+            cardRef.value?.focus()
+            return
+        }
         const btn = cardRef.value?.querySelector<HTMLElement>(
             '.modal__btn--confirm, .modal__btn--ok',
         )
@@ -51,7 +56,7 @@ function handleKeydown(e: KeyboardEvent): void {
     // Focus trap
     if (e.key === 'Tab') {
         const focusable = cardRef.value?.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
         )
         if (!focusable?.length) return
 
@@ -69,6 +74,16 @@ function handleKeydown(e: KeyboardEvent): void {
 }
 
 const isAlert = computed(() => state.type === 'alert')
+const isCustom = computed(() => state.customComponent !== null)
+
+/** Decide whether overlay click should close the modal. */
+function handleOverlayClick(): void {
+    if (isCustom.value) {
+        if (state.closeOnOverlay) close(false)
+    } else if (state.type !== 'danger') {
+        close(false)
+    }
+}
 
 onUnmounted(() => {
     if (state.visible) close(false)
@@ -78,30 +93,41 @@ onUnmounted(() => {
 <template>
     <Teleport to="body">
         <Transition name="modal">
-            <div v-if="state.visible" class="modal-overlay" @click.self="state.type !== 'danger' && close(false)"
+            <div v-if="state.visible" class="modal-overlay" @click.self="handleOverlayClick"
                 @keydown="handleKeydown">
                 <div ref="cardRef" class="modal-card" role="dialog" aria-modal="true"
-                    :aria-label="state.title || 'Dialogo'" aria-describedby="modal-desc">
+                    :aria-label="state.title || 'Dialogo'" aria-describedby="modal-desc"
+                    :style="state.width ? { width: state.width } : {}" tabindex="-1">
                     <h3 v-if="state.title" class="modal-card__title">{{ state.title }}</h3>
-                    <p id="modal-desc" class="modal-card__message">{{ state.message }}</p>
 
-                    <div class="modal-card__actions">
-                        <button v-if="!isAlert && state.cancelText" class="modal__btn modal__btn--cancel"
-                            @click="close(false)">
-                            {{ state.cancelText }}
-                        </button>
-                        <button class="modal__btn" :class="[
-                            state.type === 'danger' ? 'modal__btn--danger' : 'modal__btn--confirm',
-                            { 'modal__btn--ok': isAlert },
-                        ]" @click="close(true)">
-                            {{ state.confirmText }}
-                        </button>
-                    </div>
+                    <!-- Custom component mode -->
+                    <template v-if="isCustom">
+                        <component :is="state.customComponent" v-bind="state.customProps"
+                            @close="close" />
+                    </template>
 
-                    <p class="modal-card__hint">
-                        <template v-if="isAlert">Esc / Enter = chiudi</template>
-                        <template v-else>Enter = conferma · Esc = annulla</template>
-                    </p>
+                    <!-- Standard message+buttons mode -->
+                    <template v-else>
+                        <p id="modal-desc" class="modal-card__message">{{ state.message }}</p>
+
+                        <div class="modal-card__actions">
+                            <button v-if="!isAlert && state.cancelText" class="modal__btn modal__btn--cancel"
+                                @click="close(false)">
+                                {{ state.cancelText }}
+                            </button>
+                            <button class="modal__btn" :class="[
+                                state.type === 'danger' ? 'modal__btn--danger' : 'modal__btn--confirm',
+                                { 'modal__btn--ok': isAlert },
+                            ]" @click="close(true)">
+                                {{ state.confirmText }}
+                            </button>
+                        </div>
+
+                        <p class="modal-card__hint">
+                            <template v-if="isAlert">Esc / Enter = chiudi</template>
+                            <template v-else>Enter = conferma · Esc = annulla</template>
+                        </p>
+                    </template>
                 </div>
             </div>
         </Transition>

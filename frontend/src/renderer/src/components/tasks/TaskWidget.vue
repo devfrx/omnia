@@ -5,7 +5,7 @@
  * Expanded mode: section label, header with task count, preview/list.
  * Collapsed mode: task icon with active count badge (34x34 circle).
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTasksStore } from '../../stores/tasks'
 
@@ -16,6 +16,8 @@ const props = defineProps<{
 const store = useTasksStore()
 const router = useRouter()
 const expanded = ref(false)
+
+let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 /** Count of active tasks (pending + running). */
 const activeCount = computed((): number => {
@@ -55,6 +57,17 @@ function openTasks(): void {
 onMounted(() => {
     store.loadTasks()
     store.loadStats()
+    refreshInterval = setInterval(() => {
+        store.loadTasks()
+        store.loadStats()
+    }, 30_000)
+})
+
+onUnmounted(() => {
+    if (refreshInterval) {
+        clearInterval(refreshInterval)
+        refreshInterval = null
+    }
 })
 </script>
 

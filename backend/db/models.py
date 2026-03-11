@@ -220,7 +220,7 @@ class AgentTask(SQLModel, table=True):
     __tablename__ = "agent_tasks"
     __table_args__ = (
         sa.CheckConstraint(
-            "trigger_type IN ('once_at', 'interval', 'manual')",
+            "trigger_type IN ('once_at', 'interval', 'daily_at', 'manual')",
             name="ck_task_trigger_type",
         ),
         sa.CheckConstraint(
@@ -238,7 +238,7 @@ class AgentTask(SQLModel, table=True):
     )
 
     trigger_type: str = Field(
-        description="once_at | interval | manual",
+        description="once_at | interval | daily_at | manual",
     )
 
     # -- Trigger scheduling ------------------------------------------------
@@ -249,6 +249,14 @@ class AgentTask(SQLModel, table=True):
     interval_seconds: int | None = Field(
         default=None,
         description="For trigger_type='interval': repeat every N seconds.",
+    )
+    time_utc: str | None = Field(
+        default=None,
+        description="For trigger_type='daily_at': HH:MM in UTC (e.g. '06:56').",
+    )
+    time_local: str | None = Field(
+        default=None,
+        description="For trigger_type='daily_at': HH:MM in user's local time (e.g. '07:56').",
     )
     next_run_at: datetime | None = Field(
         default=None,

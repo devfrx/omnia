@@ -6,6 +6,7 @@ import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
 import ModalContainer from './components/ModalContainer.vue'
 import ModeSwitcher from './components/assistant/ModeSwitcher.vue'
+import { UiToast } from './components/ui'
 import { useChat, ChatApiKey } from './composables/useChat'
 import { usePluginComponents } from './composables/usePluginComponents'
 import { useEventsWebSocket } from './composables/useEventsWebSocket'
@@ -55,6 +56,7 @@ onMounted(() => {
     </div>
     <ModeSwitcher />
     <ModalContainer />
+    <UiToast />
   </div>
 </template>
 
@@ -147,4 +149,5 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
 }
+
 </style>

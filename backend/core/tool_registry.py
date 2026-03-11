@@ -8,6 +8,7 @@ execution with result sanitisation.
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 import time
 from typing import Any
@@ -368,6 +369,37 @@ class ToolRegistry:
     # Execution
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _coerce_args(
+        args: dict[str, Any],
+        schema: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Best-effort coercion of LLM-provided args to match the schema.
+
+        LLMs frequently send a dict/list where a string is expected,
+        or a numeric string where a number is required. This method
+        patches the args dict in-place to avoid repeated validation
+        failures that waste iterations.
+        """
+        props = schema.get("properties", {})
+        for key, prop_schema in props.items():
+            if key not in args:
+                continue
+            expected = prop_schema.get("type")
+            val = args[key]
+
+            if expected == "string" and not isinstance(val, str):
+                # dict/list/int/float → JSON string
+                args[key] = json.dumps(val, ensure_ascii=False)
+            elif expected in ("number", "integer") and isinstance(val, str):
+                try:
+                    args[key] = (
+                        int(val) if expected == "integer" else float(val)
+                    )
+                except (ValueError, TypeError):
+                    pass  # leave as-is; validation will catch it
+        return args
+
     async def execute_tool(
         self,
         tool_name: str,
@@ -420,6 +452,9 @@ class ToolRegistry:
             tool_name=tool_name,
             execution_id=execution_id,
         )
+
+        # --- auto-coerce LLM args to match expected types ---
+        args = self._coerce_args(args, tool_def.parameters)
 
         # --- validate args against JSON Schema ---
         if _jsonschema is not None:

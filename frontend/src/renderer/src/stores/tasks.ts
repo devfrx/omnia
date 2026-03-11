@@ -7,6 +7,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { api } from '../services/api'
+import { useToast } from '../composables/useToast'
 import type {
   AgentTask,
   TaskActivityEvent,
@@ -26,7 +27,6 @@ export const useTasksStore = defineStore('tasks', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const recentActivity = ref<TaskActivityEvent[]>([])
-
   // -----------------------------------------------------------------------
   // Actions
   // -----------------------------------------------------------------------
@@ -71,8 +71,9 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null
     try {
       const task = await api.createTaskEntry(req)
-      tasks.value.unshift(task)
+      tasks.value = [task, ...tasks.value]
       total.value += 1
+      void loadStats()
       return task
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err)
@@ -87,8 +88,11 @@ export const useTasksStore = defineStore('tasks', () => {
       await api.cancelTaskEntry(id)
       const idx = tasks.value.findIndex((t) => t.id === id)
       if (idx !== -1) {
-        tasks.value[idx].status = 'cancelled'
+        tasks.value = tasks.value.map((t, i) =>
+          i === idx ? { ...t, status: 'cancelled' as const } : t
+        )
       }
+      void loadStats()
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err)
     }
@@ -99,10 +103,8 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null
     try {
       const updated = await api.triggerTaskRun(id)
-      const idx = tasks.value.findIndex((t) => t.id === id)
-      if (idx !== -1) {
-        tasks.value[idx] = updated
-      }
+      tasks.value = tasks.value.map((t) => (t.id === id ? updated : t))
+      void loadStats()
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err)
     }
@@ -110,21 +112,42 @@ export const useTasksStore = defineStore('tasks', () => {
 
   /** Handle an incoming real-time task event from /ws/events. */
   function onTaskEvent(event: TaskActivityEvent): void {
-    recentActivity.value.unshift(event)
-    if (recentActivity.value.length > 50) {
-      recentActivity.value = recentActivity.value.slice(0, 50)
-    }
+    recentActivity.value = [event, ...recentActivity.value].slice(0, 50)
 
     // Update task status in local state
     const idx = tasks.value.findIndex((t) => t.id === event.task_id)
     if (idx !== -1 && event.status) {
-      tasks.value[idx].status = event.status
-      if (event.result_summary) {
-        tasks.value[idx].result_summary = event.result_summary
-      }
-      if (event.error_message) {
-        tasks.value[idx].error_message = event.error_message
-      }
+      tasks.value = tasks.value.map((t, i) => {
+        if (i !== idx) return t
+        return {
+          ...t,
+          status: event.status!,
+          ...(event.result_summary ? { result_summary: event.result_summary } : {}),
+          ...(event.error_message ? { error_message: event.error_message } : {}),
+        }
+      })
+    } else if (idx === -1) {
+      // New task not in local array — re-fetch from server
+      void loadTasks()
+    }
+
+    // Always refresh stats to keep counts in sync
+    void loadStats()
+
+    // Show global toast notification for key events.
+    const toast = useToast()
+    if (event.type === 'task_started') {
+      toast.info('Task in esecuzione…')
+    } else if (event.type === 'task_completed') {
+      const msg = event.result_summary
+        ? `Task completato: ${event.result_summary.slice(0, 100)}`
+        : 'Task completato'
+      toast.success(msg)
+    } else if (event.type === 'task_failed') {
+      const msg = event.error_message
+        ? `Task fallito: ${event.error_message.slice(0, 100)}`
+        : 'Task fallito'
+      toast.error(msg)
     }
   }
 
