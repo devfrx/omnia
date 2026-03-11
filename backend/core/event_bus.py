@@ -59,12 +59,6 @@ class OmniaEvent(StrEnum):
     ERROR = "error"
     # -- Calendar --
     CALENDAR_REMINDER = "calendar.reminder"
-    # -- Task Runner (Phase 10) --
-    TASK_SCHEDULED = "task.scheduled"
-    TASK_STARTED = "task.started"
-    TASK_COMPLETED = "task.completed"
-    TASK_FAILED = "task.failed"
-    TASK_CANCELLED = "task.cancelled"
 
 # Type alias for async handlers
 AsyncHandler = Callable[..., Coroutine[Any, Any, None]]

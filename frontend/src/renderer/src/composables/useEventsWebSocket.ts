@@ -2,21 +2,17 @@
  * Composable for the persistent events WebSocket connection.
  *
  * Connects to `/api/events/ws` on setup and dispatches incoming
- * task events to the tasks Pinia store. Handles reconnection
+ * events to the relevant Pinia stores. Handles reconnection
  * with exponential back-off.
  */
 
 import { onScopeDispose, ref } from 'vue'
-import { useTasksStore } from '../stores/tasks'
 import { useCalendarStore } from '../stores/calendar'
 import { BACKEND_HOST } from '../services/api'
-import type { TaskActivityEvent } from '../types/tasks'
-
 const WS_URL = `${BACKEND_HOST.replace(/^http/, 'ws')}/api/events/ws`
 
 export function useEventsWebSocket() {
   const isConnected = ref(false)
-  const tasksStore = useTasksStore()
   const calendarStore = useCalendarStore()
 
   let ws: WebSocket | null = null
@@ -51,25 +47,6 @@ export function useEventsWebSocket() {
         const data = JSON.parse(event.data)
         if (data.type === 'pong' || data.type === 'heartbeat') {
           return // Keep-alive, ignore
-        }
-
-        // Forward task events to the store
-        if (
-          data.type === 'task_scheduled' ||
-          data.type === 'task_started' ||
-          data.type === 'task_completed' ||
-          data.type === 'task_failed' ||
-          data.type === 'task_cancelled'
-        ) {
-          const taskEvent: TaskActivityEvent = {
-            type: data.type,
-            task_id: data.task_id,
-            status: data.status,
-            result_summary: data.result_summary,
-            error_message: data.error_message,
-            timestamp: new Date().toISOString(),
-          }
-          tasksStore.onTaskEvent(taskEvent)
         }
 
         // Forward calendar change events to the store

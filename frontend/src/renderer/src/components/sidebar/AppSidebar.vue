@@ -19,7 +19,6 @@ import { useModal } from '../../composables/useModal'
 import { api } from '../../services/api'
 import ConversationList from './ConversationList.vue'
 import CalendarWidget from '../calendar/CalendarWidget.vue'
-import TaskWidget from '../tasks/TaskWidget.vue'
 
 const chatStore = useChatStore()
 const uiStore = useUIStore()
@@ -155,9 +154,6 @@ async function onOpenFile(id: string): Promise<void> {
 
     <!-- Calendar widget — shows today's events and next upcoming -->
     <CalendarWidget :collapsed="!isOpen" />
-
-    <!-- Task widget — shows active autonomous tasks -->
-    <TaskWidget :collapsed="!isOpen" />
 
     <!-- Conversations section — only shown when expanded -->
     <div v-show="isOpen" class="sidebar__conversations">

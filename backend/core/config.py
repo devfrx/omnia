@@ -464,33 +464,6 @@ class MemoryConfig(BaseSettings):
     """Remove memories not accessed for N days (0 = disabled)."""
 
 
-class TaskSchedulerConfig(BaseSettings):
-    """Background task scheduler configuration."""
-
-    model_config = SettingsConfigDict(env_prefix="OMNIA_TASK_SCHEDULER__")
-
-    enabled: bool = False
-    """Enable the TaskScheduler. False by default (opt-in)."""
-
-    poll_interval_s: float = 30.0
-    """Seconds between each check DB for tasks to execute."""
-
-    max_concurrent_tasks: int = 2
-    """Tasks executable simultaneously. Limits pressure on LLM."""
-
-    task_timeout_s: int = 300
-    """Maximum timeout for a single task (5 minutes). Exceeded: status → 'failed'."""
-
-    max_task_prompt_chars: int = 2000
-    """Maximum prompt length for a task (safety)."""
-
-    max_runs_safety_cap: int = 1000
-    """Safety cap for max_runs on interval tasks (prevents infinite loops)."""
-
-    result_retention_days: int = 30
-    """Days of retention for completed/failed tasks before cleanup."""
-
-
 # ---------------------------------------------------------------------------
 # Top-level config
 # ---------------------------------------------------------------------------
@@ -533,9 +506,6 @@ class OmniaConfig(BaseSettings):
     file_search: FileSearchConfig = Field(default_factory=FileSearchConfig)
     news: NewsConfig = Field(default_factory=NewsConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
-    task_scheduler: TaskSchedulerConfig = Field(
-        default_factory=TaskSchedulerConfig
-    )
 
     @model_validator(mode="before")
     @classmethod

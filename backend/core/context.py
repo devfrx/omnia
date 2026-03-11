@@ -22,7 +22,6 @@ from backend.core.protocols import (
     PluginManagerProtocol,
     PreferencesServiceProtocol,
     STTServiceProtocol,
-    TaskSchedulerProtocol,
     TTSServiceProtocol,
     ToolRegistryProtocol,
     VRAMMonitorProtocol,
@@ -57,9 +56,6 @@ class AppContext:
 
     memory_service: MemoryServiceProtocol | None = None
     """Persistent semantic memory service."""
-
-    task_scheduler: TaskSchedulerProtocol | None = None
-    """Background autonomous task scheduler."""
 
     ws_connection_manager: WSConnectionManagerProtocol | None = None
     """Persistent event WebSocket connection manager."""

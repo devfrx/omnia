@@ -31,12 +31,6 @@ import type {
   MemorySearchResponse,
   MemoryStats
 } from '../types/memory'
-import type {
-  AgentTask,
-  TaskCreateRequest,
-  TaskListResponse,
-  TaskStatsResponse
-} from '../types/tasks'
 
 /** Backend host (without /api), configurable via VITE_API_BASE_URL env var. */
 const BACKEND_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -416,30 +410,4 @@ export const api = {
   getMemoryStats: (): Promise<MemoryStats> =>
     request<MemoryStats>('/memory/stats'),
 
-  // -- Tasks (Phase 10) -----------------------------------------------------
-
-  /** List autonomous tasks with optional filters. */
-  getTasks: (params?: URLSearchParams): Promise<TaskListResponse> => {
-    const qs = params?.toString()
-    return request<TaskListResponse>(`/tasks${qs ? `?${qs}` : ''}`)
-  },
-
-  /** Get task statistics grouped by status. */
-  getTaskStats: (): Promise<TaskStatsResponse> =>
-    request<TaskStatsResponse>('/tasks/stats'),
-
-  /** Create a new autonomous task. */
-  createTaskEntry: (data: TaskCreateRequest): Promise<AgentTask> =>
-    request<AgentTask>('/tasks', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
-
-  /** Cancel/delete a task by ID. */
-  cancelTaskEntry: (id: string): Promise<void> =>
-    request<void>(`/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-
-  /** Trigger immediate execution of a manual task. */
-  triggerTaskRun: (id: string): Promise<AgentTask> =>
-    request<AgentTask>(`/tasks/${encodeURIComponent(id)}/run`, { method: 'PATCH' })
 }
