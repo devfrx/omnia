@@ -8,6 +8,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useSettingsStore } from '../stores/settings'
 import { useVoiceStore } from '../stores/voice'
+import OmniaSpinner from './ui/OmniaSpinner.vue'
 
 /** Tracks whether the window is currently maximized */
 const isMaximized = ref(false)
@@ -33,6 +34,20 @@ const connectionStatus = computed<'connected' | 'loading' | 'disconnected'>(() =
   if (settingsStore.isAnyOperationInProgress) return 'loading'
   if (settingsStore.lmStudioConnected) return 'connected'
   return 'disconnected'
+})
+
+/**
+ * Extracts a human-readable voice name from the TTS voice path stored in settings.
+ * e.g. "models/tts/it_IT-paola-medium" → "paola"
+ */
+const ttsVoice = computed(() => {
+  const voice = settingsStore.settings?.tts?.voice ?? ''
+  if (!voice) return ''
+  const segment = (voice.split('/').pop() ?? '').replace(/\.[^.]+$/, '')
+  const parts = segment.split('-')
+  // Format: lang_REGION-name...-quality → return name part(s), skip first (locale) and last (quality)
+  if (parts.length >= 3) return parts.slice(1, -1).join('-')
+  return segment
 })
 
 const windowControls = window.electron?.windowControls
@@ -86,14 +101,36 @@ onUnmounted(() => {
           :title="modelDisplayName">
           {{ modelDisplayName }}
         </span>
-        <span v-if="connectionStatus === 'loading'" class="titlebar__spinner" />
+        <OmniaSpinner v-if="connectionStatus === 'loading'" size="xs" />
       </div>
 
-      <template v-if="voiceStore.sttAvailable && voiceStore.sttEngine">
+      <template v-if="voiceStore.sttAvailable || voiceStore.ttsAvailable">
         <span class="titlebar__separator">&middot;</span>
-        <span class="titlebar__stt">
-          {{ voiceStore.sttEngine }} · {{ voiceStore.sttModel }}
-        </span>
+        <div class="titlebar__voice">
+          <!-- STT -->
+          <div v-if="voiceStore.sttAvailable && voiceStore.sttEngine" class="titlebar__voice-item">
+            <svg class="titlebar__voice-icon" width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true">
+              <rect x="2.5" y="0.5" width="4" height="5" rx="2" fill="currentColor" />
+              <path d="M1 4.5a3.5 3 0 007 0" stroke="currentColor" stroke-width="1" fill="none" />
+              <line x1="4.5" y1="8.5" x2="4.5" y2="7" stroke="currentColor" stroke-width="1" />
+            </svg>
+            <span class="titlebar__voice-engine">{{ voiceStore.sttEngine }}</span>
+            <span v-if="voiceStore.sttModel" class="titlebar__voice-model">{{ voiceStore.sttModel }}</span>
+          </div>
+          <!-- STT / TTS divider -->
+          <span
+            v-if="voiceStore.sttAvailable && voiceStore.sttEngine && voiceStore.ttsAvailable && voiceStore.ttsEngine"
+            class="titlebar__voice-sep">/</span>
+          <!-- TTS -->
+          <div v-if="voiceStore.ttsAvailable && voiceStore.ttsEngine" class="titlebar__voice-item">
+            <svg class="titlebar__voice-icon" width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true">
+              <polygon points="0.5,2.5 2.5,2.5 5,0.5 5,8.5 2.5,6.5 0.5,6.5" fill="currentColor" />
+              <path d="M6.5 3a2 2 0 010 3" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" />
+            </svg>
+            <span class="titlebar__voice-engine">{{ voiceStore.ttsEngine }}</span>
+            <span v-if="ttsVoice" class="titlebar__voice-model">{{ ttsVoice }}</span>
+          </div>
+        </div>
       </template>
     </div>
 
@@ -213,34 +250,47 @@ onUnmounted(() => {
   font-style: italic;
 }
 
-/* STT engine + model label */
-.titlebar__stt {
+/* Voice info: STT + TTS */
+.titlebar__voice {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.titlebar__voice-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.titlebar__voice-icon {
+  color: var(--text-muted);
+  opacity: 0.55;
+  flex-shrink: 0;
+  margin-top: 0.5px;
+}
+
+.titlebar__voice-engine {
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.3px;
   color: var(--text-muted);
-  opacity: 0.7;
-  white-space: nowrap;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  opacity: 0.75;
 }
 
-/* Mini spinner */
-.titlebar__spinner {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid transparent;
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: titlebar-spin 0.8s linear infinite;
-  flex-shrink: 0;
+.titlebar__voice-model {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  letter-spacing: 0.2px;
 }
 
-@keyframes titlebar-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.titlebar__voice-sep {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.3;
+  margin: 0 1px;
 }
 
 /* Control button group */

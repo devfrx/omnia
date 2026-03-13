@@ -14,6 +14,7 @@ import { useCodeBlocks } from '../../composables/useCodeBlocks'
 import { useChatStore } from '../../stores/chat'
 import ThinkingSection from './ThinkingSection.vue'
 import ToolExecutionIndicator from './ToolExecutionIndicator.vue'
+import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
 
 const props = defineProps<{
   /** Accumulated tokens so far (`currentStreamContent` from the store). */
@@ -38,14 +39,8 @@ const chatStore = useChatStore()
     <div class="streaming-bubble">
       <!-- Thinking-only state indicator -->
       <div v-if="thinkingContent && !content" class="streaming-bubble__thinking-state">
-        <svg class="streaming-bubble__brain-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path
-            d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
-          <line x1="9" y1="21" x2="15" y2="21" />
-          <line x1="10" y1="23" x2="14" y2="23" />
-        </svg>
-        <span class="streaming-bubble__thinking-label">Ragionamento in corso...</span>
+        <OmniaSpinner size="xs" />
+        <span class="streaming-bubble__thinking-label">Ragionamento in corso…</span>
       </div>
 
       <!-- Thinking section -->
@@ -120,13 +115,6 @@ const chatStore = useChatStore()
   gap: var(--space-2);
   margin-bottom: var(--space-2);
   padding: var(--space-2) var(--space-3);
-}
-
-.streaming-bubble__brain-icon {
-  color: var(--accent);
-  flex-shrink: 0;
-  width: 14px;
-  height: 14px;
 }
 
 .streaming-bubble__thinking-label {

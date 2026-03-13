@@ -271,8 +271,12 @@ export const useSettingsStore = defineStore('settings', () => {
       const result = await api.syncModel()
       if (result.synced && result.model) {
         settings.value.llm.model = result.model
-        await loadModels()
       }
+      // Always fetch the full model list after connecting, regardless of
+      // whether a model was already loaded in LM Studio. Without this,
+      // loadModels() was only triggered when ModelSelector/ModelManager
+      // mounted — i.e. only after the user opened ChatInput.
+      await loadModels()
     } catch {
       // Backend unreachable — ignore silently
     }

@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 
 import type { ToolExecution } from '../../types/chat'
+import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
 
 const props = defineProps<{
     /** Active tool executions from the store. */
@@ -26,7 +27,7 @@ function truncate(text: string, max = 100): string {
     <div v-if="hasExecutions" class="tool-exec">
         <div v-for="exec in executions" :key="exec.executionId" class="tool-exec__item">
             <!-- Status icon -->
-            <span v-if="exec.status === 'running'" class="tool-exec__spinner" aria-label="In esecuzione" />
+            <OmniaSpinner v-if="exec.status === 'running'" size="xs" aria-label="In esecuzione" />
             <svg v-else-if="exec.status === 'done' && exec.success" class="tool-exec__icon tool-exec__icon--ok"
                 width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -77,16 +78,6 @@ function truncate(text: string, max = 100): string {
     border-bottom: 1px solid var(--border);
 }
 
-.tool-exec__spinner {
-    width: 14px;
-    height: 14px;
-    border-radius: var(--radius-full);
-    flex-shrink: 0;
-    border: 1.5px solid transparent;
-    border-top-color: var(--accent);
-    animation: toolSpin 0.7s linear infinite;
-}
-
 .tool-exec__icon {
     flex-shrink: 0;
 }
@@ -122,17 +113,5 @@ function truncate(text: string, max = 100): string {
     border: 1px solid var(--border);
     object-fit: contain;
     margin-top: var(--space-1);
-}
-
-@keyframes toolSpin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .tool-exec__spinner {
-        animation: none;
-    }
 }
 </style>

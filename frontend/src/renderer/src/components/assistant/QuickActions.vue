@@ -86,7 +86,7 @@ function toggleExpand(): void {
     position: absolute;
     bottom: var(--space-4);
     right: var(--space-4);
-    z-index: 5;
+    z-index: 999;
     display: flex;
     flex-direction: column;
     align-items: flex-end;

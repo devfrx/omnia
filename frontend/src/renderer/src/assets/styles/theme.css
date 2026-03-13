@@ -423,13 +423,19 @@ textarea:focus:not(:focus-visible) {
 }
 
 /* ── Reduced Motion ────────────────────────────────────────── */
+/*
+ * INTENTIONALLY limited: the blanket animation/transition kill here was
+ * triggering on Windows when any accessibility visual-effect setting was
+ * set to "Custom", causing ALL CSS animations (spinners, loaders, pulses)
+ * to freeze — even though the user had no explicit "reduce motion" intent.
+ * The OmniaOrb was unaffected because it uses Canvas/rAF, not CSS.
+ * Individual components that contain decorative-only animations add their
+ * own targeted @media (prefers-reduced-motion: reduce) blocks where needed.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }

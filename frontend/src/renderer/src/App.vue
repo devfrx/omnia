@@ -1,12 +1,12 @@
 <script setup lang="ts">
 // O.M.N.I.A. — Root App Component
-import { onMounted, provide, computed } from 'vue'
+import { onMounted, provide, computed, ref, watchEffect } from 'vue'
 
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
 import ModalContainer from './components/ModalContainer.vue'
 import ModeSwitcher from './components/assistant/ModeSwitcher.vue'
-import { UiToast } from './components/ui'
+import { UiToast, OmniaLoader } from './components/ui'
 import { useChat, ChatApiKey } from './composables/useChat'
 import { usePluginComponents } from './composables/usePluginComponents'
 import { useEventsWebSocket } from './composables/useEventsWebSocket'
@@ -28,9 +28,27 @@ const { toolbarComponents } = usePluginComponents()
 /** Always show sidebar (collapsed in assistant mode). */
 const showSidebar = computed(() => true)
 
+// ── Startup loader ────────────────────────────────────────────────
+const startupLoading = ref(true)
+
+const startupMessage = computed(() => {
+  switch (chatApi.connectionStatus.value) {
+    case 'connecting': return 'Connessione al backend…'
+    case 'error': return 'Errore di connessione…'
+    default: return 'Avvio in corso…'
+  }
+})
+
+watchEffect(() => {
+  if (chatApi.isConnected.value) {
+    startupLoading.value = false
+  }
+})
+
 onMounted(() => {
   settingsStore.resumeOperationTracking()
   pluginsStore.loadPlugins()
+  setTimeout(() => { startupLoading.value = false }, 10_000)
 })
 </script>
 
@@ -57,6 +75,7 @@ onMounted(() => {
     <ModeSwitcher />
     <ModalContainer />
     <UiToast />
+    <OmniaLoader :visible="startupLoading" :message="startupMessage" />
   </div>
 </template>
 

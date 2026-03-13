@@ -7,6 +7,7 @@
  */
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { renderMarkdown } from '../../utils/markdownRenderer'
+import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
 
 const props = defineProps<{
     content: string
@@ -96,9 +97,7 @@ onMounted(() => {
 
         <!-- Thinking phase placeholder (no content yet) -->
         <div v-if="isThinkingPhase && !content" class="thinking-placeholder">
-            <span class="thinking-placeholder__dot" />
-            <span class="thinking-placeholder__dot" />
-            <span class="thinking-placeholder__dot" />
+            <OmniaSpinner size="sm" variant="dots" />
         </div>
     </div>
 </template>
@@ -399,26 +398,6 @@ onMounted(() => {
     padding: var(--space-4) 0;
 }
 
-.thinking-placeholder__dot {
-    width: 4px;
-    height: 4px;
-    border-radius: var(--radius-full);
-    background: var(--text-muted);
-    animation: dot-pulse 1.4s ease-in-out infinite;
-}
-
-.thinking-placeholder__dot:nth-child(1) {
-    animation-delay: 0s;
-}
-
-.thinking-placeholder__dot:nth-child(2) {
-    animation-delay: 0.15s;
-}
-
-.thinking-placeholder__dot:nth-child(3) {
-    animation-delay: 0.3s;
-}
-
 /* ── Keyframes ── */
 @keyframes cursor-blink {
     0% {
@@ -427,18 +406,6 @@ onMounted(() => {
 
     50% {
         opacity: 0;
-    }
-}
-
-@keyframes dot-pulse {
-
-    0%,
-    100% {
-        opacity: 0.15;
-    }
-
-    50% {
-        opacity: 0.6;
     }
 }
 
@@ -458,17 +425,12 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) {
 
     .streaming-cursor,
-    .thinking-placeholder__dot,
     .thinking-toggle__indicator {
         animation: none;
     }
 
     .streaming-cursor {
         opacity: 1;
-    }
-
-    .thinking-placeholder__dot {
-        opacity: 0.4;
     }
 
     .thinking-toggle__chevron {

@@ -10,6 +10,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, nextTick, watch } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { LMStudioModel } from '../../types/settings'
+import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
 
 const props = withDefaults(defineProps<{
   /** Which model type to show: 'llm' (default) or 'embedding'. */
@@ -165,7 +166,7 @@ onBeforeUnmount(() => {
       <span v-if="loadedModels.length > 1" class="model-selector__loaded-badge">
         {{ loadedModels.length }} caricati
       </span>
-      <span v-if="settingsStore.isAnyOperationInProgress" class="model-selector__trigger-spinner" />
+      <OmniaSpinner v-if="settingsStore.isAnyOperationInProgress" size="xs" />
       <svg class="model-selector__chevron" :class="{ 'model-selector__chevron--open': isOpen }" width="10" height="10"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
         stroke-linejoin="round">
@@ -193,8 +194,7 @@ onBeforeUnmount(() => {
 
         <!-- Loading state -->
         <div v-if="settingsStore.isLoadingModels" class="model-selector__loading">
-          <span class="model-selector__spinner" />
-          <span>Caricamento modelli...</span>
+          <OmniaSpinner size="xs" label="Caricamento modelli…" />
         </div>
 
         <!-- Empty state -->
@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
                   :disabled="isModelBusy(model) || settingsStore.isAnyOperationInProgress"
                   @click="toggleModelLoad(model, $event)">
                   <!-- Loading spinner -->
-                  <span v-if="isModelBusy(model)" class="model-selector__btn-spinner" />
+                  <OmniaSpinner v-if="isModelBusy(model)" size="xs" />
                   <!-- Unload icon (arrow up from tray) -->
                   <svg v-else-if="model.loaded" width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
                   :class="{ 'model-selector__load-btn--busy': isModelBusy(model) }" title="Carica in memoria"
                   :disabled="isModelBusy(model) || settingsStore.isAnyOperationInProgress"
                   @click="toggleModelLoad(model, $event)">
-                  <span v-if="isModelBusy(model)" class="model-selector__btn-spinner" />
+                  <OmniaSpinner v-if="isModelBusy(model)" size="xs" />
                   <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="7 13 12 18 17 13" />
@@ -569,38 +569,6 @@ onBeforeUnmount(() => {
   padding: 14px 12px;
   color: var(--text-secondary);
   font-size: var(--text-base);
-}
-
-.model-selector__spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: var(--radius-full);
-  animation: ms-spin 0.6s linear infinite;
-  flex-shrink: 0;
-}
-
-.model-selector__spinner--small {
-  width: 10px;
-  height: 10px;
-  border-width: 1.5px;
-}
-
-.model-selector__trigger-spinner {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: var(--radius-full);
-  animation: ms-spin 0.6s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes ms-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* ── Model item ───────────────────────────────────────────────────── */
@@ -825,16 +793,6 @@ onBeforeUnmount(() => {
 
 .model-selector__load-btn--busy {
   border-color: var(--accent-border);
-}
-
-/* Inline spinner inside the load button */
-.model-selector__btn-spinner {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: var(--radius-full);
-  animation: ms-spin 0.6s linear infinite;
 }
 
 /* ── Switching overlay spinner ────────────────────────────────────── */

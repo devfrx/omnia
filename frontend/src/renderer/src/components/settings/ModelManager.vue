@@ -8,6 +8,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { LMStudioModel } from '../../types/settings'
+import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
 
 const settingsStore = useSettingsStore()
 
@@ -171,8 +172,7 @@ onMounted(() => {
 
         <!-- ── Loading spinner ── -->
         <div v-if="settingsStore.isLoadingModels" class="mm-loading">
-            <span class="mm-spinner" />
-            <span>Caricamento lista modelli…</span>
+            <OmniaSpinner size="sm" label="Caricamento lista modelli…" />
         </div>
 
         <!-- ── Models List ── -->
@@ -216,7 +216,7 @@ onMounted(() => {
                         model.params_string }}</span>
                     <span class="mm-model__meta-item">{{ formatSize(model.size) }}</span>
                     <span v-if="model.quantization?.name" class="mm-model__meta-item">{{ model.quantization.name
-                    }}</span>
+                        }}</span>
                     <span v-if="model.format" class="mm-model__meta-item">{{ model.format.toUpperCase() }}</span>
                     <span class="mm-model__meta-item">ctx {{ model.max_context_length.toLocaleString() }}</span>
                 </div>
@@ -468,21 +468,6 @@ onMounted(() => {
     color: var(--text-secondary);
     font-size: var(--text-base);
     justify-content: center;
-}
-
-.mm-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: var(--radius-full);
-    animation: mm-spin 0.6s linear infinite;
-}
-
-@keyframes mm-spin {
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 .mm-empty {
