@@ -311,20 +311,16 @@ onMounted(() => {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
     /* Mask fade at top and bottom edges for long content */
-    mask-image: linear-gradient(
-        to bottom,
-        transparent 0%,
-        black 12px,
-        black calc(100% - 16px),
-        transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent 0%,
-        black 12px,
-        black calc(100% - 16px),
-        transparent 100%
-    );
+    mask-image: linear-gradient(to bottom,
+            transparent 0%,
+            black 12px,
+            black calc(100% - 16px),
+            transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom,
+            transparent 0%,
+            black 12px,
+            black calc(100% - 16px),
+            transparent 100%);
     padding: var(--space-2) 0 var(--space-4);
 }
 
@@ -400,7 +396,14 @@ onMounted(() => {
 }
 
 @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
 }
 </style>
