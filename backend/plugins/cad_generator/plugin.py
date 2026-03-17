@@ -8,7 +8,6 @@ for GPUs with limited memory.
 from __future__ import annotations
 
 import asyncio
-import json
 import re
 import time
 from pathlib import Path
@@ -279,6 +278,8 @@ class CadGeneratorPlugin(BasePlugin):
         result, error = await self._vram_swap_generate(description, model_name)
         if error:
             return ToolResult.error(error)
+        if result is None:
+            return ToolResult.error("TRELLIS generation returned no result")
 
         # Download and save locally
         try:
@@ -304,8 +305,8 @@ class CadGeneratorPlugin(BasePlugin):
             result.model_name, len(glb_bytes), elapsed,
         )
         return ToolResult.ok(
-            json.dumps(payload),
-            content_type="application/vnd.omnia.cad-model+json",
+            payload,
+            content_type="application/json",
             execution_time_ms=elapsed,
         )
 

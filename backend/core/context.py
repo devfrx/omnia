@@ -19,6 +19,7 @@ from backend.core.protocols import (
     LLMServiceProtocol,
     LMStudioManagerProtocol,
     MemoryServiceProtocol,
+    NoteServiceProtocol,
     PluginManagerProtocol,
     PreferencesServiceProtocol,
     STTServiceProtocol,
@@ -56,6 +57,9 @@ class AppContext:
 
     memory_service: MemoryServiceProtocol | None = None
     """Persistent semantic memory service."""
+
+    note_service: NoteServiceProtocol | None = None
+    """Obsidian-like note vault service."""
 
     ws_connection_manager: WSConnectionManagerProtocol | None = None
     """Persistent event WebSocket connection manager."""

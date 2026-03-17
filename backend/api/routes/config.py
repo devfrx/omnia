@@ -159,7 +159,13 @@ async def update_config(request: Request) -> dict[str, Any]:
     persisted to the database so they survive restarts.
     """
     ctx = _ctx(request)
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Request body must be a JSON object")
 
     cfg = ctx.config
 

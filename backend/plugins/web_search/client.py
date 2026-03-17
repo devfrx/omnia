@@ -198,25 +198,37 @@ class WebSearchClient:
 
         # Check if this domain recently failed — avoid retry spirals
         domain = urlparse(url).netloc
+
+        # Evict expired failure entries to prevent unbounded growth
+        now = time.monotonic()
+        expired = [
+            d for d, ts in self._scrape_failures.items()
+            if (now - ts) >= self._failure_cooldown_s
+        ]
+        for d in expired:
+            del self._scrape_failures[d]
+
         fail_ts = self._scrape_failures.get(domain)
-        if fail_ts and (time.monotonic() - fail_ts) < self._failure_cooldown_s:
+        if fail_ts and (now - fail_ts) < self._failure_cooldown_s:
             raise RuntimeError(
                 f"Domain '{domain}' is temporarily blocked "
                 f"(failed recently). Try a different site."
             )
 
-        # Use primp (browser TLS fingerprint) in a thread
+        # Use primp (browser TLS fingerprint) in a thread.
+        # Follow redirect chain (max 5 hops) with SSRF validation
+        # on each hop to prevent open-redirect SSRF bypasses.
         response = await asyncio.to_thread(self._primp.get, url)
-
-        # Handle redirects manually with SSRF validation
-        if response.status_code in (301, 302, 303, 307, 308):
+        max_redirects = 5
+        for _ in range(max_redirects):
+            if response.status_code not in (301, 302, 303, 307, 308):
+                break
             location = response.headers.get("location", "")
-            if location:
-                resolved = urljoin(url, location)
-                await async_validate_url_ssrf(resolved)
-                response = await asyncio.to_thread(
-                    self._primp.get, resolved,
-                )
+            if not location:
+                break
+            url = urljoin(url, location)
+            await async_validate_url_ssrf(url)
+            response = await asyncio.to_thread(self._primp.get, url)
 
         if response.status_code in (403, 429, 503):
             self._scrape_failures[domain] = time.monotonic()
@@ -240,8 +252,12 @@ class WebSearchClient:
     # ------------------------------------------------------------------
 
     async def close(self) -> None:
-        """Close the underlying HTTP client."""
+        """Close the underlying HTTP and primp clients."""
         await self._http.aclose()
+        try:
+            self._primp.close()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Private helpers

@@ -351,47 +351,6 @@ onMounted(() => {
     line-height: var(--leading-relaxed);
 }
 
-.response-body :deep(.inline-code) {
-    font-family: var(--font-mono);
-    background: var(--surface-2);
-    border-radius: var(--radius-xs);
-    padding: 1px 5px;
-    font-size: 0.87em;
-    color: var(--text-primary);
-}
-
-.response-body :deep(.code-block) {
-    position: relative;
-    background: var(--surface-0);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--space-4);
-    margin: 1em 0;
-    overflow-x: auto;
-    font-family: var(--font-mono);
-    font-size: 0.84em;
-    line-height: var(--leading-relaxed);
-    color: var(--text-primary);
-}
-
-.response-body :deep(.code-block code) {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: inherit;
-    color: inherit;
-}
-
-.response-body :deep(.code-block__lang) {
-    display: block;
-    margin-bottom: var(--space-2);
-    font-size: var(--text-2xs);
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-wider);
-    color: var(--text-muted);
-    font-weight: var(--weight-normal);
-}
-
 /* ── Streaming Cursor ── */
 .streaming-cursor {
     display: inline-block;

@@ -302,6 +302,12 @@ async def ws_voice(websocket: WebSocket) -> None:
                             "message": f"Transcription failed: {type(exc).__name__}",
                         })
 
+                # Cancel any previous STT task before starting a new one
+                # to avoid overlapping transcripts.
+                if stt_task_ref and not stt_task_ref.done():
+                    stt_task_ref.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await stt_task_ref
                 stt_task_ref = asyncio.create_task(
                     _run_stt(wav_bytes, session_id, stt),
                 )

@@ -398,6 +398,24 @@ class ToolRegistry:
                     )
                 except (ValueError, TypeError):
                     pass  # leave as-is; validation will catch it
+            elif expected == "boolean" and not isinstance(val, bool):
+                # LLMs often send "true"/"false" strings or 0/1 ints
+                if isinstance(val, str):
+                    lower = val.strip().lower()
+                    if lower in ("true", "1", "yes"):
+                        args[key] = True
+                    elif lower in ("false", "0", "no"):
+                        args[key] = False
+                elif isinstance(val, (int, float)):
+                    args[key] = bool(val)
+            elif expected == "array" and isinstance(val, str):
+                # LLMs sometimes send a JSON-encoded array as a string
+                try:
+                    parsed = json.loads(val)
+                    if isinstance(parsed, list):
+                        args[key] = parsed
+                except (json.JSONDecodeError, ValueError):
+                    pass  # leave as-is; validation will catch it
         return args
 
     async def execute_tool(
@@ -541,7 +559,7 @@ class ToolRegistry:
         if isinstance(result.content, str) and not is_binary:
             if len(result.content) > limit:
                 result.content = (
-                    result.content[:limit - 30]
+                    result.content[:max(0, limit - 30)]
                     + "\n...[output truncated]"
                 )
                 result.truncated = True

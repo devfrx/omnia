@@ -216,6 +216,57 @@ class TestMcpClientPluginGetTools:
         assert all(n.startswith("mcp_online_") for n in names)
         assert not any(n.startswith("mcp_offline_") for n in names)
 
+    def test_get_tools_truncates_long_names(self) -> None:
+        """Tool names exceeding 64 chars are truncated, not crashed."""
+        plugin = McpClientPlugin()
+        long_server = "a_very_long_server_name_that_pushes_limits"
+        plugin._sessions = {
+            long_server: _make_mock_session(
+                long_server,
+                tools=[
+                    ToolDefinition(
+                        name="also_a_very_long_tool_name",
+                        description="Test",
+                        parameters={},
+                    ),
+                ],
+            ),
+        }
+
+        tools = plugin.get_tools()
+        assert len(tools) == 1
+        assert len(tools[0].name) <= 64
+
+    def test_get_tools_isolates_invalid_tool(self) -> None:
+        """A single invalid tool doesn't crash the entire get_tools()."""
+        plugin = McpClientPlugin()
+        plugin._sessions = {
+            "srv": _make_mock_session(
+                "srv",
+                tools=[
+                    ToolDefinition(name="good", description="OK"),
+                    ToolDefinition(name="good2", description="Also OK"),
+                ],
+            ),
+        }
+        # Monkey-patch to make one ToolDefinition raise during construction
+        original_get = plugin._sessions["srv"].get_tools
+        call_count = 0
+
+        def patched_get_tools():
+            raw = original_get()
+            # Add a tool with a name that will fail after truncation
+            bad_tool = MagicMock()
+            bad_tool.name = "!invalid!"
+            bad_tool.description = "bad"
+            bad_tool.parameters = {}
+            return [raw[0], bad_tool, raw[1]]
+
+        plugin._sessions["srv"].get_tools = patched_get_tools
+        tools = plugin.get_tools()
+        # Should get 2 valid tools, skipping the invalid one
+        assert len(tools) == 2
+
 
 class TestMcpClientPluginExecuteTool:
     """Tests for McpClientPlugin.execute_tool()."""

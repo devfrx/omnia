@@ -208,7 +208,7 @@ def _build_mcp_context(ctx: AppContext) -> str | None:
             # Extract path args (anything starting with a drive letter or /)
             roots = [
                 arg for arg in srv.command[1:]
-                if arg and (arg[0].isalpha() and len(arg) > 1 and arg[1] == ":" or arg.startswith("/"))
+                if arg and ((arg[0].isalpha() and len(arg) > 1 and arg[1] == ":") or arg.startswith("/"))
             ]
             root_info = f"  root permessa: {', '.join(roots)}" if roots else ""
             lines.append(f"- {srv.name} (stdio){root_info}")
@@ -930,8 +930,14 @@ async def update_conversation_title(
     Body: ``{"title": "new title"}``
     """
     ctx = _ctx(request)
-    body = await request.json()
-    new_title: str = body.get("title", "")
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    new_title: str = str(body.get("title", "")).strip()
+    if len(new_title) > 500:
+        raise HTTPException(status_code=400, detail="Title too long (max 500 chars)")
 
     async with ctx.db() as session:
         conv = await session.get(Conversation, conversation_id)
@@ -1178,7 +1184,7 @@ async def import_conversation(request: Request) -> dict[str, Any]:
                 # Sanitise: reject paths that escape the uploads directory.
                 if file_path:
                     resolved = (PROJECT_ROOT / file_path).resolve()
-                    if not str(resolved).startswith(str(allowed_base)):
+                    if not resolved.is_relative_to(allowed_base):
                         logger.warning(
                             "Import: rejecting path traversal: {}",
                             file_path,
@@ -1270,7 +1276,11 @@ async def upload_image(
 
     # Check Content-Length header as an early rejection.
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > max_bytes:
+    try:
+        content_length_int = int(content_length) if content_length else 0
+    except (ValueError, TypeError):
+        content_length_int = 0
+    if content_length_int > max_bytes:
         raise HTTPException(
             status_code=413,
             detail=(

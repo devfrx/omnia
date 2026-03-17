@@ -113,6 +113,11 @@ def validate_command(command: str) -> tuple[bool, str]:
     if not command or not command.strip():
         return False, "Empty command"
 
+    # Block newline/CR characters — these act as command separators
+    # in cmd.exe /c context, enabling command injection.
+    if "\n" in command or "\r" in command:
+        return False, "Newline characters are not allowed in commands"
+
     # Extract base command (first token)
     parts = command.strip().split()
     base_cmd = parts[0].lower()
@@ -243,8 +248,10 @@ def validate_path(path: str) -> tuple[bool, str]:
     if not path or not path.strip():
         return False, "Empty path"
 
-    # Block UNC paths (\\server\share) and Win32 device paths (\\.\device)
-    if path.startswith("\\\\"):
+    # Block UNC paths (\\server\share), Win32 device paths (\\.\device),
+    # and single-backslash-leading paths (could be UNC degraded by
+    # backslash normalization in exec_command).
+    if path.startswith("\\") or path.startswith("//"):
         return False, f"UNC and device paths are not allowed: {path}"
 
     try:
@@ -255,7 +262,7 @@ def validate_path(path: str) -> tuple[bool, str]:
     normalized = str(resolved).lower().replace("\\", "/")
 
     for sys_dir in SYSTEM_DIRS:
-        if normalized.startswith(sys_dir):
+        if normalized == sys_dir or normalized.startswith(sys_dir + "/"):
             return False, f"Path '{path}' is in a protected system directory"
 
     return True, "Path is valid"

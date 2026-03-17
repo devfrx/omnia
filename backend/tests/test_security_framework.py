@@ -109,6 +109,16 @@ class TestValidateCommand:
         assert ok is False
         assert "empty" in msg.lower()
 
+    def test_newline_injection(self) -> None:
+        ok, msg = validate_command("dir C:\\Users\necho pwned")
+        assert ok is False
+        assert "newline" in msg.lower()
+
+    def test_carriage_return_injection(self) -> None:
+        ok, msg = validate_command("dir C:\\Users\r\necho pwned")
+        assert ok is False
+        assert "newline" in msg.lower()
+
 
 # ===================================================================
 # TestValidateKeys

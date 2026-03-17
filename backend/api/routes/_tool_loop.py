@@ -216,9 +216,7 @@ async def run_tool_loop(
 
             if tool_def and tool_def.requires_confirmation:
                 # Check if confirmations are globally disabled in config
-                confirmations_on = True
-                if hasattr(ctx.config, "pc_automation"):
-                    confirmations_on = ctx.config.pc_automation.confirmations_enabled
+                confirmations_on = ctx.config.pc_automation.confirmations_enabled
 
                 if confirmations_on:
                     approved = await _request_confirmation(
@@ -376,9 +374,7 @@ async def run_tool_loop(
                 entry["tool_call_id"] = m.tool_call_id
             updated_history.append(entry)
 
-        _tools_enabled = getattr(
-            getattr(ctx.config, "llm", None), "tools_enabled", True
-        )
+        _tools_enabled = ctx.config.llm.tools_enabled
         tools = (
             await ctx.tool_registry.get_available_tools()
             if ctx.tool_registry and _tools_enabled
@@ -541,7 +537,13 @@ async def _request_confirmation(
             raw = await asyncio.wait_for(
                 websocket.receive_text(), timeout=remaining,
             )
-            msg = json.loads(raw)
+            try:
+                msg = json.loads(raw)
+            except json.JSONDecodeError:
+                logger.debug(
+                    "Ignoring non-JSON message during confirmation wait",
+                )
+                continue
             # Handle cancel messages during confirmation wait.
             if msg.get("type") == "cancel":
                 if cancel_event:
@@ -564,7 +566,7 @@ async def _request_confirmation(
             tool_name, execution_id,
         )
         return False
-    except (json.JSONDecodeError, Exception):
+    except Exception:
         logger.warning(
             "Error receiving confirmation for tool '{}' (exec_id={})",
             tool_name, execution_id,

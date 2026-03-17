@@ -3,15 +3,18 @@
  *  O.M.N.I.A. — Shared Code Block Styles
  *
  *  Styles for code blocks rendered by `useMarkdown` inside v-html.
- *  Imported globally so both MessageBubble and StreamingIndicator
- *  (and any future markdown-rendering component) share one source.
- *  Clean Supabase-dashboard inspired code display.
+ *  Imported globally so MessageBubble, StreamingIndicator,
+ *  AssistantResponse, NoteEditor (and any future component)
+ *  share one source.  Clean Supabase-dashboard inspired display.
+ *
+ *  Parent selector shorthand ─ every markdown-rendering context:
+ *    :is(.bubble__content, .streaming-bubble__content,
+ *        .markdown-body, .response-body)
  * ═══════════════════════════════════════════════════════════════
  */
 
-/* ----- Inline code (inside markdown content) */
-.bubble__content code,
-.streaming-bubble__content code {
+/* Shorthand: all parents that render markdown via v-html */
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) code {
   font-family: var(--font-mono);
   font-size: 0.85em;
   background: var(--surface-3);
@@ -22,8 +25,7 @@
 }
 
 /* ----- Code block wrapper */
-.bubble__content .code-block-wrapper,
-.streaming-bubble__content .code-block-wrapper {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-wrapper {
   margin: var(--space-2) 0;
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -32,8 +34,7 @@
 }
 
 /* ----- Code block header (language label + copy button) */
-.bubble__content .code-block-header,
-.streaming-bubble__content .code-block-header {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -43,8 +44,7 @@
   min-height: 32px;
 }
 
-.bubble__content .code-block-lang,
-.streaming-bubble__content .code-block-lang {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-lang {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--text-muted);
@@ -53,8 +53,7 @@
   user-select: none;
 }
 
-.bubble__content .code-block-copy,
-.streaming-bubble__content .code-block-copy {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-copy {
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -70,33 +69,28 @@
   user-select: none;
 }
 
-.bubble__content .code-block-copy:hover,
-.streaming-bubble__content .code-block-copy:hover {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-copy:hover {
   color: var(--text-secondary);
   background: var(--surface-3);
   border-color: var(--border);
 }
 
-.bubble__content .code-block-copy--copied,
-.streaming-bubble__content .code-block-copy--copied {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-copy--copied {
   color: var(--success) !important;
   border-color: var(--success-border) !important;
 }
 
-.bubble__content .code-block-copy__label,
-.streaming-bubble__content .code-block-copy__label {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-copy__label {
   pointer-events: none;
 }
 
-.bubble__content .code-block-copy svg,
-.streaming-bubble__content .code-block-copy svg {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block-copy svg {
   pointer-events: none;
   flex-shrink: 0;
 }
 
 /* ----- Code block body */
-.bubble__content .code-block,
-.streaming-bubble__content .code-block {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block {
   background: var(--surface-0);
   padding: var(--space-3) 14px;
   overflow-x: auto;
@@ -107,8 +101,7 @@
   border-radius: 0;
 }
 
-.bubble__content .code-block code,
-.streaming-bubble__content .code-block code {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .code-block code {
   background: none;
   padding: 0;
   font-size: inherit;
@@ -117,128 +110,72 @@
 }
 
 /* ----- highlight.js token colors (warm neutral palette) ─── */
-.bubble__content .hljs,
-.streaming-bubble__content .hljs {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs {
   color: #d4d0c8;
 }
 
-/* Keywords, built-ins, tag names */
-.bubble__content .hljs-keyword,
-.bubble__content .hljs-selector-tag,
-.bubble__content .hljs-built_in,
-.bubble__content .hljs-name,
-.streaming-bubble__content .hljs-keyword,
-.streaming-bubble__content .hljs-selector-tag,
-.streaming-bubble__content .hljs-built_in,
-.streaming-bubble__content .hljs-name {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name) {
   color: var(--accent);
 }
 
-/* Strings, additions */
-.bubble__content .hljs-string,
-.bubble__content .hljs-addition,
-.streaming-bubble__content .hljs-string,
-.streaming-bubble__content .hljs-addition {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-string, .hljs-addition) {
   color: #8fbc6a;
 }
 
-/* Comments, quotes */
-.bubble__content .hljs-comment,
-.bubble__content .hljs-quote,
-.streaming-bubble__content .hljs-comment,
-.streaming-bubble__content .hljs-quote {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-comment, .hljs-quote) {
   color: var(--text-muted);
   font-style: italic;
 }
 
-/* Numbers, literals */
-.bubble__content .hljs-number,
-.bubble__content .hljs-literal,
-.streaming-bubble__content .hljs-number,
-.streaming-bubble__content .hljs-literal {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-number, .hljs-literal) {
   color: #CC9B6D;
 }
 
-/* Types, class titles */
-.bubble__content .hljs-type,
-.bubble__content .hljs-class .hljs-title,
-.bubble__content .hljs-title,
-.streaming-bubble__content .hljs-type,
-.streaming-bubble__content .hljs-class .hljs-title,
-.streaming-bubble__content .hljs-title {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-type, .hljs-title) {
   color: #D4C8B0;
 }
 
-/* Attributes, variables */
-.bubble__content .hljs-attr,
-.bubble__content .hljs-variable,
-.bubble__content .hljs-template-variable,
-.streaming-bubble__content .hljs-attr,
-.streaming-bubble__content .hljs-variable,
-.streaming-bubble__content .hljs-template-variable {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-attr, .hljs-variable, .hljs-template-variable) {
   color: #BDB3A0;
 }
 
-/* Functions */
-.bubble__content .hljs-function,
-.streaming-bubble__content .hljs-function {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-function {
   color: #C8BCA8;
 }
 
-/* Params */
-.bubble__content .hljs-params,
-.streaming-bubble__content .hljs-params {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-params {
   color: #B5AE9C;
 }
 
-/* Regexp, links */
-.bubble__content .hljs-regexp,
-.bubble__content .hljs-link,
-.streaming-bubble__content .hljs-regexp,
-.streaming-bubble__content .hljs-link {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-regexp, .hljs-link) {
   color: #B89878;
 }
 
-/* Meta */
-.bubble__content .hljs-meta,
-.streaming-bubble__content .hljs-meta {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-meta {
   color: var(--text-secondary);
 }
 
-/* Deletion */
-.bubble__content .hljs-deletion,
-.streaming-bubble__content .hljs-deletion {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-deletion {
   color: var(--danger);
 }
 
-/* Symbols, bullets */
-.bubble__content .hljs-symbol,
-.bubble__content .hljs-bullet,
-.streaming-bubble__content .hljs-symbol,
-.streaming-bubble__content .hljs-bullet {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) :is(.hljs-symbol, .hljs-bullet) {
   color: var(--accent);
 }
 
-/* Substitution */
-.bubble__content .hljs-subst,
-.streaming-bubble__content .hljs-subst {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-subst {
   color: #d4d0c8;
 }
 
-/* Sections */
-.bubble__content .hljs-section,
-.streaming-bubble__content .hljs-section {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-section {
   color: var(--accent);
   font-weight: 600;
 }
 
-/* Emphasis / strong */
-.bubble__content .hljs-emphasis,
-.streaming-bubble__content .hljs-emphasis {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-emphasis {
   font-style: italic;
 }
 
-.bubble__content .hljs-strong,
-.streaming-bubble__content .hljs-strong {
+:is(.bubble__content, .streaming-bubble__content, .markdown-body, .response-body) .hljs-strong {
   font-weight: bold;
 }

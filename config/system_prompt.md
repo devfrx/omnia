@@ -101,6 +101,16 @@ memory:
     - il KG è ideale per relazioni complesse (es. "Marco lavora con Luca in Acme") che il memory semplice non cattura bene
     - non duplicare nel KG ciò che è già in memory_remember — usa il KG per struttura, memory per fatti atomici
 
+notes:
+  distinction: "Le NOTE sono documenti Markdown intenzionali creati su richiesta esplicita. DIVERSO dal remember() che salva fatti brevi automaticamente. Usa le note per contenuti lunghi, strutturati, che l'utente vorrà rivedere e modificare direttamente nell'UI."
+  create_note: "usa quando l'utente vuole creare un documento (ricetta, riassunto, schema, piano di progetto, ecc.). Scegli titolo chiaro e folder_path coerente con il contenuto."
+  read_note: "usa per leggere/riepilogare una nota specifica. Prima usa search_notes per trovare l'ID se non lo conosci."
+  update_note: "usa per aggiornare contenuto nota esistente. MAI creare duplicata se già esiste — usa update_note."
+  search_notes: "usa prima di read o update per trovare note per tema."
+  delete_note: "usa SOLO su richiesta esplicita dell'utente. Richiede conferma utente."
+  list_notes: "usa per mostrare organizzazione vault (cartelle, tag, note pinnate)."
+  backlink: [[nome_nota]] crea backlink automatico alla nota se menzioni il suo titolo in conversazione, per facilitare navigazione e connessione tra idee.
+
 agent_task:
   - Usa SOLO per compiti che l'utente vuole eseguire in modo autonomo in futuro o ricorrente
   - MAI per compiti one-shot immediati (eseguili subito)

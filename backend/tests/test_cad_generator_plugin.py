@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -197,8 +196,8 @@ class TestCadGenerate:
         )
 
         assert result.success is True
-        assert result.content_type == "application/vnd.omnia.cad-model+json"
-        payload = json.loads(result.content)
+        assert result.content_type == "application/json"
+        payload = result.content
         assert payload["model_name"] == "test_cube"
         assert payload["export_url"] == "/api/cad/models/test_cube"
         assert payload["format"] == "glb"
@@ -276,7 +275,7 @@ class TestCadGenerate:
         )
 
         assert result.success is True
-        payload = json.loads(result.content)
+        payload = result.content
         # Auto-name is derived from the description, not execution_id
         assert payload["model_name"] == "a_simple_box"
         await plugin.cleanup()
@@ -306,7 +305,7 @@ class TestCadGenerate:
         )
 
         assert result.success is True
-        payload = json.loads(result.content)
+        payload = result.content
         # Slashes and dashes replaced with underscores
         assert "/" not in payload["model_name"]
         assert "-" not in payload["model_name"]

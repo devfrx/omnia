@@ -142,6 +142,19 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             logger.warning("Memory service failed to start: {}", exc)
             await memory_service.close()
 
+    # -- Note service (Phase 13) -------------------------------------------
+    if config.notes.enabled:
+        from backend.services.note_service import NoteService
+
+        note_service = NoteService(config.notes, config.llm.base_url)
+        try:
+            await note_service.initialize()
+            ctx.note_service = note_service
+            logger.info("Note service started")
+        except Exception as exc:
+            logger.warning("Note service failed to start: {}", exc)
+            await note_service.close()
+
     # -- Voice services (Phase 4) ------------------------------------------
     if config.stt.enabled:
         try:
@@ -287,8 +300,14 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         await plugin_manager.shutdown()
     except Exception as exc:
         logger.error("Plugin system shutdown error: {}", exc)
-    await lmstudio_manager.close()
-    await llm_service.close()
+    try:
+        await lmstudio_manager.close()
+    except Exception as exc:
+        logger.error("LMStudio manager shutdown error: {}", exc)
+    try:
+        await llm_service.close()
+    except Exception as exc:
+        logger.error("LLM service shutdown error: {}", exc)
     if ctx.stt_service:
         try:
             await ctx.stt_service.stop()
@@ -309,7 +328,15 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             await ctx.memory_service.close()
         except Exception as exc:
             logger.error("Memory service shutdown error: {}", exc)
-    await engine.dispose()
+    if ctx.note_service:
+        try:
+            await ctx.note_service.close()
+        except Exception as exc:
+            logger.error("Note service shutdown error: {}", exc)
+    try:
+        await engine.dispose()
+    except Exception as exc:
+        logger.error("Engine disposal error: {}", exc)
     logger.info("OMNIA backend stopped")
 
 

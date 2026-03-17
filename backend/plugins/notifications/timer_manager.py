@@ -221,6 +221,7 @@ class TimerManager:
         except asyncio.CancelledError:
             await self._update_status(timer_id, "cancelled")
             self._logger.debug("Timer task '{}' cancelled", timer_id)
+            raise
 
     async def _fire_timer(
         self,

@@ -289,6 +289,12 @@ class MediaControlPlugin(BasePlugin):
                 execution_time_ms=elapsed,
             )
 
+    # -- Private helpers ----------------------------------------------------
+
+    def _volume_step(self) -> int:
+        """Return the configured volume step percentage."""
+        return self.ctx.config.media_control.volume_step
+
     # -- Dependency / health -----------------------------------------------
 
     def check_dependencies(self) -> list[str]:

@@ -850,10 +850,13 @@ class CalendarPlugin(BasePlugin):
 
         # Prune fired reminders older than 24h to prevent memory leak
         cutoff = now_utc - timedelta(hours=24)
-        stale = {
-            key for key in self._fired_reminders
-            if dt_parser.parse(key[1]) < cutoff
-        }
+        stale: set[tuple[uuid.UUID, str]] = set()
+        for key in self._fired_reminders:
+            try:
+                if dt_parser.parse(key[1]) < cutoff:
+                    stale.add(key)
+            except (ValueError, OverflowError):
+                stale.add(key)
         if stale:
             self._fired_reminders -= stale
 

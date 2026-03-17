@@ -181,7 +181,15 @@ async def execute_plugin_tool(request: Request) -> dict[str, Any]:
             detail="Plugin manager not available",
         )
 
-    body = _ExecuteRequest(**(await request.json()))
+    try:
+        raw_body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    try:
+        body = _ExecuteRequest(**raw_body)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request body")
 
     plugin = pm.get_plugin(body.plugin)
     if plugin is None:

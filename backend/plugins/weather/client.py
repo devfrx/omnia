@@ -249,7 +249,7 @@ class WeatherClient:
         Args:
             lat: Latitude.
             lon: Longitude.
-            days: Number of forecast days (1–7).
+            days: Number of forecast days (1–16).
 
         Returns:
             A list of dicts, each with: ``date``, ``temp_max``,

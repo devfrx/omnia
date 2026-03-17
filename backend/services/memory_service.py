@@ -310,6 +310,12 @@ class MemoryService:
         for entry in entries:
             try:
                 vector = await self._embed.encode(entry["content"])
+                if len(vector) != self._config.embedding_dim:
+                    logger.warning(
+                        "Skipping memory {} — embedding dim {} != expected {}",
+                        entry["id"], len(vector), self._config.embedding_dim,
+                    )
+                    continue
                 await self._db.execute(
                     "INSERT INTO memory_vectors (id, embedding) VALUES (?, ?)",
                     (entry["id"], _serialize_f32(vector)),
@@ -633,7 +639,11 @@ class MemoryService:
         db_path = Path(self._config.db_path)
         if not db_path.is_absolute():
             db_path = PROJECT_ROOT / db_path
-        db_size = db_path.stat().st_size if db_path.exists() else 0
+
+        def _stat_size() -> int:
+            return db_path.stat().st_size if db_path.exists() else 0
+
+        db_size = await asyncio.to_thread(_stat_size)
 
         return {
             "total": total,

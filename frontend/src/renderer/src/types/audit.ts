@@ -17,6 +17,7 @@ export interface AuditConfirmationEntry {
 /** Paginated response from GET /api/audit/confirmations. */
 export interface AuditConfirmationsResponse {
   entries: AuditConfirmationEntry[]
+  total: number
   count: number
   offset: number
   limit: number

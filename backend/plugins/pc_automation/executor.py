@@ -97,39 +97,45 @@ def _tokenize_command(command: str) -> list[str]:
 
     Backslash is NOT treated as an escape character (Windows semantics).
     Surrounding double quotes are stripped from each token.  Trailing
-    backslashes are stripped from tokens longer than one character to
-    work around the cmd.exe ``\\"`` trailing-backslash bug where a
-    quoted destination path ends with a backslash, e.g.::
+    backslashes are stripped **only from tokens that were originally
+    quoted** to work around the cmd.exe ``\\"`` trailing-backslash
+    bug where a quoted destination path ends with a backslash, e.g.::
 
         move "C:\\src\\a.jpg" "C:\\dest\\"
+
+    Unquoted tokens like ``C:\\`` are preserved so that root drive
+    references keep their trailing backslash.
 
     Args:
         command: The raw command string (e.g. from the LLM).
 
     Returns:
         List of string tokens with quotes removed and trailing backslashes
-        stripped from multi-character tokens.
+        stripped from quoted multi-character tokens.
     """
     tokens: list[str] = []
     current: list[str] = []
     in_quotes = False
+    was_quoted = False
 
     for ch in command:
         if ch == '"':
             in_quotes = not in_quotes
+            was_quoted = True
         elif ch == ' ' and not in_quotes:
             if current:
                 token = "".join(current)
-                if len(token) > 1:
+                if was_quoted and len(token) > 1:
                     token = token.rstrip("\\")
                 tokens.append(token)
                 current = []
+                was_quoted = False
         else:
             current.append(ch)
 
     if current:
         token = "".join(current)
-        if len(token) > 1:
+        if was_quoted and len(token) > 1:
             token = token.rstrip("\\")
         tokens.append(token)
 
@@ -268,6 +274,7 @@ async def exec_close_app(app_name: str) -> str:
     """Close an application by name.
 
     Uses taskkill to terminate the process gracefully.
+    URI-based apps (e.g. ms-settings:) cannot be closed via taskkill.
     """
     valid, msg, primary_exe = validate_app_name(app_name)
     if not valid:
@@ -275,6 +282,13 @@ async def exec_close_app(app_name: str) -> str:
 
     # taskkill needs just the base exe name
     executable = primary_exe or app_name
+
+    # URI protocols (e.g. ms-settings:) cannot be closed via taskkill
+    if ":" in executable and not executable.endswith(".exe"):
+        raise ValueError(
+            f"Application '{app_name}' was opened via URI protocol "
+            f"and cannot be closed programmatically"
+        )
 
     try:
         output = await safe_subprocess("taskkill", ["/IM", executable, "/F"], timeout=10)

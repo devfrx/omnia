@@ -41,6 +41,14 @@ import type {
   DeleteRelationsPayload,
   KGGraph
 } from '../types/mcpMemory'
+import type {
+  Note,
+  NoteListResponse,
+  NoteSearchResponse,
+  NoteFolder,
+  CreateNoteRequest,
+  UpdateNoteRequest
+} from '../types/notes'
 
 /** Backend host (without /api), configurable via VITE_API_BASE_URL env var. */
 const BACKEND_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -505,6 +513,80 @@ export const api = {
     request<unknown>('/mcp/memory/observations', {
       method: 'DELETE',
       body: JSON.stringify(payload),
+    }),
+
+  // -- Notes ----------------------------------------------------------------
+
+  /** Fetch notes with optional filters. */
+  getNotes: (params?: {
+    folder?: string
+    tags?: string
+    pinned?: boolean
+    q?: string
+    limit?: number
+    offset?: number
+  }): Promise<NoteListResponse> => {
+    const qs = new URLSearchParams()
+    if (params?.folder) qs.set('folder', params.folder)
+    if (params?.tags) qs.set('tags', params.tags)
+    if (params?.pinned !== undefined) qs.set('pinned', String(params.pinned))
+    if (params?.q) qs.set('q', params.q)
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit))
+    if (params?.offset !== undefined) qs.set('offset', String(params.offset))
+    const q = qs.toString()
+    return request<NoteListResponse>(`/notes${q ? `?${q}` : ''}`)
+  },
+
+  /** Fetch a single note by ID. */
+  getNote: (id: string): Promise<Note> =>
+    request<Note>(`/notes/${encodeURIComponent(id)}`),
+
+  /** Create a new note. */
+  createNote: (data: CreateNoteRequest): Promise<Note> =>
+    request<Note>('/notes', { method: 'POST', body: JSON.stringify(data) }),
+
+  /** Update an existing note. */
+  updateNote: (id: string, data: UpdateNoteRequest): Promise<Note> =>
+    request<Note>(`/notes/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
+  /** Delete a note by ID. */
+  deleteNote: (id: string): Promise<{ deleted: boolean }> =>
+    request<{ deleted: boolean }>(`/notes/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    }),
+
+  /** Full-text search over notes. */
+  searchNotes: (
+    query: string,
+    folder?: string,
+    tags?: string[],
+    limit?: number
+  ): Promise<NoteSearchResponse> =>
+    request<NoteSearchResponse>('/notes/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        query,
+        ...(folder ? { folder } : {}),
+        ...(tags ? { tags } : {}),
+        ...(limit ? { limit } : {})
+      })
+    }),
+
+  /** Get all note folders with counts. */
+  getNoteFolders: (): Promise<NoteFolder[]> =>
+    request<NoteFolder[]>('/notes/folders'),
+
+  /** Delete a folder. mode = 'move' (notes → root) or 'delete'. */
+  deleteFolder: (
+    folderPath: string,
+    mode: 'move' | 'delete' = 'move'
+  ): Promise<{ affected: number; mode: string }> =>
+    request<{ affected: number; mode: string }>('/notes/folders/delete', {
+      method: 'POST',
+      body: JSON.stringify({ folder_path: folderPath, mode })
     }),
 
 }

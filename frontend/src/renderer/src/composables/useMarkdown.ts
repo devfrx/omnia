@@ -70,6 +70,42 @@ function capitalizeFirst(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+/**
+ * Wikilink plugin — transforms [[Target]] and [[Target|display]]
+ * into <a class="wikilink" data-target="Target">display</a>.
+ */
+function wikilinkPlugin(mdi: MarkdownIt): void {
+  mdi.inline.ruler.push('wikilink', (state, silent) => {
+    const src = state.src.slice(state.pos)
+    if (!src.startsWith('[[')) return false
+
+    const closeIdx = src.indexOf(']]')
+    if (closeIdx < 0) return false
+
+    const inner = src.slice(2, closeIdx)
+    if (!inner) return false
+
+    if (!silent) {
+      const pipeIdx = inner.indexOf('|')
+      const target = (pipeIdx >= 0 ? inner.slice(0, pipeIdx) : inner).trim()
+      const display = (pipeIdx >= 0 ? inner.slice(pipeIdx + 1) : inner).trim()
+
+      const tokenOpen = state.push('html_inline', '', 0)
+      tokenOpen.content =
+        `<a class="wikilink" data-target="${escapeHtml(target)}">`
+
+      const tokenText = state.push('html_inline', '', 0)
+      tokenText.content = escapeHtml(display)
+
+      const tokenClose = state.push('html_inline', '', 0)
+      tokenClose.content = '</a>'
+    }
+
+    state.pos += closeIdx + 2
+    return true
+  })
+}
+
 /** Module-level singleton — avoids re-creating on every composable call. */
 const md: MarkdownIt = new MarkdownIt({
   html: false,
@@ -91,7 +127,7 @@ const md: MarkdownIt = new MarkdownIt({
       }
     }
 
-    const langLabel = normalizedLang ? capitalizeFirst(normalizedLang) : 'Codice'
+    const langLabel = normalizedLang ? escapeHtml(capitalizeFirst(normalizedLang)) : 'Codice'
     const langClass = (normalizedLang || 'plaintext').replace(/[^a-zA-Z0-9_-]/g, '')
     const dataCode = encodeBase64(str)
 
@@ -107,6 +143,8 @@ const md: MarkdownIt = new MarkdownIt({
     `</div>`
   }
 })
+
+md.use(wikilinkPlugin)
 
 export function renderMarkdown(raw: string): string {
   if (!raw) return ''

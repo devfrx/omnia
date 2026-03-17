@@ -1,0 +1,40 @@
+<script setup lang="ts">
+/**
+ * NotesPageView — Full-page three-column note editor.
+ *
+ * Layout: NotesBrowser (280px) | NoteEditor (flex) | NotesBacklinks (240px, conditional)
+ */
+import NotesBrowser from '../components/notes/NotesBrowser.vue'
+import NoteEditor from '../components/notes/NoteEditor.vue'
+import NotesBacklinks from '../components/notes/NotesBacklinks.vue'
+import { useNotesStore } from '../stores/notes'
+import { computed, onMounted } from 'vue'
+
+const store = useNotesStore()
+const hasCurrentNote = computed(() => store.currentNote !== null)
+
+onMounted(() => {
+    store.loadNotes()
+    store.loadFolders()
+})
+</script>
+
+<template>
+    <div class="notes-page">
+        <NotesBrowser />
+        <NoteEditor />
+        <NotesBacklinks v-if="hasCurrentNote" />
+    </div>
+</template>
+
+<style scoped>
+.notes-page {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    background: var(--surface-0);
+    color: var(--text-primary);
+}
+</style>

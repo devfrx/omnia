@@ -101,6 +101,9 @@ class McpClientPlugin(BasePlugin):
     # typical context windows while covering most real-world responses.
     _MCP_MAX_RESULT_CHARS: int = 20_000
 
+    # Maximum length for a tool name (from plugin_models.TOOL_NAME_PATTERN).
+    _MAX_TOOL_NAME_LEN: int = 64
+
     def get_tools(self) -> list[ToolDefinition]:
         """Aggregate tool definitions from all connected MCP sessions."""
         tools: list[ToolDefinition] = []
@@ -109,15 +112,29 @@ class McpClientPlugin(BasePlugin):
                 continue
             safe_server = re.sub(r"[^a-zA-Z0-9_-]", "_", server_name)
             for tool in session.get_tools():
-                full_desc = f"[{server_name}] {tool.description}"
-                tools.append(
-                    ToolDefinition(
-                        name=f"mcp_{safe_server}_{tool.name}",
-                        description=full_desc[:512],
-                        parameters=tool.parameters,
-                        max_result_chars=self._MCP_MAX_RESULT_CHARS,
+                full_name = f"mcp_{safe_server}_{tool.name}"
+                # Truncate to 64-char limit enforced by ToolDefinition
+                if len(full_name) > self._MAX_TOOL_NAME_LEN:
+                    self.logger.warning(
+                        "MCP tool name '{}' exceeds {} chars, truncating",
+                        full_name, self._MAX_TOOL_NAME_LEN,
                     )
-                )
+                    full_name = full_name[:self._MAX_TOOL_NAME_LEN]
+                full_desc = f"[{server_name}] {tool.description}"
+                try:
+                    tools.append(
+                        ToolDefinition(
+                            name=full_name,
+                            description=full_desc[:512],
+                            parameters=tool.parameters,
+                            max_result_chars=self._MCP_MAX_RESULT_CHARS,
+                        )
+                    )
+                except ValueError as exc:
+                    self.logger.warning(
+                        "Skipping invalid MCP tool '{}': {}",
+                        full_name, exc,
+                    )
         return tools
 
     async def execute_tool(

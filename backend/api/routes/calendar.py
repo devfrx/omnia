@@ -7,7 +7,7 @@ from datetime import datetime, time, timedelta, timezone
 import sqlalchemy as sa
 from dateutil import parser as dt_parser
 from dateutil.rrule import rrulestr
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from loguru import logger
 from sqlmodel import select
 from zoneinfo import ZoneInfo
@@ -116,7 +116,7 @@ async def list_events(
     request: Request,
     start_date: str | None = None,
     end_date: str | None = None,
-    max_results: int = 20,
+    max_results: int = Query(20, ge=1, le=500),
 ) -> list[dict]:
     """List calendar events within a date range.
 
@@ -216,7 +216,7 @@ async def today_summary(request: Request) -> dict:
 
 
 @router.get("/upcoming")
-async def upcoming_events(request: Request, limit: int = 5) -> list[dict]:
+async def upcoming_events(request: Request, limit: int = Query(5, ge=1, le=100)) -> list[dict]:
     """Return the next N upcoming events from now.
 
     Args:
@@ -276,7 +276,10 @@ async def create_event(request: Request) -> dict:
     """
     ctx: AppContext = request.app.state.context
     tz = _get_tz(ctx)
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
 
     title = body.get("title")
     if not title:
@@ -343,7 +346,10 @@ async def update_event(request: Request, event_id: str) -> dict:
 
     ctx: AppContext = request.app.state.context
     tz = _get_tz(ctx)
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
 
     try:
         eid = _uuid.UUID(event_id)

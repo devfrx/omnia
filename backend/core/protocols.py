@@ -34,6 +34,11 @@ if TYPE_CHECKING:
 class LLMServiceProtocol(Protocol):
     """Protocol for language-model services."""
 
+    @property
+    def supports_vision(self) -> bool:
+        """Whether the active model supports multimodal (vision) input."""
+        ...
+
     def build_messages(
         self,
         user_content: str,
@@ -387,6 +392,10 @@ class MemoryServiceProtocol(Protocol):
         """Return memory statistics."""
         ...
 
+    async def delete_all(self) -> int:
+        """Delete every stored memory. Returns count deleted."""
+        ...
+
     async def delete_by_scope(self, scope: str) -> int:
         """Delete all memories of a given scope. Returns count deleted."""
         ...
@@ -394,6 +403,68 @@ class MemoryServiceProtocol(Protocol):
     async def close(self) -> None:
         """Shut down the memory service."""
         ...
+
+
+# ---------------------------------------------------------------------------
+# Note service
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class NoteServiceProtocol(Protocol):
+    """Protocol for the Note Service (Obsidian-like note vault)."""
+
+    async def initialize(self) -> None: ...
+
+    async def create(
+        self,
+        title: str,
+        content: str,
+        folder_path: str = "",
+        tags: list[str] | None = None,
+    ) -> Any: ...
+
+    async def get(self, note_id: str) -> Any: ...
+
+    async def update(
+        self,
+        note_id: str,
+        *,
+        title: str | None = None,
+        content: str | None = None,
+        folder_path: str | None = None,
+        tags: list[str] | None = None,
+        pinned: bool | None = None,
+    ) -> Any: ...
+
+    async def delete(self, note_id: str) -> bool: ...
+
+    async def search(
+        self,
+        query: str,
+        folder: str | None = None,
+        tags: list[str] | None = None,
+        limit: int = 10,
+    ) -> list[Any]: ...
+
+    async def list(
+        self,
+        folder: str | None = None,
+        tags: list[str] | None = None,
+        pinned_only: bool = False,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[Any], int]: ...
+
+    async def get_folders(self) -> list[dict[str, Any]]: ...
+
+    async def delete_folder(
+        self, folder_path: str, *, mode: str = "move",
+    ) -> int:
+        """Delete a folder, moving or removing its notes."""
+        ...
+
+    async def close(self) -> None: ...
 
 
 # ---------------------------------------------------------------------------
@@ -419,4 +490,9 @@ class WSConnectionManagerProtocol(Protocol):
 
     async def send_to(self, session_id: str, event: dict[str, Any]) -> None:
         """Send an event to a specific session."""
+        ...
+
+    @property
+    def connection_count(self) -> int:
+        """Number of active WebSocket connections."""
         ...

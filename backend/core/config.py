@@ -464,7 +464,40 @@ class MemoryConfig(BaseSettings):
     """TTL for session-scoped memories. Expired entries are ignored."""
 
     auto_cleanup_days: int = 90
-    """Remove memories not accessed for N days (0 = disabled)."""
+    """Remove memories older than N days based on creation date (0 = disabled)."""
+
+
+class NotesConfig(BaseSettings):
+    """Note system (Obsidian-like vault) configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="OMNIA_NOTES__")
+
+    enabled: bool = False
+    """Enable the Note System. False by default (opt-in)."""
+
+    db_path: str = "data/notes.db"
+    """Path to the dedicated notes SQLite file (separate from omnia.db)."""
+
+    embedding_enabled: bool = True
+    """Enable semantic search via sqlite-vec embeddings."""
+
+    embedding_model: str = "text-embedding-mxbai-embed-large-v1"
+    """Embedding model name for LM Studio/Ollama /v1/embeddings."""
+
+    embedding_dim: int = 1024
+    """Vector dimensions of the chosen embedding model."""
+
+    embedding_fallback: bool = True
+    """Fall back to fastembed (CPU) when LLM API is unavailable."""
+
+    max_content_chars_llm: int = 8000
+    """Max note content chars included in LLM tool responses."""
+
+    semantic_threshold: float = 0.70
+    """Minimum cosine similarity for semantic search results."""
+
+    max_search_results: int = 20
+    """Maximum results returned from search."""
 
 
 _MCP_SERVER_NAME_RE = re.compile(r"^[a-z][a-z0-9_]{0,29}$")
@@ -604,6 +637,7 @@ class OmniaConfig(BaseSettings):
     file_search: FileSearchConfig = Field(default_factory=FileSearchConfig)
     news: NewsConfig = Field(default_factory=NewsConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
+    notes: NotesConfig = Field(default_factory=NotesConfig)
     mcp: McpConfig = Field(default_factory=McpConfig)
     trellis: TrellisServiceConfig = Field(default_factory=TrellisServiceConfig)
 

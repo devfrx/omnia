@@ -219,7 +219,7 @@ class EmbeddingClient:
         """Encode a single text, falling back to CPU if the API is unreachable."""
         try:
             return await self._openai.encode(text)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+        except (httpx.HTTPError, ValueError, KeyError) as exc:
             logger.debug("OpenAI embedding failed: {}", exc)
             return await self._fallback_encode(text)
 
@@ -227,7 +227,7 @@ class EmbeddingClient:
         """Encode a batch of texts, falling back to CPU if the API is unreachable."""
         try:
             return await self._openai.encode_batch(texts)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+        except (httpx.HTTPError, ValueError, KeyError) as exc:
             logger.debug("OpenAI embedding batch failed: {}", exc)
             return await self._fallback_encode_batch(texts)
 

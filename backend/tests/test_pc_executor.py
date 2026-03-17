@@ -134,8 +134,9 @@ class TestTokenizeCommand:
         assert result == ["move", "C:\\src\\file.jpg", "C:\\dest"]
 
     def test_unquoted_trailing_backslash(self):
+        """Unquoted trailing backslash is preserved (root drive paths)."""
         result = _tokenize_command("mkdir C:\\Users\\Desktop\\folder\\")
-        assert result == ["mkdir", "C:\\Users\\Desktop\\folder"]
+        assert result == ["mkdir", "C:\\Users\\Desktop\\folder\\"]
 
     def test_mixed_quoted_unquoted(self):
         result = _tokenize_command('move file.txt "C:\\My Folder\\"')

@@ -101,9 +101,7 @@ class NotificationsPlugin(BasePlugin):
         )
 
     async def on_app_shutdown(self) -> None:
-        """Shut down the timer manager."""
-        if self._timer_manager is not None:
-            await self._timer_manager.shutdown()
+        """Signal shutdown — actual cleanup happens in cleanup()."""
 
     # -- Tool definitions --------------------------------------------------
 

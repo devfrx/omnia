@@ -70,6 +70,7 @@ plugins:
     - file_search
     - news
     - memory
+    - notes
     - mcp_client
     - cad_generator
     # - home_automation  # not implemented yet
@@ -186,6 +187,22 @@ memory:
   context_max_chars: 2000
   session_ttl_hours: 24
   auto_cleanup_days: 90
+
+
+# ──────────────────────────────────────────────────
+# Phase 13 — Note System
+# ──────────────────────────────────────────────────
+
+notes:
+  enabled: true
+  # db_path: "data/notes.db"
+  embedding_enabled: true
+  embedding_model: "text-embedding-mxbai-embed-large-v1"
+  embedding_dim: 1024
+  embedding_fallback: true
+  max_content_chars_llm: 8000
+  semantic_threshold: 0.70
+  max_search_results: 20
 
 
 # ──────────────────────────────────────────────────

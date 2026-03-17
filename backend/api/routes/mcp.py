@@ -45,7 +45,7 @@ async def list_mcp_servers(request: Request) -> dict[str, Any]:
 
     plugin = _get_mcp_plugin(ctx)
     statuses: dict[str, str] = {}
-    if plugin and hasattr(plugin, "get_status"):
+    if plugin:
         statuses = await plugin.get_status()
 
     servers = []
@@ -85,7 +85,7 @@ async def get_mcp_server(
 
     plugin = _get_mcp_plugin(ctx)
     statuses: dict[str, str] = {}
-    if plugin and hasattr(plugin, "get_status"):
+    if plugin:
         statuses = await plugin.get_status()
 
     tools: list[dict[str, str]] = []

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
+from loguru import logger
 from pydantic import BaseModel
 
 from backend.core.context import AppContext
@@ -49,8 +50,8 @@ async def set_tool_confirmations(
             await ctx.preferences_service.save_preference(
                 "pc_automation.confirmations_enabled", body.enabled,
             )
-        except Exception:
-            pass  # Non-critical — best effort
+        except Exception as exc:
+            logger.warning("Failed to persist tool-confirmations preference: {}", exc)
     return ToolConfirmationsResponse(
         confirmations_enabled=ctx.config.pc_automation.confirmations_enabled,
     )
@@ -101,8 +102,8 @@ async def set_system_prompt(
             await ctx.preferences_service.save_preference(
                 "llm.system_prompt_enabled", body.enabled,
             )
-        except Exception:
-            pass  # Non-critical — best effort
+        except Exception as exc:
+            logger.warning("Failed to persist system-prompt preference: {}", exc)
     return SystemPromptResponse(
         system_prompt_enabled=ctx.config.llm.system_prompt_enabled,
     )
@@ -149,8 +150,8 @@ async def set_tools(
             await ctx.preferences_service.save_preference(
                 "llm.tools_enabled", body.enabled,
             )
-        except Exception:
-            pass  # Non-critical — best effort
+        except Exception as exc:
+            logger.warning("Failed to persist tools preference: {}", exc)
     return ToolsResponse(
         tools_enabled=ctx.config.llm.tools_enabled,
     )

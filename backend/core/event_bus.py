@@ -62,6 +62,10 @@ class OmniaEvent(StrEnum):
     # -- MCP Client (Phase 11) --
     MCP_SERVER_CONNECTED = "mcp.server.connected"
     MCP_SERVER_DISCONNECTED = "mcp.server.disconnected"
+    # -- Notes (Phase 13) --
+    NOTE_CREATED = "note.created"
+    NOTE_UPDATED = "note.updated"
+    NOTE_DELETED = "note.deleted"
 
 # Type alias for async handlers
 AsyncHandler = Callable[..., Coroutine[Any, Any, None]]
@@ -115,12 +119,19 @@ class EventBus:
     ) -> None:
         """Remove *handler* from *event_name*.
 
+        Also cleans up circuit-breaker state for the handler to prevent
+        memory leaks, especially for ``once()`` wrappers that create
+        a fresh closure on every call.
+
         Args:
             event_name: The event to stop listening for.
             handler: The handler previously registered via ``subscribe``.
         """
         try:
             self._handlers[event_name].remove(handler)
+            # Clean up circuit-breaker state to prevent memory leaks.
+            self._handler_failures.pop(handler, None)
+            self._disabled_handlers.pop(handler, None)
             logger.debug(
                 "Unsubscribed {} from '{}'",
                 handler.__qualname__,
