@@ -514,6 +514,45 @@ class McpServerConfig(BaseModel):
         return self
 
 
+class TrellisServiceConfig(BaseSettings):
+    """TRELLIS 3D generation microservice configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="OMNIA_TRELLIS__")
+
+    enabled: bool = False
+    """Enable the cad_generator plugin. Requires the TRELLIS microservice installed."""
+
+    service_url: str = "http://localhost:8090"
+    """Base URL of the TRELLIS microservice (separate Python 3.10-3.12 process)."""
+
+    request_timeout_s: int = 600
+    """Timeout for 3D generation in seconds.
+    First run downloads model weights (~60s) + two sampling passes (~180s).
+    Subsequent runs still need ~180s for inference. 600s gives ample margin."""
+
+    max_model_size_mb: int = 100
+    """Maximum accepted size for generated GLB files."""
+
+    model_output_dir: str = "data/3d_models"
+    """Local directory for generated GLB files (relative to PROJECT_ROOT)."""
+
+    auto_vram_swap: bool = True
+    """If True, automatically unload the LLM from VRAM before 3D generation
+    and reload it after. Required on GPUs with < 20GB VRAM."""
+
+    trellis_model: str = "JeffreyXiang/TRELLIS-text-large"
+    """TRELLIS model to load in the microservice (full HuggingFace repo ID).
+    JeffreyXiang/TRELLIS-text-* = text-to-3D (accepts text prompts from chat).
+    JeffreyXiang/TRELLIS-image-* = image-to-3D (requires an input image)."""
+
+    trellis_dir: str = ""
+    """Path to the TRELLIS-for-windows installation directory.
+    Used by start-trellis.ps1. Empty = auto-detect (../TRELLIS-for-windows)."""
+
+    seed: int = -1
+    """Seed for generation. -1 = random."""
+
+
 class McpConfig(BaseSettings):
     """MCP client configuration."""
 
@@ -566,6 +605,7 @@ class OmniaConfig(BaseSettings):
     news: NewsConfig = Field(default_factory=NewsConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     mcp: McpConfig = Field(default_factory=McpConfig)
+    trellis: TrellisServiceConfig = Field(default_factory=TrellisServiceConfig)
 
     @model_validator(mode="before")
     @classmethod

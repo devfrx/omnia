@@ -7,13 +7,15 @@
  * and a subtle glow border.  Markdown is rendered via `useMarkdown`.
  * Supports collapsible thinking content and image attachments.
  */
-import { computed, ref, watch, onUnmounted } from 'vue'
+import { computed, ref, watch, onUnmounted, defineAsyncComponent } from 'vue'
 
 import { renderMarkdown } from '../../composables/useMarkdown'
 import { useCodeBlocks } from '../../composables/useCodeBlocks'
 import ThinkingSection from './ThinkingSection.vue'
 import ToolCallSection from './ToolCallSection.vue'
-import type { ChatMessage } from '../../types/chat'
+import type { ChatMessage, CadModelPayload } from '../../types/chat'
+
+const CADViewer = defineAsyncComponent(() => import('./CADViewer.vue'))
 
 const props = defineProps<{
   /** The message to render. */
@@ -51,6 +53,21 @@ const formattedTime = computed(() => {
 const bubbleClass = computed(() => `bubble--${props.message.role}`)
 
 const { handleCodeBlockClick } = useCodeBlocks()
+
+/**
+ * If this is a tool message with a CAD model payload, return the parsed
+ * payload — otherwise null.  Used to render CADViewer inline.
+ */
+const cadPayload = computed((): CadModelPayload | null => {
+  if (props.message.role !== 'tool') return null
+  try {
+    const p = JSON.parse(props.message.content)
+    if (typeof p.model_name === 'string' && typeof p.export_url === 'string') {
+      return p as CadModelPayload
+    }
+  } catch { /* not JSON */ }
+  return null
+})
 
 /** Open full-size image overlay. */
 function openOverlay(url: string, alt: string): void {
@@ -101,9 +118,12 @@ onUnmounted(() => {
       <!-- Tool calls section (assistant only) -->
       <ToolCallSection v-if="message.tool_calls?.length" :tool-calls="message.tool_calls ?? []" />
 
-      <!-- Message content -->
+      <!-- CAD model viewer (tool message with cad-model payload) -->
+      <CADViewer v-if="cadPayload" :model-url="cadPayload.export_url" :model-name="cadPayload.model_name" />
+
+      <!-- Message content (hide raw JSON for CAD tool messages) -->
       <!-- eslint-disable-next-line vue/no-v-html — content is sanitised by markdown-it -->
-      <div class="bubble__content" v-html="htmlContent" @click="handleCodeBlockClick" />
+      <div v-if="!cadPayload" class="bubble__content" v-html="htmlContent" @click="handleCodeBlockClick" />
       <span class="bubble__time">{{ formattedTime }}</span>
     </div>
 
@@ -176,7 +196,7 @@ onUnmounted(() => {
 
 /* Tool result bubble */
 .bubble--tool {
-  max-width: 78%;
+  max-width: 82%;
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -186,6 +206,16 @@ onUnmounted(() => {
   padding: var(--space-3) var(--space-4);
   line-height: var(--leading-relaxed);
   animation: slideInLeft 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* When tool bubble contains a CAD viewer, remove the mono/small styling
+   so the viewer renders at full width without text constraints */
+.bubble--tool:has(.cad-viewer) {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
 }
 
 /* Attachments */

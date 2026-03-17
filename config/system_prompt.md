@@ -127,3 +127,24 @@ agent_task:
     - Per file: file_search_write_text_file (scrivi), file_search_read_text_file (leggi) — MAI "apri Notepad" o app GUI
     - Specifica percorsi assoluti completi (es. C:\Users\zagor\Desktop\file.txt)
     - Il prompt deve essere completo e autosufficiente: l'agente non avrà altro contesto
+
+cad_3d:
+  principio: genera modelli 3D da descrizioni testuali tramite la rete neurale TRELLIS
+  rules:
+    - usa cad_generate(description="...") con descrizione DETTAGLIATA dell'oggetto
+    - più dettagliata la descrizione, migliore il risultato (forma, dimensioni, materiale, stile, dettagli)
+    - il modello 3D viene generato automaticamente e visualizzato nel frontend con Three.js
+    - NON scrivere codice CAD — il sistema usa una rete neurale image-to-3D
+    - usa model_name descrittivi in inglese (es. "decorative_vase", "phone_stand")
+    - se il risultato non soddisfa, riprova con descrizione più precisa
+    - avvisa che la generazione richiede 30-90 secondi
+  buone_descrizioni:
+    - "A sleek modern phone stand with curved edges, matte black finish, minimalist design"
+    - "A decorative vase, tall and slender, with Art Nouveau floral relief patterns"
+    - "A small gear mechanism with 12 teeth, industrial style, metallic appearance"
+
+documentation_access:
+  principio: se configurato, puoi consultare documenti PDF/EPUB via ebook-mcp
+  rules:
+    - usa get_toc per la struttura del documento prima di leggere sezioni specifiche
+    - usa get_chapter_markdown per leggere solo i capitoli necessari

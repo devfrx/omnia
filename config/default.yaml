@@ -71,6 +71,7 @@ plugins:
     - news
     - memory
     - mcp_client
+    - cad_generator
     # - home_automation  # not implemented yet
 
 home_assistant:
@@ -280,5 +281,41 @@ mcp:
   #   transport: sse
   #   url: "http://localhost:5678/mcp/sse"
   #   enabled: true
+  #
+  # ebook-mcp — PDF/EPUB reader for technical docs (Phase 12)
+  # Installa con: uvx ebook-mcp --version
+  # Posiziona i PDF/EPUB in models/docs/
+  # - name: 3d_docs
+  #   transport: stdio
+  #   command: ["uvx", "ebook-mcp", "--folder", "C:/Users/Jays/Desktop/omnia/omnia/models/docs"]
+  #   enabled: true
 
 
+# ──────────────────────────────────────────────────
+# Phase 12 — Generazione 3D Neurale (TRELLIS)
+# ──────────────────────────────────────────────────
+trellis:
+  enabled: true
+  # Installazione e avvio:
+  #   1. git clone --recurse-submodules https://github.com/devfrx/TRELLIS-for-windows.git
+  #   2. .\scripts\start-trellis.ps1 -Install    (una tantum, ~30min)
+  #   3. .\scripts\start-trellis.ps1              (avvia il microservizio)
+  #   Oppure con start-dev: .\scripts\start-dev.ps1 -Trellis
+  trellis_dir: ""  # vuoto = auto-detect (../TRELLIS-for-windows)
+  service_url: "http://localhost:8090"
+  request_timeout_s: 600
+  max_model_size_mb: 10000
+  model_output_dir: "data/3d_models"
+  auto_vram_swap: true
+  trellis_model: "JeffreyXiang/TRELLIS-text-large"
+  # Modelli disponibili (da HuggingFace JeffreyXiang/):
+  # - JeffreyXiang/TRELLIS-text-large (1.1B) — text-to-3D, accetta prompt testuali (raccomandato per chat)
+  # - JeffreyXiang/TRELLIS-text-base (342M) — text-to-3D, veloce, ~8GB VRAM
+  # - JeffreyXiang/TRELLIS-image-large (1.2B) — image-to-3D, qualità migliore ma richiede immagine di input
+  # Il tipo (text/image) è determinato automaticamente dal nome modello.
+  # I modelli TRELLIS-text-* funzionano direttamente dalla chat (prompt testuali).
+  # I modelli TRELLIS-image-* richiedono un'immagine di input.
+  seed: -1
+
+# In plugins.enabled, aggiungere (commentato per default-off):
+#   - cad_generator  # abilitare con trellis.enabled: true

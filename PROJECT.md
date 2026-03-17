@@ -3069,17 +3069,17 @@ Nessun file modificato nei layer esistenti: `app.py`, `protocols.py`, `context.p
 > 2. **Generazione 3D** — TRELLIS microservizio (Python 3.10-3.12 separato) + plugin
 >    `cad_generator` (HTTP client) + route proxy `/api/cad/` + viewer Three.js (GLTFLoader).
 
-- [ ] 12.1 — Documentazione MCP (`ebook-mcp`) — config-only
-- [ ] 12.2 — `TrellisServiceConfig` in `config.py` + `default.yaml`
-- [ ] 12.3 — TRELLIS Microservizio (`trellis_server/`)
-- [ ] 12.4 — `TrellisClient` (`backend/plugins/cad_generator/client.py`)
-- [ ] 12.5 — Orchestrazione VRAM (unload/reload LLM automatico)
-- [ ] 12.6 — `CadGeneratorPlugin` (1 tool primario: `cad_generate`)
-- [ ] 12.7 — REST proxy `backend/api/routes/cad.py` (`/api/cad/`)
-- [ ] 12.8 — Frontend: `CADViewer.vue` (Three.js + GLTFLoader)
-- [ ] 12.9 — Frontend: estensione `ToolExecutionIndicator.vue` + `types/chat.ts`
-- [ ] 12.10 — System prompt update (`config/system_prompt.md`)
-- [ ] 12.11 — Test suite (3+ file, 25+ test case)
+- [x] 12.1 — Documentazione MCP (`ebook-mcp`) — config-only
+- [x] 12.2 — `TrellisServiceConfig` in `config.py` + `default.yaml`
+- [x] 12.3 — TRELLIS Microservizio (`trellis_server/`)
+- [x] 12.4 — `TrellisClient` (`backend/plugins/cad_generator/client.py`)
+- [x] 12.5 — Orchestrazione VRAM (unload/reload LLM automatico)
+- [x] 12.6 — `CadGeneratorPlugin` (1 tool primario: `cad_generate`)
+- [x] 12.7 — REST proxy `backend/api/routes/cad.py` (`/api/cad/`)
+- [x] 12.8 — Frontend: `CADViewer.vue` (Three.js + GLTFLoader)
+- [x] 12.9 — Frontend: estensione `ToolExecutionIndicator.vue` + `types/chat.ts`
+- [x] 12.10 — System prompt update (`config/system_prompt.md`)
+- [x] 12.11 — Test suite (3+ file, 25+ test case)
 
 ---
 

@@ -26,6 +26,7 @@
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.1",
     "pinia": "^3.0.4",
+    "three": "^0.183.2",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
@@ -35,6 +36,7 @@
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.19.1",
+    "@types/three": "^0.183.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",

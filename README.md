@@ -80,7 +80,9 @@ models/           # AI model files (gitignored)
   stt/            # faster-whisper (auto-cached da HuggingFace)
   tts/            # Piper voice files (.onnx + .json)
   llm/            # LLM model files
+trellis_server/   # TRELLIS 3D microservice wrapper (server.py)
 scripts/          # Setup e dev scripts
+docs/             # Guide e documentazione tecnica
 ```
 
 ## Services
@@ -91,6 +93,82 @@ scripts/          # Setup e dev scripts
 | Frontend | `localhost:5173` | Vite dev server |
 | LM Studio | `localhost:1234` | LLM provider (default) |
 | Ollama | `localhost:11434` | LLM provider (alternativo) |
+| TRELLIS 3D | `localhost:8090` | Generazione 3D neurale (opzionale) |
+
+## TRELLIS — Generazione 3D Neurale (Opzionale)
+
+OMNIA integra [TRELLIS](https://github.com/microsoft/TRELLIS) (Microsoft Research)
+per generare modelli 3D `.glb` da descrizioni in linguaggio naturale, visualizzabili
+inline nella chat con un viewer Three.js interattivo.
+
+### Setup rapido
+
+```powershell
+# 1. Clone il fork Windows (una sola volta)
+#    --recurse-submodules è OBBLIGATORIO (submodule flexicubes)
+cd C:\Users\Jays\Desktop\omnia
+git clone --recurse-submodules https://github.com/devfrx/TRELLIS-for-windows.git
+
+# 2. Installa + avvia
+cd omnia
+.\scripts\start-trellis.ps1 -Install
+```
+
+### Avvio successivo
+
+```powershell
+.\scripts\start-trellis.ps1
+```
+
+### Requisiti aggiuntivi
+
+- NVIDIA GPU ≥16GB VRAM
+- CUDA Toolkit 12.8+
+- VS Build Tools 2022 (o 2025 con [patch host_config.h](docs/trellis-setup.md#6-patch-host_configh-per-vs-2025-msvc-1950))
+- Python 3.10 (gestito automaticamente nel venv TRELLIS)
+
+### Passi manuali obbligatori su GPU Blackwell (RTX 50xx)
+
+Questi due passi **non sono automatizzabili** e vanno eseguiti una sola volta sulla macchina target:
+
+**1. Patch `host_config.h`** — CUDA 12.8 non riconosce MSVC 19.50+ (VS 2025).
+Il file è di sistema e non è distribuibile nel fork.
+
+```c
+// C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\include\crt\host_config.h
+// Cambia riga ~164 da:
+#if _MSC_VER < 1910 || _MSC_VER >= 1950
+// a:
+#if _MSC_VER < 1910 || _MSC_VER >= 2000
+```
+
+**2. Rebuild estensioni CUDA da sorgente** — le wheel pre-built nel fork sono compilate
+per torch 2.5.1+cu124 (ABI incompatibile con torch 2.7.0+cu128). Devono essere
+ricompilate localmente con la versione torch/CUDA installata sulla macchina.
+
+```powershell
+$env:CUDA_HOME = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8"
+$env:TORCH_CUDA_ARCH_LIST = "12.0"
+$env:DISTUTILS_USE_SDK = "1"
+& "C:\Users\Jays\Desktop\omnia\TRELLIS-for-windows\.venv\Scripts\Activate.ps1"
+
+# 1. diff-gaussian-rasterization
+cd C:\Users\Jays\Desktop\omnia
+git clone https://github.com/sdbds/diff-gaussian-rasterization.git
+cd diff-gaussian-rasterization; git submodule update --init --recursive
+pip install . --no-build-isolation
+
+# 2. diffoctreerast
+cd C:\Users\Jays\Desktop\omnia
+git clone https://github.com/JeffreyXiang/diffoctreerast.git
+cd diffoctreerast; pip install . --no-build-isolation
+
+# 3. vox2seq
+cd C:\Users\Jays\Desktop\omnia\TRELLIS-for-windows\extensions\vox2seq
+pip install . --no-build-isolation
+```
+
+> Guida completa con troubleshooting: [docs/trellis-setup.md](docs/trellis-setup.md)
 
 ## Testing
 

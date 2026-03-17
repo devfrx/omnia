@@ -5,10 +5,14 @@
  * Shows a compact list of tool executions with status icons
  * (spinner, check, or error) and truncated result snippets.
  */
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
 import type { ToolExecution } from '../../types/chat'
 import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
+
+const CADViewer = defineAsyncComponent(
+    () => import('./CADViewer.vue')
+)
 
 const props = defineProps<{
     /** Active tool executions from the store. */
@@ -20,6 +24,15 @@ const hasExecutions = computed(() => props.executions.length > 0)
 /** Truncate a result string to ~100 characters. */
 function truncate(text: string, max = 100): string {
     return text.length > max ? text.slice(0, max) + '…' : text
+}
+
+/** Try to parse a CAD model JSON payload from a tool result string. */
+function parseCadPayload(result: string): { export_url: string; model_name: string } | null {
+    try {
+        const p = JSON.parse(result)
+        if (typeof p.model_name === 'string' && typeof p.export_url === 'string') return p
+        return null
+    } catch { return null }
 }
 </script>
 
@@ -42,9 +55,13 @@ function truncate(text: string, max = 100): string {
             <!-- Tool name -->
             <span class="tool-exec__name">{{ exec.toolName }}</span>
 
-            <!-- Result snippet (image or text) -->
+            <!-- Result snippet (CAD model, image, or text) -->
             <img v-if="exec.result && exec.contentType?.startsWith('image/')" class="tool-exec__image"
                 :src="`data:${exec.contentType};base64,${exec.result}`" alt="Screenshot" />
+            <template v-else-if="exec.contentType === 'application/vnd.omnia.cad-model+json' && exec.result">
+                <CADViewer :model-url="parseCadPayload(exec.result)?.export_url ?? ''"
+                    :model-name="parseCadPayload(exec.result)?.model_name" />
+            </template>
             <span v-else-if="exec.result" class="tool-exec__result">{{ truncate(exec.result) }}</span>
         </div>
     </div>

@@ -199,6 +199,21 @@ export interface WsToolCallMessage {
 }
 
 // ---------------------------------------------------------------------------
+// CAD / 3D Model
+// ---------------------------------------------------------------------------
+
+/** Payload from cad_generate tool (content_type='application/vnd.omnia.cad-model+json'). */
+export interface CadModelPayload {
+  model_name: string
+  /** Relative URL of the proxy route: /api/cad/models/{name} */
+  export_url: string
+  /** Format: always "glb" for TRELLIS */
+  format: string
+  size_bytes?: number
+  description?: string
+}
+
+// ---------------------------------------------------------------------------
 // Tool execution tracking (client-side)
 // ---------------------------------------------------------------------------
 
