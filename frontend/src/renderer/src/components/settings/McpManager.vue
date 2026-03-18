@@ -243,11 +243,11 @@ onMounted(() => {
 }
 
 .mcp-server--connected {
-    border-left-color: #2ecc71;
+    /* border-left-color: #2ecc71; */
 }
 
 .mcp-server--error {
-    border-left-color: #e74c3c;
+    /* border-left-color: #e74c3c; */
 }
 
 .mcp-server--disabled {

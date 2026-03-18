@@ -90,7 +90,11 @@ class MockLLM:
         self._idx = 0
 
     async def chat(
-        self, messages: list, tools: Any = None, cancel_event: Any = None,
+        self,
+        messages: list,
+        tools: Any = None,
+        cancel_event: Any = None,
+        system_prompt: str | None = None,
     ):
         """Yield events from the pre-configured response list."""
         if self._idx < len(self._responses):
@@ -103,7 +107,10 @@ class MockLLM:
             yield {"type": "done"}
 
     def build_continuation_messages(
-        self, history: list, memory_context: str | None = None,
+        self,
+        history: list,
+        memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> list:
         """Passthrough system prompt + history."""
         return [{"role": "system", "content": "sys"}]
@@ -149,11 +156,22 @@ class _PcAutoCfg:
         self.confirmations_enabled: bool = True
 
 
+class _LLMCfg:
+    """Minimal LLMConfig stand-in."""
+
+    def __init__(self) -> None:
+        self.tools_enabled: bool = True
+        self.max_tools: int = 0
+        self.priority_plugins: list[str] = []
+        self.tool_execution_timeout: float = 120.0
+
+
 class _Cfg:
     """Minimal config stand-in."""
 
     def __init__(self) -> None:
         self.pc_automation = _PcAutoCfg()
+        self.llm = _LLMCfg()
 
 
 class _EventBus:
@@ -410,3 +428,50 @@ class TestConfirmation:
             if m.get("type") == "tool_execution_done" and m.get("success") is False
         ]
         assert len(rejection_msgs) == 1
+
+
+# ---------------------------------------------------------------------------
+# Tests — empty response retry
+# ---------------------------------------------------------------------------
+
+
+class TestEmptyResponseRetry:
+    """LLM returns empty completion after tool execution → retry."""
+
+    @pytest.mark.asyncio
+    async def test_retries_on_empty_response(self) -> None:
+        """When re-query returns empty, the loop retries and succeeds."""
+        # First re-query: empty (no content, no tool_calls).
+        # Second re-query: real content.
+        llm_resp = [
+            [{"type": "done"}],  # empty response
+            [{"type": "token", "content": "Got it!"}, {"type": "done"}],
+        ]
+        ws, _, _ = await _run(
+            [_tc("tool_a")],
+            llm_responses=llm_resp,
+        )
+        # The final content should be "Got it!" from the retry.
+        tokens = [
+            m["content"] for m in ws.sent if m.get("type") == "token"
+        ]
+        assert "Got it!" in tokens
+
+    @pytest.mark.asyncio
+    async def test_accepts_after_max_retries(self) -> None:
+        """If all retries return empty, loop accepts empty and stops."""
+        # All re-queries return empty — loop should still finish.
+        llm_resp = [
+            [{"type": "done"}],  # empty 1
+            [{"type": "done"}],  # empty 2
+            [{"type": "done"}],  # empty 3
+        ]
+        ws, _, _ = await _run(
+            [_tc("tool_a")],
+            llm_responses=llm_resp,
+        )
+        tokens = [
+            m["content"] for m in ws.sent if m.get("type") == "token"
+        ]
+        # No content tokens since all retries were empty.
+        assert tokens == []

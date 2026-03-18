@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import json
 import uuid
 from typing import Any, Callable, Coroutine
 
 from fastapi import WebSocket, WebSocketDisconnect
 from loguru import logger
-from sqlmodel import select
 
 from backend.core.context import AppContext
 from backend.core.plugin_models import ExecutionContext, ToolResult
@@ -23,6 +23,23 @@ from backend.services.llm_service import LLMService
 
 # Type alias for the sync callback.
 SyncFn = Callable[..., Coroutine[Any, Any, None]]
+
+# Max retries when the LLM returns an empty response during re-query.
+# Local models occasionally produce empty completions after tool results;
+# retrying typically succeeds on the next attempt.
+_EMPTY_REQUERY_RETRIES = 2
+
+
+def _dedup_hash(tool_name: str, args: dict[str, Any]) -> str:
+    """Return a compact hash for deduplication of identical tool calls.
+
+    Normalizes paths (forward-slash only) and produces a SHA-256 digest
+    instead of holding full JSON strings in memory.
+    """
+    canonical = json.dumps(args, sort_keys=True, default=str)
+    canonical = canonical.replace("\\\\", "/")
+    raw = f"{tool_name}:{canonical}"
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 async def run_tool_loop(
@@ -41,6 +58,9 @@ async def run_tool_loop(
     sync_fn: SyncFn | None,
     cancel_event: asyncio.Event | None = None,
     memory_context: str | None = None,
+    tools: list[dict[str, Any]] | None = None,
+    initial_history: list[dict[str, Any]] | None = None,
+    system_prompt: str | None = None,
 ) -> tuple[str, str]:
     """Execute the tool-calling loop until the LLM produces a final answer.
 
@@ -66,6 +86,15 @@ async def run_tool_loop(
             to stop early and return accumulated content.
         memory_context: Optional pre-formatted memory block to inject
             into the system prompt on each LLM re-query.
+        tools: Pre-fetched tool definitions (avoids re-fetching each
+            iteration).  When ``None``, tools are fetched from the
+            registry on each re-query (legacy fallback).
+        initial_history: Conversation history at the start of the tool
+            loop.  When provided, the loop maintains an in-memory copy
+            instead of re-querying the DB on each iteration.
+        system_prompt: Pre-built system prompt.  When provided, it is
+            forwarded to ``build_continuation_messages`` and ``llm.chat``
+            so the prompt is not rebuilt on every iteration.
 
     Returns:
         ``(full_content, thinking_content)`` of the final LLM response
@@ -76,6 +105,16 @@ async def run_tool_loop(
         return full_content, thinking_content
 
     llm_error_in_requery = False
+
+    # In-memory history: maintained across iterations so we never
+    # re-fetch from DB during the loop.  Falls back to None which
+    # triggers the legacy DB-based re-fetch path.
+    mem_history: list[dict[str, Any]] | None = (
+        list(initial_history) if initial_history is not None else None
+    )
+
+    # Tool execution timeout from config.
+    tool_exec_timeout: float = ctx.config.llm.tool_execution_timeout
 
     for iteration in range(max_iterations):
         if not tool_calls_from_llm:
@@ -98,25 +137,34 @@ async def run_tool_loop(
                 tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
 
         # 1. Save assistant message with tool_calls to DB.
+        normalized_tcs = [
+            {
+                "id": tc["id"],
+                "type": "function",
+                "function": tc["function"],
+            }
+            for tc in tool_calls_from_llm
+        ]
         asst_msg = Message(
             conversation_id=conv_id,
             role="assistant",
             content=full_content,
-            tool_calls=[
-                {
-                    "id": tc["id"],
-                    "type": "function",
-                    "function": tc["function"],
-                }
-                for tc in tool_calls_from_llm
-            ],
+            tool_calls=normalized_tcs,
             thinking_content=thinking_content or None,
         )
         session.add(asst_msg)
         await session.flush()
 
+        # Append the assistant message to in-memory history.
+        if mem_history is not None:
+            mem_history.append({
+                "role": "assistant",
+                "content": full_content or "",
+                "tool_calls": normalized_tcs,
+            })
+
         # 2. Build execution tasks — dedup and check confirmation.
-        seen: set[tuple[str, str]] = set()
+        seen: set[str] = set()
         tasks: list[tuple[str, str, dict[str, Any], ExecutionContext]] = []
 
         for tc in tool_calls_from_llm:
@@ -128,13 +176,20 @@ async def run_tool_loop(
                     "Skipping tool call with no function name: {}", tc,
                 )
                 if tc_id:
+                    _err_content = "Error: tool call has no function name."
                     session.add(Message(
                         conversation_id=conv_id,
                         role="tool",
-                        content="Error: tool call has no function name.",
+                        content=_err_content,
                         tool_call_id=tc_id,
                     ))
                     await session.flush()
+                    if mem_history is not None:
+                        mem_history.append({
+                            "role": "tool",
+                            "content": _err_content,
+                            "tool_call_id": tc_id,
+                        })
                 continue
 
             raw_args = fn.get("arguments", "{}") or "{}"
@@ -145,35 +200,49 @@ async def run_tool_loop(
                     "Invalid JSON args for tool '{}': {}",
                     tool_name, raw_args[:200],
                 )
+                _parse_err = f"Error: could not parse arguments \u2014 {e}"
                 session.add(Message(
                     conversation_id=conv_id,
                     role="tool",
-                    content=f"Error: could not parse arguments \u2014 {e}",
+                    content=_parse_err,
                     tool_call_id=tc_id,
                 ))
                 await session.flush()
+                if mem_history is not None:
+                    mem_history.append({
+                        "role": "tool",
+                        "content": _parse_err,
+                        "tool_call_id": tc_id,
+                    })
                 await websocket.send_json({
                     "type": "tool_execution_done",
                     "tool_name": tool_name,
-                    "result": f"Error: could not parse arguments \u2014 {e}",
+                    "result": _parse_err,
                     "execution_id": str(uuid.uuid4()),
                     "success": False,
                 })
                 continue
 
-            dedup_key = (tool_name, json.dumps(args, sort_keys=True))
+            dedup_key = _dedup_hash(tool_name, args)
             if dedup_key in seen:
                 logger.warning(
                     "Dedup: skipping duplicate tool call {}(…)", tool_name,
                 )
                 # OpenAI API requires a tool response for EVERY tool_call_id.
+                _dedup_content = "Duplicate call \u2014 see prior result."
                 session.add(Message(
                     conversation_id=conv_id,
                     role="tool",
-                    content="Duplicate call — see prior result.",
+                    content=_dedup_content,
                     tool_call_id=tc_id,
                 ))
-                await session.flush()  # Ensure dedup response persisted immediately
+                await session.flush()
+                if mem_history is not None:
+                    mem_history.append({
+                        "role": "tool",
+                        "content": _dedup_content,
+                        "tool_call_id": tc_id,
+                    })
                 continue
             seen.add(dedup_key)
 
@@ -194,6 +263,12 @@ async def run_tool_loop(
                 )
                 _save_rejected_tool_msg(session, conv_id, tc_id)
                 await session.flush()
+                if mem_history is not None:
+                    mem_history.append({
+                        "role": "tool",
+                        "content": "Tool execution was rejected by user or timed out.",
+                        "tool_call_id": tc_id,
+                    })
                 await websocket.send_json({
                     "type": "tool_execution_done",
                     "tool_name": tool_name,
@@ -254,7 +329,13 @@ async def run_tool_loop(
                     _save_rejected_tool_msg(
                         session, conv_id, tc_id,
                     )
-                    await session.flush()  # Persist rejection immediately
+                    await session.flush()
+                    if mem_history is not None:
+                        mem_history.append({
+                            "role": "tool",
+                            "content": "Tool execution was rejected by user or timed out.",
+                            "tool_call_id": tc_id,
+                        })
                     await websocket.send_json({
                         "type": "tool_execution_done",
                         "tool_name": tool_name,
@@ -281,11 +362,50 @@ async def run_tool_loop(
         # plugin tools can write to the DB on their own connections.
         await session.commit()
 
-        # 3. Execute all tools in parallel.
-        results = await asyncio.gather(
-            *[_exec_one(ctx, tc_id, name, a, c) for tc_id, name, a, c in tasks],
-            return_exceptions=True,
-        )
+        # 3. Execute all tools in parallel (with timeout).
+        try:
+            results = await asyncio.wait_for(
+                asyncio.gather(
+                    *[
+                        _exec_one(ctx, tc_id, name, a, c)
+                        for tc_id, name, a, c in tasks
+                    ],
+                    return_exceptions=True,
+                ),
+                timeout=tool_exec_timeout,
+            )
+        except asyncio.TimeoutError:
+            logger.error(
+                "Tool execution timed out after {}s — aborting iteration",
+                tool_exec_timeout,
+            )
+            # Save timeout error messages for all tasks.
+            for tc_id, tool_name, _, exec_ctx in tasks:
+                _timeout_content = (
+                    f"Tool '{tool_name}' timed out after "
+                    f"{tool_exec_timeout}s."
+                )
+                session.add(Message(
+                    conversation_id=conv_id,
+                    role="tool",
+                    content=_timeout_content,
+                    tool_call_id=tc_id,
+                ))
+                if mem_history is not None:
+                    mem_history.append({
+                        "role": "tool",
+                        "content": _timeout_content,
+                        "tool_call_id": tc_id,
+                    })
+                await websocket.send_json({
+                    "type": "tool_execution_done",
+                    "tool_name": tool_name,
+                    "result": _timeout_content,
+                    "execution_id": exec_ctx.execution_id,
+                    "success": False,
+                })
+            await session.commit()
+            results = []
 
         # 4. Process results — persist and notify WS.
         # NOTE: Cancel check is AFTER persistence to avoid orphaned tool_calls
@@ -301,12 +421,19 @@ async def run_tool_loop(
                     "Tool execution exception for '{}': {}",
                     failed_tool_name, res,
                 )
+                _fail_content = f"Tool '{failed_tool_name}' execution failed."
                 session.add(Message(
                     conversation_id=conv_id,
                     role="tool",
-                    content=f"Tool '{failed_tool_name}' execution failed.",
+                    content=_fail_content,
                     tool_call_id=failed_tc_id,
                 ))
+                if mem_history is not None:
+                    mem_history.append({
+                        "role": "tool",
+                        "content": _fail_content,
+                        "tool_call_id": failed_tc_id,
+                    })
                 await websocket.send_json({
                     "type": "tool_execution_done",
                     "tool_name": failed_tool_name,
@@ -324,10 +451,20 @@ async def run_tool_loop(
                 and tool_result.content_type.startswith("image/")
             )
 
-            # For images: store a short placeholder in DB (sent to
-            # the LLM on re-query) and send the full base64 only to
-            # the frontend for rendering.
-            db_content = "[Screenshot captured successfully]" if is_image else content
+            # For images: persist the base64 data to a file so the
+            # frontend can retrieve it on page reload, and store a
+            # descriptive placeholder in the DB for the LLM context.
+            if is_image:
+                image_ref = await _persist_tool_image(
+                    conv_id, exec_id, content, tool_result.content_type,
+                )
+                db_content = (
+                    f"[Image captured — ref:{image_ref}]"
+                    if image_ref
+                    else "[Screenshot captured successfully]"
+                )
+            else:
+                db_content = content
 
             tool_msg = Message(
                 conversation_id=conv_id,
@@ -336,6 +473,14 @@ async def run_tool_loop(
                 tool_call_id=tc_id,
             )
             session.add(tool_msg)
+
+            # Append to in-memory history so DB re-fetch is avoided.
+            if mem_history is not None:
+                mem_history.append({
+                    "role": "tool",
+                    "content": db_content,
+                    "tool_call_id": tc_id,
+                })
 
             ws_payload: dict[str, Any] = {
                 "type": "tool_execution_done",
@@ -360,97 +505,134 @@ async def run_tool_loop(
         if ctx.conversation_file_manager and sync_fn:
             await sync_fn(session, conv_id, ctx.conversation_file_manager)
 
-        # 6. Rebuild messages from full DB history and re-query LLM.
-        stmt = (
-            select(Message)
-            .where(Message.conversation_id == conv_id)
-            .order_by(Message.created_at)
-        )
-        results_db = await session.exec(stmt)
-        updated_history: list[dict[str, Any]] = []
-        for m in results_db.all():
-            entry: dict[str, Any] = {"role": m.role, "content": m.content or ""}
-            if m.role == "assistant" and m.tool_calls:
-                entry["tool_calls"] = m.tool_calls
-            if m.role == "tool" and m.tool_call_id:
-                entry["tool_call_id"] = m.tool_call_id
-            updated_history.append(entry)
-
-        _tools_enabled = ctx.config.llm.tools_enabled
-        tools = (
-            await ctx.tool_registry.get_available_tools()
-            if ctx.tool_registry and _tools_enabled
-            else None
-        )
-        if tools and ctx.config.llm.max_tools > 0 and ctx.tool_registry:
-            tools = ctx.tool_registry.limit_tools(
-                tools,
-                max_tools=ctx.config.llm.max_tools,
-                priority_plugins=ctx.config.llm.priority_plugins,
+        # 6. Build messages for re-query — use in-memory history when
+        #    available, otherwise fall back to a DB fetch (legacy path).
+        if mem_history is not None:
+            updated_history = mem_history
+        else:
+            from sqlmodel import select as _select
+            stmt = (
+                _select(Message)
+                .where(Message.conversation_id == conv_id)
+                .order_by(Message.created_at)
             )
-        if tools is not None and len(tools) == 0:
-            tools = None  # empty list confuses some LLMs
+            results_db = await session.exec(stmt)
+            updated_history = []
+            for m in results_db.all():
+                entry: dict[str, Any] = {
+                    "role": m.role, "content": m.content or "",
+                }
+                if m.role == "assistant" and m.tool_calls:
+                    entry["tool_calls"] = m.tool_calls
+                if m.role == "tool" and m.tool_call_id:
+                    entry["tool_call_id"] = m.tool_call_id
+                updated_history.append(entry)
 
         messages = llm.build_continuation_messages(
             history=updated_history,
             memory_context=memory_context,
+            system_prompt=system_prompt,
         )
 
-        # 7. Re-stream LLM.
-        full_content = ""
-        thinking_content = ""
-        tool_calls_from_llm = []
+        # 7. Re-stream LLM (with retry on empty responses).
+        # Local LLMs sometimes return completely empty completions
+        # after tool execution.  Retry up to _EMPTY_REQUERY_RETRIES
+        # times before accepting an empty result as "final answer".
+        # On retries we inject a continuation nudge so the model
+        # understands it must produce a response.
+        for requery_attempt in range(_EMPTY_REQUERY_RETRIES + 1):
+            full_content = ""
+            thinking_content = ""
+            tool_calls_from_llm = []
 
-        await websocket.send_json({
-            "type": "llm_requery",
-            "iteration": iteration + 1,
-        })
+            if requery_attempt == 0:
+                query_messages = messages
+                await websocket.send_json({
+                    "type": "llm_requery",
+                    "iteration": iteration + 1,
+                })
+            else:
+                logger.info(
+                    "Re-query retry {}/{} (iter {}) — LLM returned empty, "
+                    "injecting continuation nudge",
+                    requery_attempt, _EMPTY_REQUERY_RETRIES,
+                    iteration + 1,
+                )
+                # Add a lightweight user nudge so the model knows it must
+                # continue.  This is appended only for this attempt and is
+                # never persisted to the DB.
+                query_messages = messages + [
+                    {
+                        "role": "user",
+                        "content": (
+                            "Please continue and provide your response "
+                            "based on the tool results above."
+                        ),
+                    }
+                ]
+                await asyncio.sleep(0.3)
 
-        # Spawn a reader task so cancel messages are detected during streaming.
-        reader_task = asyncio.create_task(
-            _ws_cancel_reader(websocket, cancel_event),
-        ) if cancel_event else None
+            # Spawn a reader task so cancel messages are detected
+            # during streaming.
+            reader_task = asyncio.create_task(
+                _ws_cancel_reader(websocket, cancel_event),
+            ) if cancel_event else None
 
-        llm_error_in_requery = False
+            llm_error_in_requery = False
 
-        try:
-            async for event in llm.chat(
-                messages, tools=tools, cancel_event=cancel_event,
+            try:
+                async for event in llm.chat(
+                    query_messages, tools=tools,
+                    cancel_event=cancel_event,
+                    system_prompt=system_prompt,
+                ):
+                    if event["type"] == "token":
+                        full_content += event["content"]
+                        await websocket.send_json(event)
+                    elif event["type"] == "thinking":
+                        thinking_content += event["content"]
+                        await websocket.send_json(event)
+                    elif event["type"] == "tool_call":
+                        tool_calls_from_llm.append(event)
+                        await websocket.send_json(event)
+                    elif event["type"] == "error":
+                        logger.error(
+                            "LLM error during tool loop re-query "
+                            "(iter {}): {}",
+                            iteration + 1,
+                            event.get("content", "unknown"),
+                        )
+                        llm_error_in_requery = True
+                    elif event["type"] == "done":
+                        pass
+            except Exception as exc:
+                logger.error(
+                    "LLM exception during tool loop re-query "
+                    "(iter {}): {}",
+                    iteration + 1, exc,
+                )
+                llm_error_in_requery = True
+            finally:
+                if reader_task and not reader_task.done():
+                    reader_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await reader_task
+
+            # Got content or tool calls or an error — accept the result.
+            if (
+                full_content.strip()
+                or tool_calls_from_llm
+                or llm_error_in_requery
             ):
-                if event["type"] == "token":
-                    full_content += event["content"]
-                    await websocket.send_json(event)
-                elif event["type"] == "thinking":
-                    thinking_content += event["content"]
-                    await websocket.send_json(event)
-                elif event["type"] == "tool_call":
-                    tool_calls_from_llm.append(event)
-                    await websocket.send_json(event)
-                elif event["type"] == "error":
-                    logger.error(
-                        "LLM error during tool loop re-query (iter {}): {}",
-                        iteration + 1, event.get("content", "unknown"),
-                    )
-                    # Do NOT forward error to WS here — it would cause
-                    # the frontend to abort the stream prematurely.
-                    # The error is handled internally: the loop stops
-                    # and the accumulated content is returned as-is.
-                    llm_error_in_requery = True
-                elif event["type"] == "done":
-                    pass
-        except Exception as exc:
-            # Catch LLM HTTP/connection errors during re-query so the
-            # tool loop returns accumulated content instead of raising.
-            logger.error(
-                "LLM exception during tool loop re-query (iter {}): {}",
-                iteration + 1, exc,
-            )
-            llm_error_in_requery = True
-        finally:
-            if reader_task and not reader_task.done():
-                reader_task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await reader_task
+                break
+
+            # Empty response on last attempt — accept as-is.
+            if requery_attempt == _EMPTY_REQUERY_RETRIES:
+                logger.warning(
+                    "LLM returned empty after {} retries (iter {}) "
+                    "— accepting empty response",
+                    _EMPTY_REQUERY_RETRIES, iteration + 1,
+                )
 
         # If the LLM returned an error during the re-query, stop
         # the loop — do not attempt further tool calls.
@@ -462,11 +644,12 @@ async def run_tool_loop(
 
         logger.info(
             "Tool loop iter {} re-query done: content_len={}, "
-            "tool_calls={}, error={}",
+            "tool_calls={}, error={}, retries={}",
             iteration + 1,
             len(full_content),
             len(tool_calls_from_llm),
             llm_error_in_requery,
+            requery_attempt,
         )
 
     # Log why the tool loop exited.
@@ -516,6 +699,56 @@ def _result_to_str(tool_result: ToolResult) -> str:
     if content is None:
         return tool_result.error_message or "No result"
     return str(content)
+
+
+async def _persist_tool_image(
+    conv_id: uuid.UUID,
+    exec_id: str,
+    base64_data: str,
+    content_type: str | None,
+) -> str | None:
+    """Save base64 image data to disk and return a relative reference path.
+
+    The image is stored under ``data/uploads/{conv_id}/tool_images/``
+    so chat history reconstruction can serve them via the existing
+    ``/uploads/`` static route.
+
+    Args:
+        conv_id: Conversation UUID (used for directory partitioning).
+        exec_id: Execution ID (used for a unique filename).
+        base64_data: Raw base64-encoded image bytes.
+        content_type: MIME type (e.g. ``image/png``).
+
+    Returns:
+        Relative path from the project root, or ``None`` on failure.
+    """
+    import base64
+    from backend.core.config import PROJECT_ROOT
+
+    ext_map = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
+    }
+    ext = ext_map.get(content_type or "", ".png")
+    rel_dir = f"data/uploads/{conv_id}/tool_images"
+    abs_dir = PROJECT_ROOT / rel_dir
+    filename = f"{exec_id}{ext}"
+    abs_path = abs_dir / filename
+
+    try:
+        import asyncio as _aio
+        await _aio.to_thread(abs_dir.mkdir, parents=True, exist_ok=True)
+        raw = base64.b64decode(base64_data)
+        await _aio.to_thread(abs_path.write_bytes, raw)
+        logger.debug(
+            "Persisted tool image: {} ({} bytes)", abs_path, len(raw),
+        )
+        return f"{rel_dir}/{filename}"
+    except Exception as exc:
+        logger.warning("Failed to persist tool image: {}", exc)
+        return None
 
 
 def _save_rejected_tool_msg(

@@ -142,6 +142,11 @@ class LLMConfig(BaseSettings):
     """Enable for multimodal models (LLaVA, Qwen2-VL) that accept images."""
     max_tool_iterations: int = 25
     """Maximum number of tool calling rounds before forcing a final answer."""
+    tool_execution_timeout: float = 120.0
+    """Timeout in seconds for parallel tool execution per iteration.
+
+    If any tool takes longer than this, the gather is cancelled and
+    a timeout error is recorded for the stuck tool(s)."""
     max_tools: int = 0
     """Maximum number of tool definitions sent to the LLM per request.
 

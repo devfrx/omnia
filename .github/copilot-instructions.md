@@ -59,7 +59,7 @@ code_style:
 
 commands:
   backend_install: "cd backend; uv pip install -e \".[dev]\""
-  backend_run: "uvicorn core.app:create_app --factory --reload --port 8000"
+  backend_run: "python -m backend --reload --reload-dir backend"
   backend_test: pytest tests/ -v
   frontend_install: cd frontend; npm install
   frontend_dev: cd frontend; npm run dev

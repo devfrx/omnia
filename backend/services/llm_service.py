@@ -309,6 +309,29 @@ class LLMService:
         )
         return base + time_block
 
+    def get_system_prompt(
+        self, memory_context: str | None = None,
+    ) -> str:
+        """Build the full system prompt with optional memory context.
+
+        Use this to build the prompt once per request and pass it to
+        both ``build_messages`` and ``build_continuation_messages``
+        via the ``system_prompt`` parameter to avoid redundant work.
+
+        Args:
+            memory_context: Optional block of relevant memories/MCP
+                context to append.
+
+        Returns:
+            The complete system prompt string.
+        """
+        base = self._get_dynamic_system_prompt()
+        if memory_context and base:
+            return f"{base}\n\n{memory_context}"
+        if memory_context:
+            return memory_context
+        return base
+
     # ------------------------------------------------------------------
     # Message building
     # ------------------------------------------------------------------
@@ -385,6 +408,7 @@ class LLMService:
         history: list[dict[str, Any]] | None = None,
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> list[dict[str, Any]]:
         """Build a full message list with system prompt, history, and user msg.
 
@@ -394,17 +418,24 @@ class LLMService:
             attachments: Optional list of dicts with ``file_path`` (absolute)
                 and ``content_type`` keys for vision-model image inputs.
             memory_context: Optional block of relevant memories to append
-                to the system prompt.
+                to the system prompt.  Ignored when *system_prompt* is
+                provided (it should already include memory context).
+            system_prompt: Pre-built system prompt (from
+                ``get_system_prompt``).  When provided, *memory_context*
+                is ignored and the prompt is used as-is.
 
         Returns:
             A list of message dicts ready for the chat completions API.
         """
         messages: list[dict[str, Any]] = []
-        sys_prompt = self._get_dynamic_system_prompt()
-        if memory_context and sys_prompt:
-            sys_prompt = f"{sys_prompt}\n\n{memory_context}"
-        elif memory_context:
-            sys_prompt = memory_context
+        if system_prompt is not None:
+            sys_prompt = system_prompt
+        else:
+            sys_prompt = self._get_dynamic_system_prompt()
+            if memory_context and sys_prompt:
+                sys_prompt = f"{sys_prompt}\n\n{memory_context}"
+            elif memory_context:
+                sys_prompt = memory_context
         if sys_prompt:
             messages.append({"role": "system", "content": sys_prompt})
         if history:
@@ -443,6 +474,7 @@ class LLMService:
         self,
         history: list[dict[str, Any]],
         memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> list[dict[str, Any]]:
         """Build messages for tool-loop continuation (no new user message).
 
@@ -453,17 +485,24 @@ class LLMService:
         Args:
             history: Full conversation history including tool messages.
             memory_context: Optional block of relevant memories to append
-                to the system prompt.
+                to the system prompt.  Ignored when *system_prompt* is
+                provided.
+            system_prompt: Pre-built system prompt (from
+                ``get_system_prompt``).  When provided, *memory_context*
+                is ignored.
 
         Returns:
             A list of message dicts: system prompt + normalized history.
         """
         messages: list[dict[str, Any]] = []
-        sys_prompt = self._get_dynamic_system_prompt()
-        if memory_context and sys_prompt:
-            sys_prompt = f"{sys_prompt}\n\n{memory_context}"
-        elif memory_context:
-            sys_prompt = memory_context
+        if system_prompt is not None:
+            sys_prompt = system_prompt
+        else:
+            sys_prompt = self._get_dynamic_system_prompt()
+            if memory_context and sys_prompt:
+                sys_prompt = f"{sys_prompt}\n\n{memory_context}"
+            elif memory_context:
+                sys_prompt = memory_context
         if sys_prompt:
             messages.append({"role": "system", "content": sys_prompt})
         if history:
@@ -484,6 +523,7 @@ class LLMService:
         conversation_id: str | None = None,
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream a chat completion, choosing the best backend.
 
@@ -503,6 +543,9 @@ class LLMService:
             memory_context: Optional pre-formatted memory block to
                 inject into the system prompt (native path only;
                 OAI-compat path already has it baked into *messages*).
+                Ignored when *system_prompt* is provided.
+            system_prompt: Pre-built system prompt.  When provided,
+                *memory_context* is ignored in the native path.
 
         Yields:
             Dicts with a ``type`` key — same contract for both paths.
@@ -519,6 +562,7 @@ class LLMService:
                 conversation_id=conversation_id,
                 attachments=attachments,
                 memory_context=memory_context,
+                system_prompt=system_prompt,
             ):
                 yield event
         else:
@@ -538,6 +582,7 @@ class LLMService:
         conversation_id: str | None = None,
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream via LM Studio native REST API ``/api/v1/chat``.
 
@@ -584,11 +629,14 @@ class LLMService:
         else:
             input_field = user_content
 
-        sys_prompt = self._get_dynamic_system_prompt()
-        if memory_context and sys_prompt:
-            sys_prompt = f"{sys_prompt}\n\n{memory_context}"
-        elif memory_context:
-            sys_prompt = memory_context
+        if system_prompt is not None:
+            sys_prompt = system_prompt
+        else:
+            sys_prompt = self._get_dynamic_system_prompt()
+            if memory_context and sys_prompt:
+                sys_prompt = f"{sys_prompt}\n\n{memory_context}"
+            elif memory_context:
+                sys_prompt = memory_context
         active_model = await self._resolve_model()
         payload: dict[str, Any] = {
             "model": active_model,

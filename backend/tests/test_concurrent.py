@@ -29,6 +29,7 @@ async def _mock_chat_generator(
     conversation_id: str | None = None,
     attachments: list[dict[str, str]] | None = None,
     memory_context: str | None = None,
+    system_prompt: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     yield {"type": "token", "content": "Hello"}
     yield {"type": "token", "content": " world"}
@@ -40,6 +41,7 @@ def _mock_build_messages(
     history: list[dict[str, Any]] | None = None,
     attachments: list[dict[str, str]] | None = None,
     memory_context: str | None = None,
+    system_prompt: str | None = None,
 ) -> list[dict[str, Any]]:
     return [
         {"role": "system", "content": "system"},

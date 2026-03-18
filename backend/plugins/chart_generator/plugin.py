@@ -36,8 +36,16 @@ _GENERATE_SCHEMA: dict[str, Any] = {
             "type": "object",
             "description": (
                 "Configurazione Apache ECharts completa (option object). "
-                "Deve includere almeno: title, series. Includere xAxis/yAxis "
-                "per grafici cartesiani, legend e tooltip per interattività. "
+                "Deve includere almeno: series. NON includere 'title' in "
+                "echarts_option: il titolo è già mostrato nell'header del viewer. "
+                "REGOLA CRITICA per grafici cartesiani (bar/line): se hai N "
+                "categorie sull'asse X, usa UNA SOLA series con N valori nel "
+                "campo data. Esempio corretto per 3 metriche: "
+                "xAxis.data=['CPU','RAM','Disco'], series=[{type:'bar', "
+                "data:[11,83,75]}]. NON creare N series ognuna con 1 solo "
+                "valore — ECharts le sovrappone tutte sulla prima categoria. "
+                "Usa series multiple SOLO per confrontare dataset diversi "
+                "sulle stesse categorie (es. 'Usato' vs 'Libero'). "
                 "Il formato è identico alla documentazione ufficiale ECharts."
             ),
             "additionalProperties": True,

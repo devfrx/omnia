@@ -450,11 +450,18 @@ async def ws_chat(websocket: WebSocket) -> None:
                     )
 
                 # --- call LLM (streaming) ---------------------------------
+                # Build system prompt once for the entire request — reused
+                # in build_messages, build_continuation_messages, and the
+                # native API path.
+                cached_sys_prompt = llm.get_system_prompt(
+                    memory_context=memory_context,
+                )
+
                 messages = llm.build_messages(
                     user_content,
                     history=history[:-1],  # history already has user msg
                     attachments=attachment_info or None,
-                    memory_context=memory_context,
+                    system_prompt=cached_sys_prompt,
                 )
 
                 full_content = ""
@@ -473,7 +480,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                         user_content=user_content,
                         conversation_id=str(conv_id),
                         attachments=attachment_info or None,
-                        memory_context=memory_context,
+                        system_prompt=cached_sys_prompt,
                     ):
                         etype = event["type"]
                         if etype == "token":
@@ -615,6 +622,9 @@ async def ws_chat(websocket: WebSocket) -> None:
                             sync_fn=_sync_conversation_to_file,
                             cancel_event=cancel_event,
                             memory_context=memory_context,
+                            tools=tools,
+                            initial_history=history,
+                            system_prompt=cached_sys_prompt,
                         )
                         # Update finish_reason to reflect the tool loop
                         # outcome (the initial value is stale — it came

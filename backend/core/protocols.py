@@ -39,12 +39,19 @@ class LLMServiceProtocol(Protocol):
         """Whether the active model supports multimodal (vision) input."""
         ...
 
+    def get_system_prompt(
+        self, memory_context: str | None = None,
+    ) -> str:
+        """Build the full system prompt with optional memory context."""
+        ...
+
     def build_messages(
         self,
         user_content: str,
         history: list[dict[str, Any]] | None = None,
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> list[dict[str, Any]]:
         """Build the full message list for a chat completion request."""
         ...
@@ -53,6 +60,7 @@ class LLMServiceProtocol(Protocol):
         self,
         history: list[dict[str, Any]],
         memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> list[dict[str, Any]]:
         """Build messages for tool-loop continuation (no new user message)."""
         ...
@@ -67,6 +75,7 @@ class LLMServiceProtocol(Protocol):
         conversation_id: str | None = None,
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
+        system_prompt: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream a chat completion, yielding event dicts."""
         ...

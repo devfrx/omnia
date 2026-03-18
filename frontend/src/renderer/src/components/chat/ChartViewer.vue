@@ -25,21 +25,72 @@ const error = ref<string | null>(null)
 let fetchedOption: Record<string, unknown> | null = null
 
 /**
- * OMNIA chart color palette — vibrant, accessible on dark backgrounds.
- * Used when the LLM doesn't specify colors or when we override them.
+ * OMNIA chart color palette — warm, muted tones that harmonise with the
+ * dark cream-accented interface. Derived from the CSS design tokens:
+ * accent #E8DCC8 · success #5C9A6E · warning #D4A72C · danger #B85C5C.
  */
 const OMNIA_PALETTE = [
-    '#6ee7b7', // emerald
-    '#93c5fd', // sky blue
-    '#fca5a5', // coral
-    '#fcd34d', // amber
-    '#c4b5fd', // violet
-    '#f9a8d4', // pink
-    '#67e8f9', // cyan
-    '#fdba74', // orange
-    '#a5f3fc', // teal
-    '#d9f99d', // lime
+    '#E8DCC8', // cream — primary accent
+    '#7BAE8A', // sage green — success-adjacent
+    '#D4A72C', // warm amber — warning
+    '#8AABC8', // dusty steel blue
+    '#C08080', // muted coral — danger-adjacent
+    '#B09AC8', // dusty lavender
+    '#60A8A0', // warm teal
+    '#C8B070', // ochre gold
+    '#A87868', // terracotta
+    '#A0B890', // dusty sage
 ]
+
+/**
+ * Fix common LLM mistake: N cartesian series each with 1 data point
+ * when there are N xAxis categories. Merges them into a single series
+ * so each bar/line maps correctly to its category.
+ *
+ * Example broken input:
+ *   xAxis.data = ["CPU", "RAM", "Disco"]
+ *   series = [{name:"CPU", data:[17]}, {name:"RAM", data:[82]}, {name:"Disco", data:[75]}]
+ *
+ * Fixed output:
+ *   series = [{type:"bar", data:[17, 82, 75]}]  (+ colorBy: "data" for distinct colors)
+ */
+function fixSingleDataPointSeries(opt: Record<string, unknown>): void {
+    const series = opt.series
+    if (!Array.isArray(series) || series.length < 2) return
+
+    // Only fix cartesian charts with a category xAxis
+    const xAxis = opt.xAxis as Record<string, unknown> | undefined
+    if (!xAxis || typeof xAxis !== 'object') return
+    const categories = xAxis.data
+    if (!Array.isArray(categories)) return
+
+    // Check: all series are the same cartesian type, each has exactly 1 data point
+    const allSeries = series as Record<string, unknown>[]
+    const chartType = allSeries[0]?.type as string | undefined
+    if (!chartType || !['bar', 'line'].includes(chartType)) return
+
+    const allSinglePoint = allSeries.every((s) => {
+        const d = s.data
+        return (
+            s.type === chartType &&
+            Array.isArray(d) &&
+            d.length === 1
+        )
+    })
+
+    if (!allSinglePoint || allSeries.length !== categories.length) return
+
+    // Merge into a single series
+    const mergedData = allSeries.map((s) => (s.data as unknown[])[0])
+    opt.series = [{
+        type: chartType,
+        data: mergedData,
+        colorBy: 'data',
+    }]
+
+    // Legend is meaningless after merge — remove it
+    delete opt.legend
+}
 
 /**
  * Sanitize and restyle the LLM-generated ECharts option:
@@ -71,49 +122,117 @@ function sanitizeOption(opt: Record<string, unknown>): Record<string, unknown> {
     // Remove toolbox — takes space and is not useful in chat context.
     delete opt.toolbox
 
-    // Grid: generous padding, always containLabel.
-    const existingGrid = (opt.grid ?? {}) as Record<string, unknown>
-    opt.grid = {
-        top: hadTitle ? 24 : 14,
-        right: 20,
-        bottom: 14,
-        left: 14,
-        ...existingGrid,
-        containLabel: true,
-    }
-
     // Apply OMNIA palette.
     opt.color = OMNIA_PALETTE
 
-    // Style legend for dark theme.
-    if (opt.legend && typeof opt.legend === 'object') {
+    // Fix common LLM mistake: N cartesian series each with 1 data point
+    // for N xAxis categories. Merge them into a single series.
+    fixSingleDataPointSeries(opt)
+
+    // Legend: process BEFORE grid so grid.bottom can account for it.
+    // Always force legend to bottom-center horizontal — the LLM often places
+    // it at top: 'middle' or uses orient: 'vertical', causing it to overlap bars.
+    const hasLegend = !!(opt.legend && typeof opt.legend === 'object')
+    if (hasLegend) {
         const legend = opt.legend as Record<string, unknown>
-        legend.textStyle = { color: '#d1d5db' }
-        // Move to bottom to avoid overlapping chart area.
-        if (!legend.bottom && !legend.top) {
-            legend.bottom = 0
+        // Sync legend.data with actual series names.
+        const optSeries = opt.series
+        if (Array.isArray(optSeries)) {
+            const seriesNames = (optSeries as Record<string, unknown>[])
+                .map((s) => s.name as string | undefined)
+                .filter((n): n is string => !!n)
+            if (Array.isArray(legend.data) && seriesNames.length > 0) {
+                const hasOrphan = (legend.data as string[]).some(
+                    (name) => !seriesNames.includes(name),
+                )
+                if (hasOrphan) {
+                    legend.data = seriesNames
+                }
+            }
         }
+        // Force position and orientation — delete any LLM-provided positioning.
+        delete legend.top
+        delete legend.left
+        delete legend.right
+        legend.bottom = 8
+        legend.orient = 'horizontal'
+        legend.type = 'scroll'
+        legend.textStyle = { color: '#C8C5BE', fontSize: 12 }
+        legend.pageTextStyle = { color: '#8A8A85' }
+        legend.pageIconColor = '#E8DCC8'
+        legend.pageIconInactiveColor = '#4A4A4A'
     }
 
-    // Style tooltip.
+    // Grid: generous padding, always containLabel.
+    // top is sized to accommodate a yAxis name if present (ECharts places it
+    // above the axis and clips it when top is too small).
+    // bottom reserves space for the legend so it never overlaps the plot area.
+    // Critical: our enforced values come AFTER ...existingGrid so the LLM
+    // can't accidentally override containLabel or bottom.
+    const existingGrid = (opt.grid ?? {}) as Record<string, unknown>
+    const hasAxisName = (() => {
+        for (const k of ['xAxis', 'yAxis']) {
+            const a = opt[k]
+            const axes = Array.isArray(a) ? a : (a && typeof a === 'object' ? [a] : [])
+            if ((axes as Record<string, unknown>[]).some((ax) => !!ax.name)) return true
+        }
+        return false
+    })()
+    const hasYAxisName = (() => {
+        const a = opt.yAxis
+        const axes = Array.isArray(a) ? a : (a && typeof a === 'object' ? [a] : [])
+        return (axes as Record<string, unknown>[]).some((ax) => !!ax.name)
+    })()
+    opt.grid = {
+        top: hasAxisName ? 36 : (hadTitle ? 24 : 14),
+        right: 20,
+        left: hasYAxisName ? 20 : 14,
+        ...existingGrid,
+        bottom: hasLegend ? 56 : 16,
+        containLabel: true,
+    }
+
+    // Use transparent background so the container CSS surface color shows through.
+    opt.backgroundColor = 'transparent'
+
+    // Style tooltip — matches --surface-3 (#2A2A2A) and --text-primary (#EDEDE9).
     opt.tooltip = {
         ...(typeof opt.tooltip === 'object' && opt.tooltip ? opt.tooltip : {}),
-        backgroundColor: 'rgba(30, 30, 40, 0.92)',
+        backgroundColor: 'rgba(42, 42, 42, 0.97)',
         borderColor: 'rgba(255, 255, 255, 0.08)',
-        textStyle: { color: '#e5e7eb', fontSize: 13 },
+        borderWidth: 1,
+        textStyle: { color: '#EDEDE9', fontSize: 13 },
+        extraCssText: 'box-shadow: 0 4px 16px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04);',
     } as Record<string, unknown>
 
-    // Style axes for dark theme.
+    // Style axes — use --border and warm-gray text matching the app.
     for (const axisKey of ['xAxis', 'yAxis']) {
         const axis = opt[axisKey]
-        if (axis && typeof axis === 'object' && !Array.isArray(axis)) {
-            const ax = axis as Record<string, unknown>
-            ax.axisLine = { lineStyle: { color: 'rgba(255,255,255,0.12)' } }
+        const axes = Array.isArray(axis) ? axis : (axis && typeof axis === 'object' ? [axis] : [])
+        for (const ax of axes as Record<string, unknown>[]) {
+            ax.axisLine = { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
+            ax.axisTick = { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
             ax.axisLabel = {
                 ...(typeof ax.axisLabel === 'object' && ax.axisLabel ? ax.axisLabel : {}),
-                color: '#9ca3af',
+                color: '#8A8A85',
+                fontSize: 12,
             }
-            ax.splitLine = { lineStyle: { color: 'rgba(255,255,255,0.06)' } }
+            ax.splitLine = { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } }
+
+            if (ax.name) {
+                // nameLocation 'end' (default) puts the label at the top of yAxis
+                // where it clips. 'middle' centres it along the axis and is always
+                // fully visible. nameGap shifts it away from the tick labels.
+                if (axisKey === 'yAxis') {
+                    ax.nameLocation = 'middle'
+                    ax.nameRotate = 90
+                    ax.nameGap = 48
+                } else {
+                    ax.nameLocation = 'middle'
+                    ax.nameGap = 28
+                }
+                ax.nameTextStyle = { color: '#C8C5BE', fontSize: 12 }
+            }
         }
     }
 
@@ -217,7 +336,11 @@ async function loadAndRender(): Promise<void> {
         await waitForDimensions(containerRef.value)
         if (unmounted) return
 
-        instance = echarts.init(containerRef.value, 'dark')
+        // Do NOT use ECharts' built-in 'dark' theme — its navy background
+        // (#100C2A) conflicts with OMNIA's warm-dark surfaces. We style
+        // everything manually and set backgroundColor: 'transparent' so the
+        // container CSS background shows through correctly.
+        instance = echarts.init(containerRef.value)
         try {
             instance.setOption(fetchedOption!)
         } catch (renderErr) {
