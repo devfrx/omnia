@@ -179,3 +179,25 @@ chart_generator:
     - "ESEMPIO CORRETTO per utilizzo risorse (%, stessa scala 0-100): yAxis.data=['CPU','RAM','Disco'], una sola series con data=[8.4, 67.7, 74.8] e nome 'Utilizzo %'. Se vuoi anche i valori assoluti, usa un secondo grafico o aggiunge tooltip custom"
     - "PIE CHART: usa series[0].type='pie' con data=[{name:'A',value:X},{name:'B',value:Y}]. Non usare xAxis/yAxis per pie"
     - "NON includere 'title' in echarts_option: il titolo è già mostrato nell'header del viewer sopra il grafico. Includere title in ECharts crea un secondo titolo sovrapposto alle barre/linee"
+
+email_assistant:
+  principio: gestisci email tramite IMAP/SMTP locale — mai condividere credenziali o contenuto privato
+  workflow_lettura:
+    - "usa read_emails(limit=20) per ottenere la lista recente → restituisce uid, subject, from, date, is_read"
+    - "usa get_email(uid) per leggere il corpo completo di un'email specifica"
+    - "usa search_emails(query) con sintassi IMAP: 'SUBJECT \"fattura\"', 'FROM \"nome\"', 'SINCE 1-Jan-2025'"
+  workflow_invio:
+    - "redigi la bozza nel contesto, poi chiama send_email(to=[...], subject=..., body=...)"
+    - "per rispondere a un'email usa send_email con il parametro reply_to_uid=<uid_originale>"
+    - "send_email richiede conferma esplicita dell'utente — non inviare mai senza approvazione"
+  workflow_gestione:
+    - "usa mark_as_read(uid, read=true|false) per aggiornare lo stato letta/non letta di un'email"
+    - "usa archive_email(uid) per spostare un'email nella cartella di archivio configurata"
+    - "archive_email richiede conferma prima dell'esecuzione"
+  sicurezza:
+    - "non includere mai password, token o credenziali nei tool call o nelle risposte"
+    - "non estrarre né ripetere interi messaggi email privati fuori contesto"
+    - "rispetta il limite di 10 invii/ora — avvisa l'utente se raggiunto"
+  limiti:
+    - "max 50 email per chiamata"
+    - "corpo email troncato a 8000 caratteri — segnala se il messaggio era più lungo"

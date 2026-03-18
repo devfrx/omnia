@@ -66,6 +66,9 @@ class OmniaEvent(StrEnum):
     NOTE_CREATED = "note.created"
     NOTE_UPDATED = "note.updated"
     NOTE_DELETED = "note.deleted"
+    # -- Email Assistant (Phase 15) --
+    EMAIL_RECEIVED = "email.received"
+    EMAIL_SENT = "email.sent"
 
 # Type alias for async handlers
 AsyncHandler = Callable[..., Coroutine[Any, Any, None]]

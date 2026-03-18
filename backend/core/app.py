@@ -155,6 +155,19 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             logger.warning("Note service failed to start: {}", exc)
             await note_service.close()
 
+    # -- Email service (Phase 15) ------------------------------------------
+    if config.email.enabled:
+        from backend.services.email_service import EmailService
+
+        email_service = EmailService(config.email, ctx.event_bus)
+        try:
+            await email_service.initialize()
+            ctx.email_service = email_service
+            logger.info("Email service started ({})", config.email.username)
+        except Exception as exc:
+            logger.warning("Email service failed to start: {}", exc)
+            await email_service.close()
+
     # -- Voice services (Phase 4) ------------------------------------------
     if config.stt.enabled:
         try:
@@ -288,6 +301,28 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         OmniaEvent.MCP_SERVER_DISCONNECTED, _forward_mcp_disconnected,
     )
 
+    # -- Bridge Email events to the events WebSocket --------------------
+    async def _forward_email_received(**kwargs):
+        if ctx.ws_connection_manager:
+            await ctx.ws_connection_manager.broadcast({
+                "type": "email.received",
+                "folder": kwargs.get("folder", "INBOX"),
+            })
+
+    async def _forward_email_sent(**kwargs):
+        if ctx.ws_connection_manager:
+            await ctx.ws_connection_manager.broadcast({
+                "type": "email.sent",
+                "message_id": kwargs.get("message_id"),
+            })
+
+    ctx.event_bus.subscribe(
+        OmniaEvent.EMAIL_RECEIVED, _forward_email_received,
+    )
+    ctx.event_bus.subscribe(
+        OmniaEvent.EMAIL_SENT, _forward_email_sent,
+    )
+
     app.state.context = ctx
     app.state.engine = engine
 
@@ -333,6 +368,11 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             await ctx.note_service.close()
         except Exception as exc:
             logger.error("Note service shutdown error: {}", exc)
+    if ctx.email_service:
+        try:
+            await ctx.email_service.close()
+        except Exception as exc:
+            logger.error("Email service shutdown error: {}", exc)
     try:
         await engine.dispose()
     except Exception as exc:

@@ -477,6 +477,60 @@ class NoteServiceProtocol(Protocol):
 
 
 # ---------------------------------------------------------------------------
+# Email service
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class EmailServiceProtocol(Protocol):
+    """Protocol for the async IMAP/SMTP email assistant service."""
+
+    async def initialize(self) -> None: ...
+
+    async def fetch_inbox(
+        self,
+        *,
+        folder: str = "INBOX",
+        limit: int = 20,
+        unread_only: bool = False,
+    ) -> list[dict[str, Any]]: ...
+
+    async def fetch_email(
+        self, uid: str, *, folder: str = "INBOX",
+    ) -> dict[str, Any] | None: ...
+
+    async def search(
+        self,
+        query: str,
+        *,
+        folder: str = "INBOX",
+        limit: int = 20,
+    ) -> list[dict[str, Any]]: ...
+
+    async def send(
+        self,
+        to: list[str],
+        subject: str,
+        body: str,
+        *,
+        reply_to_uid: str | None = None,
+        folder: str = "INBOX",
+    ) -> dict[str, Any]: ...
+
+    async def mark_read(
+        self, uid: str, *, folder: str = "INBOX", read: bool = True,
+    ) -> bool: ...
+
+    async def archive(
+        self, uid: str, *, from_folder: str = "INBOX",
+    ) -> bool: ...
+
+    async def list_folders(self) -> list[str]: ...
+
+    async def close(self) -> None: ...
+
+
+# ---------------------------------------------------------------------------
 # WebSocket connection manager
 # ---------------------------------------------------------------------------
 

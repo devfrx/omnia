@@ -77,7 +77,7 @@ CREATE VIRTUAL TABLE note_fts USING fts5(
 
 ### 2. Email Assistant
 
-**Stato**: backlog (alta complessità, buon ROI)
+**Stato**: pianificato → **Fase 15** di `PROJECT.md`
 
 #### Descrizione
 

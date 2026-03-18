@@ -15,6 +15,7 @@ import { useRouter } from 'vue-router'
 
 import { useChatStore } from '../../stores/chat'
 import { useUIStore } from '../../stores/ui'
+import { useEmailStore } from '../../stores/email'
 import { useModal } from '../../composables/useModal'
 import { api } from '../../services/api'
 import ConversationList from './ConversationList.vue'
@@ -22,8 +23,11 @@ import CalendarWidget from '../calendar/CalendarWidget.vue'
 
 const chatStore = useChatStore()
 const uiStore = useUIStore()
+const emailStore = useEmailStore()
 const router = useRouter()
 const { confirm } = useModal()
+
+const unreadBadge = computed(() => emailStore.unreadCount)
 
 /** Whether the sidebar is expanded (wired to central UI store). */
 const isOpen = computed(() => uiStore.sidebarOpen)
@@ -154,6 +158,17 @@ async function onOpenFile(id: string): Promise<void> {
           </svg>
         </span>
         <span class="sidebar__link-label">Note</span>
+      </router-link>
+
+      <router-link to="/email" class="sidebar__link" active-class="sidebar__link--active" title="Email">
+        <span class="sidebar__link-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+          </svg>
+        </span>
+        <span class="sidebar__link-label">Email</span>
+        <span v-if="unreadBadge" class="sidebar__badge">{{ unreadBadge }}</span>
       </router-link>
     </nav>
 
@@ -378,6 +393,26 @@ async function onOpenFile(id: string): Promise<void> {
 
 .sidebar :deep(::-webkit-scrollbar-thumb:hover) {
   background: var(--surface-4);
+}
+
+.sidebar__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: auto;
+}
+
+.sidebar--collapsed .sidebar__badge {
+  display: none;
 }
 
 /* Reduced motion */

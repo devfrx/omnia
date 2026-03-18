@@ -75,6 +75,7 @@ plugins:
     - mcp_client
     - cad_generator
     - chart_generator
+    - email_assistant
     # - home_automation  # not implemented yet
 
 home_assistant:
@@ -216,6 +217,32 @@ chart:
   chart_output_dir: "data/charts"
   max_option_chars: 10000
   max_charts: 1000
+
+
+# ──────────────────────────────────────────────────
+# Phase 15 — Email Assistant
+# ──────────────────────────────────────────────────
+
+email:
+  enabled: false           # abilitare via OMNIA_EMAIL__ENABLED=true (.env.email)
+  imap_host: "imap.gmail.com"
+  imap_port: 993
+  imap_ssl: true
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_ssl: false               # false = STARTTLS su 587; true = SSL su 465
+  username: "itavfx04@gmail.com"
+  use_keyring: false
+  # password: set via OMNIA_EMAIL__PASSWORD env var (never commit)
+  fetch_last_n: 20
+  max_fetch: 50
+  max_email_body_chars: 8000
+  cache_ttl_s: 300
+  rate_limit_send_per_hour: 10
+  allowed_recipients: []
+  imap_idle_enabled: true
+  connection_timeout_s: 30
+  archive_folder: "Archive"
 
 
 # ──────────────────────────────────────────────────

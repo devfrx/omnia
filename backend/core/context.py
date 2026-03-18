@@ -16,6 +16,7 @@ from backend.core.config import OmniaConfig
 from backend.core.event_bus import EventBus
 from backend.core.protocols import (
     ConversationFileManagerProtocol,
+    EmailServiceProtocol,
     LLMServiceProtocol,
     LMStudioManagerProtocol,
     MemoryServiceProtocol,
@@ -60,6 +61,9 @@ class AppContext:
 
     note_service: NoteServiceProtocol | None = None
     """Obsidian-like note vault service."""
+
+    email_service: EmailServiceProtocol | None = None
+    """Async IMAP/SMTP email assistant service."""
 
     ws_connection_manager: WSConnectionManagerProtocol | None = None
     """Persistent event WebSocket connection manager."""

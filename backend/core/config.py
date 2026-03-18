@@ -15,7 +15,7 @@ import re
 
 import yaml
 from loguru import logger
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ---------------------------------------------------------------------------
@@ -570,6 +570,32 @@ class ChartConfig(BaseSettings):
     """Numero massimo di grafici persistiti."""
 
 
+class EmailConfig(BaseSettings):
+    """Email assistant (IMAP / SMTP) configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="OMNIA_EMAIL__")
+
+    enabled: bool = False
+    imap_host: str = ""
+    imap_port: int = 993
+    imap_ssl: bool = True
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_ssl: bool = False
+    username: str = ""
+    use_keyring: bool = True
+    password: SecretStr = Field(default=SecretStr(""))
+    fetch_last_n: int = 20
+    max_fetch: int = 50
+    max_email_body_chars: int = 8_000
+    cache_ttl_s: int = 300
+    rate_limit_send_per_hour: int = 10
+    allowed_recipients: list[str] = Field(default_factory=list)
+    imap_idle_enabled: bool = True
+    connection_timeout_s: int = 30
+    archive_folder: str = "Archive"
+
+
 class TrellisServiceConfig(BaseSettings):
     """TRELLIS 3D generation microservice configuration."""
 
@@ -631,6 +657,18 @@ class OmniaConfig(BaseSettings):
         env_nested_delimiter="__",
     )
 
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: Any,
+        env_settings: Any,
+        dotenv_settings: Any,
+        file_secret_settings: Any,
+    ) -> tuple[Any, ...]:
+        """Env vars override YAML (init kwargs), not the other way around."""
+        return (env_settings, init_settings, dotenv_settings, file_secret_settings)
+
     server: ServerConfig = Field(default_factory=ServerConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     stt: STTConfig = Field(default_factory=STTConfig)
@@ -664,6 +702,7 @@ class OmniaConfig(BaseSettings):
     mcp: McpConfig = Field(default_factory=McpConfig)
     trellis: TrellisServiceConfig = Field(default_factory=TrellisServiceConfig)
     chart: ChartConfig = Field(default_factory=ChartConfig)
+    email: EmailConfig = Field(default_factory=EmailConfig)
 
     @model_validator(mode="before")
     @classmethod

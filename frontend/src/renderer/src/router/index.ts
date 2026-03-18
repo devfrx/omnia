@@ -38,6 +38,11 @@ const router = createRouter({
       component: () => import('../views/NotesPageView.vue')
     },
     {
+      path: '/email',
+      name: 'email',
+      component: () => import('../views/EmailPageView.vue')
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/assistant'
     }

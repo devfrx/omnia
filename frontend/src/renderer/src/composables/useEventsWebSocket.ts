@@ -63,6 +63,14 @@ export function useEventsWebSocket() {
         ) {
           void mcpStore.loadServers()
         }
+
+        // Handle email events (Phase 15)
+        if (data.type === 'email.received') {
+          import('../stores/email').then(({ useEmailStore }) => {
+            const emailStore = useEmailStore()
+            emailStore.handleEmailReceived(data.folder as string)
+          })
+        }
       } catch {
         console.warn('[OMNIA Events WS] Failed to parse message')
       }

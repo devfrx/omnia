@@ -63,6 +63,10 @@ dependencies = [
     # System Info
     "psutil>=6.0",
 
+    # Email Assistant (Phase 15)
+    "aioimaplib>=1.0.1",
+    "aiosmtplib>=3.0",
+
     # Utils
     "loguru>=0.7",
     "watchfiles>=0.24",
@@ -97,6 +101,9 @@ tts-xtts = [
 tts-kokoro = [
     "kokoro-onnx>=0.4",
     "soundfile>=0.12",
+]
+email = [
+    "keyring>=24.0",
 ]
 # VRAM monitoring
 vram = [
