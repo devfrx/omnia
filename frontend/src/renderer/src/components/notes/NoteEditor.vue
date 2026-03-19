@@ -45,9 +45,9 @@ const renderedHtml = computed(() =>
     note.value ? renderMarkdown(localContent.value) : ''
 )
 
-/** Sync local state when currentNote changes. */
-watch(note, (n) => {
-    if (n) {
+/** Sync local state when currentNote changes (only on note switch, not on save response). */
+watch(note, (n, old) => {
+    if (n && n.id !== old?.id) {
         syncing = true
         localTitle.value = n.title
         localContent.value = n.content
