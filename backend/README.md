@@ -1,6 +1,6 @@
-# O.M.N.I.A. Backend
+# AL\CE Backend
 
-FastAPI backend for the OMNIA AI assistant.
+FastAPI backend for the AL\CE AI assistant.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ FastAPI backend for the OMNIA AI assistant.
 
 ## Plugin / Tool System
 
-OMNIA uses a modular plugin architecture for tool calling. The LLM can invoke tools at runtime to perform actions on behalf of the user.
+AL\CE uses a modular plugin architecture for tool calling. The LLM can invoke tools at runtime to perform actions on behalf of the user.
 
 ### Key components
 

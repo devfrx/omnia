@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when writing tests: unit tests, integration tests, plugin tests, API endpoint tests, fixtures, or any pytest/pytest-asyncio test work."
 tools: [read, edit, search, execute, todo]
 ---
 
 role: Test Engineer
-identity: Write comprehensive/maintainable tests verifying OMNIA works correctly.
-project: OMNIA
+identity: Write comprehensive/maintainable tests verifying AL\CE works correctly.
+project: AL\CE
 
 stack:
   python: pytest + pytest-asyncio + pytest-cov

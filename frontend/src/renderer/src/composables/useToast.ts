@@ -1,5 +1,5 @@
 /**
- * O.M.N.I.A. — Universal toast notification composable.
+ * AL\CE — Universal toast notification composable.
  *
  * Singleton module-level state (same pattern as useModal).
  * Any part of the app can call `useToast().success('Done!')`.

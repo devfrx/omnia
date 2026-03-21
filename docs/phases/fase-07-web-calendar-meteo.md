@@ -1,4 +1,4 @@
-### Fase 7 — Plugin: Ricerca Web + Calendario + Meteo
+﻿### Fase 7 — Plugin: Ricerca Web + Calendario + Meteo
 
 > **Struttura file per ogni plugin** (pattern consolidato dal codebase):
 > `backend/plugins/{name}/__init__.py` — import + `PLUGIN_REGISTRY["{name}"] = XxxPlugin`
@@ -104,7 +104,7 @@
   - Nessuna nuova dep per weather (httpx già in core)
 - [x] `backend/core/config.py`:
   - Aggiungere `WebConfig`, `CalendarConfig`, `WeatherConfig` come `BaseSettings` subclass
-  - Aggiungere a `OmniaConfig` come campi: `web: WebConfig`, `calendar: CalendarConfig`, `weather: WeatherConfig`
+  - Aggiungere a `AliceConfig` come campi: `web: WebConfig`, `calendar: CalendarConfig`, `weather: WeatherConfig`
 - [x] `config/default.yaml`:
   - Sezioni `web_search:`, `calendar:`, `weather:` con tutti i defaults
   - `plugins.enabled` rimane `[system_info, pc_automation]` — gli altri `enabled: false` individualmente per safety

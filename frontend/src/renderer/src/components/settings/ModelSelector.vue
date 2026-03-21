@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ModelSelector.vue — Compact dropdown for switching models.
  *
@@ -10,7 +10,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, nextTick, watch } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { LMStudioModel } from '../../types/settings'
-import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
+import AliceSpinner from '../../components/ui/AliceSpinner.vue'
 
 const props = withDefaults(defineProps<{
   /** Which model type to show: 'llm' (default) or 'embedding'. */
@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
       <span v-if="loadedModels.length > 1" class="model-selector__loaded-badge">
         {{ loadedModels.length }} caricati
       </span>
-      <OmniaSpinner v-if="settingsStore.isAnyOperationInProgress" size="xs" />
+      <AliceSpinner v-if="settingsStore.isAnyOperationInProgress" size="xs" />
       <svg class="model-selector__chevron" :class="{ 'model-selector__chevron--open': isOpen }" width="10" height="10"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
         stroke-linejoin="round">
@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
 
         <!-- Loading state -->
         <div v-if="settingsStore.isLoadingModels" class="model-selector__loading">
-          <OmniaSpinner size="xs" label="Caricamento modelli…" />
+          <AliceSpinner size="xs" label="Caricamento modelli…" />
         </div>
 
         <!-- Empty state -->
@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
                   :disabled="isModelBusy(model) || settingsStore.isAnyOperationInProgress"
                   @click="toggleModelLoad(model, $event)">
                   <!-- Loading spinner -->
-                  <OmniaSpinner v-if="isModelBusy(model)" size="xs" />
+                  <AliceSpinner v-if="isModelBusy(model)" size="xs" />
                   <!-- Unload icon (arrow up from tray) -->
                   <svg v-else-if="model.loaded" width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
                   :class="{ 'model-selector__load-btn--busy': isModelBusy(model) }" title="Carica in memoria"
                   :disabled="isModelBusy(model) || settingsStore.isAnyOperationInProgress"
                   @click="toggleModelLoad(model, $event)">
-                  <OmniaSpinner v-if="isModelBusy(model)" size="xs" />
+                  <AliceSpinner v-if="isModelBusy(model)" size="xs" />
                   <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="7 13 12 18 17 13" />

@@ -4,7 +4,7 @@ tools: [read, search, execute, todo]
 ---
 role: "Git Manager"
 identity: "Handle version control: commits/branches/merge strategies/repository hygiene."
-project: OMNIA
+project: AL\CE
 
 conventions:
   main_branch: master

@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Tests for voice + tool calling integration (Phase 4).
+"""AL\CE — Tests for voice + tool calling integration (Phase 4).
 
 Since the full voice → LLM → tool pipeline (M10) is not yet implemented in
 production, these tests focus on what IS available in voice.py:
@@ -20,7 +20,7 @@ from starlette.testclient import TestClient
 
 from backend.api.routes import voice as voice_module
 from backend.core.app import create_app
-from backend.core.config import OmniaConfig, load_config
+from backend.core.config import AliceConfig, load_config
 from backend.services.audio_utils import MAX_AUDIO_SIZE_BYTES
 
 
@@ -88,7 +88,7 @@ def _reset_voice_connections():
 @pytest.fixture
 async def voice_app():
     """FastAPI app with STT/TTS/VRAM disabled for clean voice tests."""
-    config = OmniaConfig()
+    config = AliceConfig()
     config.stt.enabled = False
     config.tts.enabled = False
     config.vram.monitoring_enabled = False

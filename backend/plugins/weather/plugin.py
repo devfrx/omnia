@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Weather plugin.
+"""AL\CE — Weather plugin.
 
 Exposes ``get_weather`` and ``get_weather_forecast`` tools powered by the
 Open-Meteo free API (no API key required).  All HTTP requests go through

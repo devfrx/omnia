@@ -123,7 +123,7 @@ async function onOpenFile(id: string): Promise<void> {
       <aside v-if="isOpen" class="sidebar">
         <!-- Header with close button -->
         <div class="sidebar__header">
-          <span class="sidebar__brand">O.M.N.I.A.</span>
+          <span class="sidebar__brand">AL\CE</span>
           <button class="sidebar__close" aria-label="Chiudi sidebar" @click="toggle">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round">

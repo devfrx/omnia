@@ -13,8 +13,8 @@
             <circle cx="24" cy="24" r="2" fill="var(--accent)" />
           </svg>
         </div>
-        <h1 class="home-view__title">O.M.N.I.A.</h1>
-        <p class="home-view__subtitle">Il tuo assistente IA personale</p>
+        <h1 class="home-view__title">AL\CE</h1>
+        <p class="home-view__subtitle">Adaptive Learning Interface for Computing & Execution</p>
       </div>
 
       <!-- Mode Cards -->
@@ -130,10 +130,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 }
 
 .home-view__title {
+  font-family: var(--font-display);
   font-size: 2.2rem;
   letter-spacing: 0.3em;
-  font-weight: var(--weight-light);
-  color: var(--text-primary);
+  font-weight: 600;
+  color: var(--accent);
   line-height: 1;
 }
 

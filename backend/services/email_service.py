@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Async email service (IMAP read + SMTP send)."""
+"""AL\CE — Async email service (IMAP read + SMTP send)."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 from backend.core.config import EmailConfig
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 
 _TRUNCATION_SUFFIX = "\n[…troncato]"
 
@@ -63,7 +63,7 @@ class EmailService:
 
     Credentials are never stored in plaintext; they are retrieved from
     the OS keyring (``use_keyring=True``, default) or from the
-    ``OMNIA_EMAIL__PASSWORD`` environment variable (``use_keyring=False``).
+    ``ALICE_EMAIL__PASSWORD`` environment variable (``use_keyring=False``).
 
     The service owns:
     - A persistent ``aioimaplib`` client for inbox operations
@@ -325,7 +325,7 @@ class EmailService:
         msg["To"] = ", ".join(to)
         msg["Subject"] = subject
         message_id = (
-            f"<omnia-{uuid.uuid4()}@{self._config.smtp_host}>"
+            f"<alice-{uuid.uuid4()}@{self._config.smtp_host}>"
         )
         msg["Message-ID"] = message_id
         if in_reply_to:
@@ -349,7 +349,7 @@ class EmailService:
         self._send_log.append(now)
         logger.info("Email inviata a {} — subject: {}", to, subject)
         await self._bus.emit(
-            OmniaEvent.EMAIL_SENT,
+            AliceEvent.EMAIL_SENT,
             to=to,
             subject=subject,
             message_id=message_id,
@@ -467,14 +467,14 @@ class EmailService:
 
                 pwd = await asyncio.to_thread(
                     keyring.get_password,
-                    "omnia",
+                    "alice",
                     self._config.username,
                 )
                 if pwd:
                     return pwd
                 logger.warning(
                     "Password non trovata nel keyring per '{}'. "
-                    "Esegui: keyring set omnia {}",
+                    "Esegui: keyring set alice {}",
                     self._config.username,
                     self._config.username,
                 )
@@ -708,7 +708,7 @@ class EmailService:
                         "EMAIL_RECEIVED notification from IMAP IDLE",
                     )
                     await self._bus.emit(
-                        OmniaEvent.EMAIL_RECEIVED,
+                        AliceEvent.EMAIL_RECEIVED,
                         folder="INBOX",
                     )
                     async with self._imap_lock:

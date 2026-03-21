@@ -1,4 +1,4 @@
-"""Tests for McpClientPlugin — MCP tool aggregation and dispatch."""
+﻿"""Tests for McpClientPlugin — MCP tool aggregation and dispatch."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from backend.core.config import McpConfig, McpServerConfig, OmniaConfig
+from backend.core.config import McpConfig, McpServerConfig, AliceConfig
 from backend.core.context import AppContext
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 from backend.core.plugin_models import (
     ConnectionStatus,
     ExecutionContext,
@@ -22,7 +22,7 @@ def _make_context(
     servers: list[McpServerConfig] | None = None,
 ) -> AppContext:
     """Create a minimal AppContext with MCP config."""
-    config = MagicMock(spec=OmniaConfig)
+    config = MagicMock(spec=AliceConfig)
     config.mcp = McpConfig(servers=servers or [])
     ctx = AppContext(config=config, event_bus=EventBus())
     return ctx
@@ -158,8 +158,8 @@ class TestMcpClientPluginInitialize:
             await plugin.initialize(ctx)
 
         event_types = [e[0] for e in events_received]
-        assert OmniaEvent.MCP_SERVER_CONNECTED in event_types
-        assert OmniaEvent.MCP_SERVER_DISCONNECTED in event_types
+        assert AliceEvent.MCP_SERVER_CONNECTED in event_types
+        assert AliceEvent.MCP_SERVER_DISCONNECTED in event_types
 
 
 class TestMcpClientPluginGetTools:

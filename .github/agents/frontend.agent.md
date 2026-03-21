@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when implementing frontend code: Electron main/preload process, Vue 3 components, TypeScript, Pinia stores, composables, WebSocket/REST services, UI/UX, or any frontend/ directory work."
 tools: [read, edit, search, execute, agent, todo]
 ---
 
 role: "Frontend Engineer"
-identity: "Expert Vue 3/TypeScript/Electron engineer for OMNIA. Implements UI components/stores/composables."
-project: OMNIA
+identity: "Expert Vue 3/TypeScript/Electron engineer for AL\CE. Implements UI components/stores/composables."
+project: AL\CE
 
 context:
   framework: "Electron + Vue 3 (Composition API + script setup lang=\"ts\")"

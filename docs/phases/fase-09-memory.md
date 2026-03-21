@@ -15,7 +15,7 @@
 - [x] Test suite (4 files, 46+ test cases) — §9.11
 - [x] Dependencies (sqlite-vec, fastembed optional) — §9.10
 
-> **Obiettivo**: trasformare OMNIA da assistente reattivo a agente con memoria semantica persistente.
+> **Obiettivo**: trasformare AL\CE da assistente reattivo a agente con memoria semantica persistente.
 > Ogni informazione rilevante può essere salvata esplicitamente (tool call) o recuperata
 > automaticamente al momento opportuno, senza che l'utente debba ripetersi tra sessioni.
 
@@ -181,7 +181,7 @@ class EmbeddingClient:
             return await self._fastembed.encode(text)
 ```
 
-**Coerenza dimensioni**: quando il modello embedding cambia (es. switch da 768 a 384 dim), il `MemoryService` rileva la mismatch alla creazione della tabella vettoriale e lancia `MemoryDimensionMismatchError` con istruzione chiara: `"Run: omnia memory migrate --reembed"` (script futuro).
+**Coerenza dimensioni**: quando il modello embedding cambia (es. switch da 768 a 384 dim), il `MemoryService` rileva la mismatch alla creazione della tabella vettoriale e lancia `MemoryDimensionMismatchError` con istruzione chiara: `"Run: alice memory migrate --reembed"` (script futuro).
 
 ---
 
@@ -189,13 +189,13 @@ class EmbeddingClient:
 
 ```python
 class MemoryConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="OMNIA_MEMORY__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_MEMORY__")
 
     enabled: bool = False
     """Abilita il Memory Service. False di default (opt-in esplicito)."""
 
     db_path: str = "data/memory.db"
-    """Path del file SQLite dedicato alla memoria (separato da omnia.db)."""
+    """Path del file SQLite dedicato alla memoria (separato da alice.db)."""
 
     embedding_model: str = "nomic-embed-text"
     """Nome modello embedding per LM Studio/Ollama /v1/embeddings."""
@@ -225,7 +225,7 @@ class MemoryConfig(BaseSettings):
     """Rimuovi automaticamente ricordi non acceduti da N giorni (0 = disabilitato)."""
 ```
 
-Aggiunta a `OmniaConfig`:
+Aggiunta a `AliceConfig`:
 ```python
 memory: MemoryConfig = Field(default_factory=MemoryConfig)
 ```
@@ -267,7 +267,7 @@ backend/plugins/memory/
 Pattern `__init__.py` identico a tutti gli altri plugin (es. `web_search/__init__.py`):
 
 ```python
-"""O.M.N.I.A. — Memory plugin package.
+"""AL\CE — Memory plugin package.
 
 Importing this module registers MemoryPlugin in the static PLUGIN_REGISTRY.
 """
@@ -505,7 +505,7 @@ conn.enable_load_extension(False)  # re-disable per sicurezza
 ```
 Se Python è compilato senza `SQLITE_ENABLE_LOAD_EXTENSION` (es. distributori che lo rimuovono per sicurezza), `MemoryService.initialize()` cattura `AttributeError` e fallisce con un errore diagnostico chiaro: `"sqlite-vec non caricabile: ricompilare Python con SQLITE_ENABLE_LOAD_EXTENSION=1 o usare il wheel uv/conda"`. Il wheel Python distribuito con `uv` (usato nel progetto) include il flag — nessun problema in pratica.
 
-**DB separato**: `MemoryService` apre la propria connessione `aiosqlite` su `data/memory.db` (vedi `MemoryConfig.db_path`), separata da `data/omnia.db` (DB principale). Questo evita contaminazione delle migration SQLAlchemy con le tabelle virtuali sqlite-vec e permette di cancellare/ricreare la memoria senza toccare il DB principale.
+**DB separato**: `MemoryService` apre la propria connessione `aiosqlite` su `data/memory.db` (vedi `MemoryConfig.db_path`), separata da `data/alice.db` (DB principale). Questo evita contaminazione delle migration SQLAlchemy con le tabelle virtuali sqlite-vec e permette di cancellare/ricreare la memoria senza toccare il DB principale.
 
 **VRAM impact**:
 
@@ -573,7 +573,7 @@ backend/
 │   └── routes/
 │       └── memory.py          ← REST /api/memory/*
 ├── core/
-│   ├── config.py              ← + MemoryConfig + OmniaConfig.memory field
+│   ├── config.py              ← + MemoryConfig + AliceConfig.memory field
 │   ├── protocols.py           ← + MemoryServiceProtocol
 │   └── app.py                 ← + MemoryService init nel lifespan
 ├── db/

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { api } from '../services/api'
 import type { DownloadStatusResponse, LMStudioModel, ModelOperationResponse } from '../types/settings'
 
-export interface OmniaSettings {
+export interface AliceSettings {
   llm: {
     model: string
     temperature: number
@@ -25,7 +25,7 @@ export interface OmniaSettings {
 }
 
 export const useSettingsStore = defineStore('settings', () => {
-  const settings = ref<OmniaSettings>({
+  const settings = ref<AliceSettings>({
     llm: {
       model: 'auto',
       temperature: 0.7,

@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — File system search with path validation."""
+"""AL\CE — File system search with path validation."""
 
 from __future__ import annotations
 

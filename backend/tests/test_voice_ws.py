@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Tests for voice WebSocket endpoint (Phase 4).
+"""AL\CE — Tests for voice WebSocket endpoint (Phase 4).
 
 Tests the voice WS protocol, REST status endpoint, connection limits,
 ping/pong, and TTS streaming against the real ``voice.py`` router.

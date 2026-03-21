@@ -1,4 +1,4 @@
-"""Tests for backend.plugins.calendar.plugin — CalendarPlugin."""
+﻿"""Tests for backend.plugins.calendar.plugin — CalendarPlugin."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import pytest
 
 from backend.core.config import load_config
 from backend.core.context import AppContext
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 from backend.core.plugin_models import ConnectionStatus, ExecutionContext, ToolResult
 from backend.plugins.calendar.plugin import CalendarEvent, CalendarPlugin
 
@@ -809,7 +809,7 @@ class TestReminderDedup:
         # Should have emitted exactly once (dedup)
         assert plugin.ctx.event_bus.emit.await_count == 1
         plugin.ctx.event_bus.emit.assert_awaited_with(
-            OmniaEvent.CALENDAR_REMINDER,
+            AliceEvent.CALENDAR_REMINDER,
             event_id=str(ev.id),
             title=ev.title,
             start_time=ev.start_time.astimezone(
@@ -821,7 +821,7 @@ class TestReminderDedup:
     async def test_reminder_uses_enum_event(
         self, plugin: CalendarPlugin, mock_session: AsyncMock,
     ) -> None:
-        """Reminder must emit OmniaEvent.CALENDAR_REMINDER, not a raw string."""
+        """Reminder must emit AliceEvent.CALENDAR_REMINDER, not a raw string."""
         plugin.ctx.db = lambda: _mock_db_session(mock_session)
 
         now = datetime.now(timezone.utc)
@@ -841,5 +841,5 @@ class TestReminderDedup:
         if plugin.ctx.event_bus.emit.await_count:
             call_args = plugin.ctx.event_bus.emit.call_args
             event_arg = call_args[0][0]
-            assert isinstance(event_arg, OmniaEvent)
-            assert event_arg is OmniaEvent.CALENDAR_REMINDER
+            assert isinstance(event_arg, AliceEvent)
+            assert event_arg is AliceEvent.CALENDAR_REMINDER

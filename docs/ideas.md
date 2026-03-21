@@ -1,4 +1,4 @@
-# OMNIA — Nuove Idee di Espansione
+﻿# AL\CE — Nuove Idee di Espansione
 
 > Brainstorming di idee nuove (non presenti nel backlog originale).
 > Organizzate per categoria con stima ROI.
@@ -10,7 +10,7 @@
 ### Wake Word Always-On ⭐⭐⭐⭐⭐
 
 Wake word detection locale (openWakeWord, tiny model CPU-only) sempre attiva in background.
-L'utente dice "Omnia..." e l'app si attiva senza toccare nulla — trasforma il sistema da app
+L'utente dice "alice..." e l'app si attiva senza toccare nulla — trasforma il sistema da app
 a assistente ambientale.
 
 #### Architettura proposta
@@ -29,7 +29,7 @@ a assistente ambientale.
 
 ### Local Macro Scheduler (Cron interno) ⭐⭐⭐⭐
 
-Sistema per schedulare "routine" OMNIA: ogni lunedì 8:00 genera briefing
+Sistema per schedulare "routine" AL\CE: ogni lunedì 8:00 genera briefing
 (Weather + News + Calendar), ogni venerdì sera backup note, ogni sera report giornaliero.
 Diverso dal Calendar plugin: agisce, non ricorda.
 
@@ -96,7 +96,7 @@ avevo copiato ieri"). Usa `sqlite-vec` già presente.
 
 ### Script Generator + Task Scheduler Windows ⭐⭐⭐
 
-L'utente descrive in linguaggio naturale cosa vuole automatizzare → OMNIA genera lo script
+L'utente descrive in linguaggio naturale cosa vuole automatizzare → AL\CE genera lo script
 PowerShell con LLM → lo schedula in Windows Task Scheduler via `schtasks.exe`.
 
 #### Architettura proposta
@@ -119,7 +119,7 @@ PowerShell con LLM → lo schedula in Windows Task Scheduler via `schtasks.exe`.
 ### Voice Cloning Wizard ⭐⭐⭐
 
 Wizard UI per creare un profilo vocale personalizzato con XTTS v2 (già supportato).
-OMNIA parlerà con la voce dell'utente.
+AL\CE parlerà con la voce dell'utente.
 
 #### Architettura proposta
 
@@ -319,7 +319,7 @@ trend di spesa nel Chart plugin. Zero API esterne.
 
 ### Persona System ⭐⭐⭐⭐⭐
 
-L'utente definisce "persona" diverse per OMNIA con contesti d'uso differenti.
+L'utente definisce "persona" diverse per AL\CE con contesti d'uso differenti.
 Ogni persona ha: system prompt dedicato, voce TTS, set di plugin attivi, temperatura LLM.
 Switching istantaneo dalla barra superiore.
 
@@ -343,7 +343,7 @@ Switching istantaneo dalla barra superiore.
 
 ### Proactive Assistant Mode ⭐⭐⭐⭐
 
-OMNIA osserva i pattern dell'utente e interviene proattivamente: avvisi, suggerimenti
+AL\CE osserva i pattern dell'utente e interviene proattivamente: avvisi, suggerimenti
 contestuali, reminder intelligenti. Architettura event-driven sul `EventBus` esistente.
 
 #### Architettura proposta
@@ -364,7 +364,7 @@ contestuali, reminder intelligenti. Architettura event-driven sul `EventBus` esi
 ### Desktop Widget Overlay ⭐⭐⭐
 
 Finestra Electron secondaria, semi-trasparente, always-on-top, miniaturizzata.
-Mostra status OMNIA, orologio, prossimo evento, meteo. Click per aprire app principale.
+Mostra status AL\CE, orologio, prossimo evento, meteo. Click per aprire app principale.
 
 #### Architettura proposta
 
@@ -405,7 +405,7 @@ Le tool call possono essere incluse o escluse.
 
 ### Auto-Journaling Serale ⭐⭐⭐
 
-Ogni sera OMNIA genera automaticamente un diario sintetizzando: eventi Calendar,
+Ogni sera AL\CE genera automaticamente un diario sintetizzando: eventi Calendar,
 conversazioni avute, task completati, app più usate. Zero input utente.
 
 #### Architettura proposta
@@ -463,7 +463,7 @@ per fine-tuning futuro (LoRA). Export tool genera dataset pronto per training.
 
 ### Ambient Sound Engine ⭐⭐
 
-OMNIA gestisce suoni ambientali (white noise, pioggia, lo-fi) con duck automatico
+AL\CE gestisce suoni ambientali (white noise, pioggia, lo-fi) con duck automatico
 quando il TTS parla.
 
 #### Architettura proposta
@@ -490,7 +490,7 @@ Nessun cloud, nessun server esterno.
 
 #### Architettura proposta
 
-- Discovery via mDNS (`zeroconf`) — ogni istanza OMNIA si annuncia sulla LAN
+- Discovery via mDNS (`zeroconf`) — ogni istanza AL\CE si annuncia sulla LAN
 - Sync protocol: client pull-based, confronto hash per ogni entità, trasferimento delta
 - Crittografia: TLS con certificato self-signed generato al primo avvio (TOFU — trust on
   first use, come SSH)
@@ -510,7 +510,7 @@ Nessun cloud, nessun server esterno.
 |--------|-------------|------------|-----|
 | **Obsidian Vault Sync** | Legge/scrive vault Obsidian esistente via file system | Nessuna nuova | ⭐⭐⭐⭐ |
 | **Bitwarden Local** | Legge credenziali da Bitwarden CLI locale (no cloud API) | `subprocess` (già presente) | ⭐⭐⭐⭐ |
-| **GitHub Copilot via MCP** | Espone tool OMNIA a GitHub Copilot tramite MCP server | MCP client già presente | ⭐⭐⭐ |
+| **GitHub Copilot via MCP** | Espone tool AL\CE a GitHub Copilot tramite MCP server | MCP client già presente | ⭐⭐⭐ |
 | **Spotify Local** | Controllo Spotify via API locale (estende `media_control`) | `spotipy` | ⭐⭐⭐ |
 | **Radarr/Sonarr** | Gestione media server locale via REST API | `httpx` (già presente) | ⭐⭐ |
 | **Notion Import** | Importa pagine Notion via export locale (HTML/Markdown) | `beautifulsoup4` (già presente) | ⭐⭐ |

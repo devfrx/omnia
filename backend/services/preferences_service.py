@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — User preferences persistence service."""
+"""AL\CE — User preferences persistence service."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlmodel import select
 
-from backend.core.config import OmniaConfig
+from backend.core.config import AliceConfig
 from backend.db.models import UserPreference, _utcnow
 
 
@@ -99,7 +99,7 @@ class PreferencesService:
                         await self.save_preference(f"llm.{key}", value)
 
     def apply_to_config(
-        self, config: OmniaConfig, prefs: dict[str, Any],
+        self, config: AliceConfig, prefs: dict[str, Any],
     ) -> None:
         """Overlay persisted preferences onto the config object.
 

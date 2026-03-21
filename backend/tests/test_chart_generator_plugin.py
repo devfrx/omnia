@@ -1,4 +1,4 @@
-"""Test ChartGeneratorPlugin — esecuzione tool LLM."""
+﻿"""Test ChartGeneratorPlugin — esecuzione tool LLM."""
 
 import pytest
 from unittest.mock import MagicMock
@@ -32,7 +32,7 @@ async def test_generate_chart_success(plugin) -> None:
         "echarts_option": VALID_OPTION,
     }, context=None)
     assert result.success is True
-    assert result.content_type == "application/vnd.omnia.chart+json"
+    assert result.content_type == "application/vnd.alice.chart+json"
     import json
     payload = json.loads(result.content)
     assert "chart_id" in payload

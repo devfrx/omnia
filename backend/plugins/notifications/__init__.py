@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Notifications plugin package.
+"""AL\CE — Notifications plugin package.
 
 Importing this module registers :class:`NotificationsPlugin` in the
 static ``PLUGIN_REGISTRY`` so the plugin manager can discover it.

@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Notes plugin.
+"""AL\CE — Notes plugin.
 
 Exposes six tools — ``create_note``, ``read_note``, ``update_note``,
 ``delete_note``, ``search_notes``, ``list_notes`` — that delegate to
@@ -11,7 +11,7 @@ import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import (
     ConnectionStatus,
@@ -329,7 +329,7 @@ class NotesPlugin(BasePlugin):
             )
             elapsed = (time.perf_counter() - start) * 1000
             await self._ctx.event_bus.emit(
-                OmniaEvent.NOTE_CREATED,
+                AliceEvent.NOTE_CREATED,
                 note_id=entry.id, title=title,
             )
             return ToolResult.ok(
@@ -416,7 +416,7 @@ class NotesPlugin(BasePlugin):
                     execution_time_ms=elapsed,
                 )
             await self._ctx.event_bus.emit(
-                OmniaEvent.NOTE_UPDATED, note_id=note_id,
+                AliceEvent.NOTE_UPDATED, note_id=note_id,
             )
             return ToolResult.ok(
                 content=f"Note {note_id} updated",
@@ -445,7 +445,7 @@ class NotesPlugin(BasePlugin):
             elapsed = (time.perf_counter() - start) * 1000
             if deleted:
                 await self._ctx.event_bus.emit(
-                    OmniaEvent.NOTE_DELETED, note_id=note_id,
+                    AliceEvent.NOTE_DELETED, note_id=note_id,
                 )
                 return ToolResult.ok(
                     content=f"Note {note_id} deleted",

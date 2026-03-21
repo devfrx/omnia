@@ -1,11 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
- * OmniaLoader.vue — Full-screen animated splash loader.
+ * AliceLoader.vue — Full-screen animated splash loader.
  *
  * Displayed during app startup while the backend initialises, and reusable
  * for any full-screen blocking loading state.
  *
- * The animation is inspired by the OMNIA logo: three concentric rings in
+ * The animation is inspired by the AL\CE logo: three concentric rings in
  * warm cream that rotate at different speeds and pulse with a soft glow.
  *
  * Props:
@@ -29,11 +29,11 @@ withDefaults(
 </script>
 
 <template>
-    <Transition name="omnia-splash-fade">
-        <div v-if="visible" class="omnia-splash" role="status" :aria-label="message">
+    <Transition name="alice-splash-fade">
+        <div v-if="visible" class="alice-splash" role="status" :aria-label="message">
             <!-- Animated logo ─────────────────────────────────── -->
-            <div class="omnia-splash__logo" aria-hidden="true">
-                <svg class="omnia-splash__svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <div class="alice-splash__logo" aria-hidden="true">
+                <svg class="alice-splash__svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <!--
             Three concentric rings, each with a stroke-dasharray gap so they
             appear as arcs rather than full circles — this produces the
@@ -42,22 +42,22 @@ withDefaults(
           -->
 
                     <!-- Outer ring: largest, most transparent, slow clockwise -->
-                    <circle class="omnia-splash__ring omnia-splash__ring--outer" cx="60" cy="60" r="52"
+                    <circle class="alice-splash__ring alice-splash__ring--outer" cx="60" cy="60" r="52"
                         stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="272 54" stroke-dashoffset="0"
                         stroke-linecap="round" opacity="0.30" />
 
                     <!-- Mid ring: medium, counter-clockwise, offset dasharray -->
-                    <circle class="omnia-splash__ring omnia-splash__ring--mid" cx="60" cy="60" r="37"
+                    <circle class="alice-splash__ring alice-splash__ring--mid" cx="60" cy="60" r="37"
                         stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="200 32" stroke-dashoffset="40"
                         stroke-linecap="round" opacity="0.52" />
 
                     <!-- Inner ring: tightest, clockwise, highest speed -->
-                    <circle class="omnia-splash__ring omnia-splash__ring--inner" cx="60" cy="60" r="22"
+                    <circle class="alice-splash__ring alice-splash__ring--inner" cx="60" cy="60" r="22"
                         stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="110 28" stroke-dashoffset="15"
                         stroke-linecap="round" opacity="0.72" />
 
                     <!-- Core dot: always visible, gently pulses in scale -->
-                    <circle class="omnia-splash__core" cx="60" cy="60" r="5" fill="var(--accent)" opacity="0.85" />
+                    <circle class="alice-splash__core" cx="60" cy="60" r="5" fill="var(--accent)" opacity="0.85" />
                 </svg>
 
                 <!--
@@ -66,7 +66,7 @@ withDefaults(
           requiring a CSS filter on the animated element (avoids stacking
           context performance issues on low-end hardware).
         -->
-                <svg class="omnia-splash__glow" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+                <svg class="alice-splash__glow" viewBox="0 0 120 120" fill="none" aria-hidden="true">
                     <circle cx="60" cy="60" r="52" stroke="var(--accent)" stroke-width="8" opacity="0.04" />
                     <circle cx="60" cy="60" r="37" stroke="var(--accent)" stroke-width="10" opacity="0.05" />
                     <circle cx="60" cy="60" r="22" stroke="var(--accent)" stroke-width="12" opacity="0.06" />
@@ -75,7 +75,7 @@ withDefaults(
             </div>
 
             <!-- Message ─────────────────────────────────────────── -->
-            <p class="omnia-splash__message">{{ message }}</p>
+            <p class="alice-splash__message">{{ message }}</p>
         </div>
     </Transition>
 </template>
@@ -83,7 +83,7 @@ withDefaults(
 <style scoped>
 /* ── Shell ───────────────────────────────────────────────────── */
 
-.omnia-splash {
+.alice-splash {
     position: fixed;
     inset: 0;
     z-index: var(--z-modal);
@@ -97,14 +97,14 @@ withDefaults(
 
 /* ── Logo container ──────────────────────────────────────────── */
 
-.omnia-splash__logo {
+.alice-splash__logo {
     position: relative;
     width: 120px;
     height: 120px;
 }
 
-.omnia-splash__svg,
-.omnia-splash__glow {
+.alice-splash__svg,
+.alice-splash__glow {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -112,26 +112,26 @@ withDefaults(
     overflow: visible;
 }
 
-.omnia-splash__glow {
+.alice-splash__glow {
     filter: blur(10px);
     z-index: -1;
 }
 
 /* ── Ring keyframes ──────────────────────────────────────────── */
 
-@keyframes omniaRotateCW {
+@keyframes aliceRotateCW {
     to {
         transform: rotate(360deg);
     }
 }
 
-@keyframes omniaRotateCCW {
+@keyframes aliceRotateCCW {
     to {
         transform: rotate(-360deg);
     }
 }
 
-@keyframes omniaCorePulse {
+@keyframes aliceCorePulse {
 
     0%,
     100% {
@@ -145,7 +145,7 @@ withDefaults(
     }
 }
 
-@keyframes omniaOpacityBreath {
+@keyframes aliceOpacityBreath {
 
     0%,
     100% {
@@ -159,73 +159,73 @@ withDefaults(
 
 /* ── Ring animations ─────────────────────────────────────────── */
 
-.omnia-splash__ring {
+.alice-splash__ring {
     transform-origin: 60px 60px;
 }
 
-.omnia-splash__ring--outer {
+.alice-splash__ring--outer {
     --ring-lo: 0.22;
     --ring-hi: 0.42;
     animation:
-        omniaRotateCW 9s linear infinite,
-        omniaOpacityBreath 4s ease-in-out infinite;
+        aliceRotateCW 9s linear infinite,
+        aliceOpacityBreath 4s ease-in-out infinite;
 }
 
-.omnia-splash__ring--mid {
+.alice-splash__ring--mid {
     --ring-lo: 0.42;
     --ring-hi: 0.68;
     animation:
-        omniaRotateCCW 5.5s linear infinite,
-        omniaOpacityBreath 3.5s ease-in-out 0.5s infinite;
+        aliceRotateCCW 5.5s linear infinite,
+        aliceOpacityBreath 3.5s ease-in-out 0.5s infinite;
 }
 
-.omnia-splash__ring--inner {
+.alice-splash__ring--inner {
     --ring-lo: 0.60;
     --ring-hi: 0.90;
     animation:
-        omniaRotateCW 3.2s linear infinite,
-        omniaOpacityBreath 2.8s ease-in-out 0.9s infinite;
+        aliceRotateCW 3.2s linear infinite,
+        aliceOpacityBreath 2.8s ease-in-out 0.9s infinite;
 }
 
-.omnia-splash__core {
+.alice-splash__core {
     transform-origin: 60px 60px;
-    animation: omniaCorePulse 2.4s ease-in-out infinite;
+    animation: aliceCorePulse 2.4s ease-in-out infinite;
 }
 
 /* ── Message ─────────────────────────────────────────────────── */
 
-.omnia-splash__message {
+.alice-splash__message {
     font-family: var(--font-sans);
     font-size: var(--text-xs, 11px);
     color: var(--text-muted);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    animation: omniaOpacityBreath 2.4s ease-in-out infinite;
+    animation: aliceOpacityBreath 2.4s ease-in-out infinite;
     --ring-lo: 0.45;
     --ring-hi: 0.90;
 }
 
 /* ── Enter / leave transitions ───────────────────────────────── */
 
-.omnia-splash-fade-enter-active {
+.alice-splash-fade-enter-active {
     transition: opacity 0.4s ease;
 }
 
-.omnia-splash-fade-leave-active {
+.alice-splash-fade-leave-active {
     transition: opacity 0.6s ease, transform 0.6s ease;
     pointer-events: none;
 }
 
-.omnia-splash-fade-enter-from {
+.alice-splash-fade-enter-from {
     opacity: 0;
 }
 
-.omnia-splash-fade-leave-from {
+.alice-splash-fade-leave-from {
     opacity: 1;
     transform: scale(1);
 }
 
-.omnia-splash-fade-leave-to {
+.alice-splash-fade-leave-to {
     opacity: 0;
     transform: scale(1.03);
 }

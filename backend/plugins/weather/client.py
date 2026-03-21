@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Weather HTTP client (open-meteo.com).
+"""AL\CE — Weather HTTP client (open-meteo.com).
 
 Async client for the Open-Meteo free weather API.  Provides geocoding,
 current-weather, and daily-forecast endpoints with in-memory caching

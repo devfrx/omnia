@@ -1,6 +1,6 @@
-# TRELLIS 3D Generation — Setup & Troubleshooting Guide
+﻿# TRELLIS 3D Generation — Setup & Troubleshooting Guide
 
-> Guida completa per far funzionare la generazione 3D neurale (TRELLIS) in OMNIA
+> Guida completa per far funzionare la generazione 3D neurale (TRELLIS) in AL\CE
 > su GPU NVIDIA Blackwell (RTX 5080) con Windows + CUDA 12.8 + VS 2025.
 
 ## Indice
@@ -12,7 +12,7 @@
 5. [Ricompilazione estensioni CUDA da sorgente](#5-ricompilazione-estensioni-cuda-da-sorgente)
 6. [Patch host_config.h per VS 2025 (MSVC 19.50)](#6-patch-host_configh-per-vs-2025-msvc-1950)
 7. [Configurazione server.py](#7-configurazione-serverpy)
-8. [Configurazione OMNIA](#8-configurazione-omnia)
+8. [Configurazione AL\CE](#8-configurazione-alce)
 9. [Avvio e test](#9-avvio-e-test)
 10. [Problemi risolti (changelog)](#10-problemi-risolti-changelog)
 
@@ -22,7 +22,7 @@
 
 ```
 ┌────────────────────────────────┐      ┌──────────────────────────────┐
-│  OMNIA Backend (Python 3.14)   │      │  TRELLIS Microservice        │
+│  AL\CE Backend (Python 3.14)   │      │  TRELLIS Microservice        │
 │  ┌──────────────────────────┐  │      │  (Python 3.10, porta 8090)   │
 │  │ cad_generator plugin     │──┼─HTTP─┤  trellis_server/server.py    │
 │  │ - VRAM swap (unload LLM) │  │      │  - FastAPI wrapper            │
@@ -48,7 +48,7 @@
 └────────────────────────────────┘
 ```
 
-**Perché un processo separato:** OMNIA usa Python 3.14; TRELLIS richiede 3.10-3.12
+**Perché un processo separato:** AL\CE usa Python 3.14; TRELLIS richiede 3.10-3.12
 (flash-attn, kaolin, spconv non compilano su 3.14). Impossibile coesistere nello
 stesso venv. Il microservizio si avvia on-demand e rilascia VRAM quando inattivo.
 
@@ -66,7 +66,7 @@ TRELLIS, poi ricarica l'LLM. Tutto avviene nella finestra di tool execution
 | **GPU** | NVIDIA con ≥16GB VRAM (testato su RTX 5080 Blackwell sm_120) |
 | **CUDA Toolkit** | v12.8 (per `nvcc`, `cudart.lib`, headers JIT) |
 | **VS Build Tools** | 2022 o 2025 (con VS 2025 serve [patch host_config.h](#6-patch-host_configh-per-vs-2025-msvc-1950)) |
-| **Python** | 3.10 (nel venv TRELLIS; OMNIA usa 3.14 separatamente) |
+| **Python** | 3.10 (nel venv TRELLIS; AL\CE usa 3.14 separatamente) |
 | **uv** | Package manager (usato dall'installer TRELLIS) |
 | **OS** | Windows 10/11 |
 | **LM Studio** | Per gestione LLM e VRAM swap |
@@ -81,7 +81,7 @@ TRELLIS, poi ricarica l'LLM. Tutto avviene nella finestra di tool execution
 cd C:\Users\Jays\Desktop\omnia
 git clone --recurse-submodules https://github.com/devfrx/TRELLIS-for-windows.git
 
-# 2. Installa con lo script PowerShell di OMNIA
+# 2. Installa con lo script PowerShell di AL\CE
 cd omnia
 .\scripts\start-trellis.ps1 -Install
 ```
@@ -95,7 +95,7 @@ Lo script `start-trellis.ps1`:
 **Layout risultante:**
 ```
 C:\Users\Jays\Desktop\omnia\
-├── omnia\                      ← progetto OMNIA
+├── omnia\                      ← progetto AL\CE
 │   ├── trellis_server\server.py  ← microservizio wrapper
 │   └── scripts\start-trellis.ps1
 └── TRELLIS-for-windows\        ← fork devfrx (Blackwell-ready)
@@ -271,7 +271,7 @@ microservizio HTTP. Caratteristiche principali:
 
 ---
 
-## 8. Configurazione OMNIA
+## 8. Configurazione AL\CE
 
 ### config/default.yaml
 
@@ -303,7 +303,7 @@ Il plugin `backend/plugins/cad_generator/` gestisce:
 - GLTFLoader per file `.glb`
 - OrbitControls (drag/scroll/pinch)
 - Toolbar: auto-rotate, wireframe, reset camera, download
-- Stile visivo coerente con il tema OMNIA (charcoal scuro + cream accent)
+- Stile visivo coerente con il tema AL\CE (charcoal scuro + cream accent)
 - Auto-fit camera al bounding box del modello
 - Cleanup completo risorse GPU on unmount
 
@@ -318,7 +318,7 @@ Il plugin `backend/plugins/cad_generator/` gestisce:
 cd C:\Users\Jays\Desktop\omnia\omnia
 .\scripts\start-trellis.ps1
 
-# 3. Avvia backend OMNIA (in un altro terminale)
+# 3. Avvia backend AL\CE (in un altro terminale)
 & ".\backend\.venv\Scripts\python.exe" -m uvicorn backend.core.app:create_app --factory --reload --reload-dir backend --host 0.0.0.0 --port 8000
 
 # 4. Avvia frontend Electron
@@ -327,7 +327,7 @@ cd frontend && npm run dev
 
 ### Test manuale
 
-Nella chat OMNIA, scrivi:
+Nella chat AL\CE, scrivi:
 ```
 Genera un modello 3D di una tazza di ceramica
 ```

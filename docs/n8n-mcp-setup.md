@@ -1,6 +1,6 @@
 # n8n MCP Integration — Setup Guide
 
-> **O.M.N.I.A. Phase 11** — Connecting to n8n as an MCP Server
+> **AL\CE Phase 11** — Connecting to n8n as an MCP Server
 
 ## What is n8n?
 
@@ -15,7 +15,7 @@ as MCP tools.
 |-------------|----------------|
 | n8n         | v1.76+         |
 | Node.js     | v18+           |
-| OMNIA       | Phase 11       |
+| AL\CE       | Phase 11       |
 
 ## Quick Start
 
@@ -65,7 +65,7 @@ Example workflow: "Send Email Notification"
 - Action: Gmail/SMTP node sends the email
 - Response: Returns `{success: true, messageId: "..."}`
 
-### 5. Configure OMNIA
+### 5. Configure AL\CE
 
 Edit `config/default.yaml` and add n8n to the MCP servers list:
 
@@ -80,14 +80,14 @@ mcp:
 
 ### 6. Verify Connection
 
-After restarting OMNIA:
+After restarting AL\CE:
 
 1. Open **Settings** → **Server MCP** in the UI
 2. The n8n server should show as "Connesso" (Connected)
 3. Workflow tools will appear as `mcp_n8n_{workflow_name}`
 4. Ask the assistant to list available tools — n8n workflows should be included
 
-## Workflow Examples for OMNIA
+## Workflow Examples for AL\CE
 
 ### Home Automation via n8n
 ```

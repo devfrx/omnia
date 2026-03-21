@@ -1,11 +1,11 @@
 ### Fase 13 — Note System (Obsidian-like)
 
-> **Obiettivo**: aggiungere a OMNIA un sistema di note personali ispirato a Obsidian.
+> **Obiettivo**: aggiungere a AL\CE un sistema di note personali ispirato a Obsidian.
 > Radicalmente distinto dal Memory Service (Fase 9): la memoria è automatica, semantica
 > e invisibile all'utente (accumulata in background, iniettata nell'LLM context). Le
 > **note** sono documenti Markdown intenzionalmente creati dall'utente o dall'LLM su
 > esplicita istruzione, organizzati in cartelle e tag, con wikilinks ed editing diretto
-> nella UI. Con Fase 13 OMNIA diventa anche un **vault di conoscenza personale** al
+> nella UI. Con Fase 13 AL\CE diventa anche un **vault di conoscenza personale** al
 > fianco dell'assistente conversazionale.
 
 - [x] NotesConfig in config.py + default.yaml — §13.1
@@ -15,7 +15,7 @@
 - [x] App lifespan wiring (startup init + shutdown close) — §13.3
 - [x] NotesPlugin (6 tool, schemi JSON completi) — §13.4
 - [x] REST API /api/notes (7 endpoint) — §13.5
-- [x] OmniaEvent NOTE_* events in event_bus.py — §13.6
+- [x] AliceEvent NOTE_* events in event_bus.py — §13.6
 - [x] System prompt guidelines — §13.7
 - [x] Frontend types/notes.ts + stores/notes.ts — §13.8
 - [x] services/api.ts aggiornato (metodi notes) — §13.8
@@ -36,7 +36,7 @@
 - Il plugin `notes` delega tutta la logica a `ctx.note_service` senza conoscere SQL o
   embedding — separazione responsabilità pulita, identica al pattern Fase 9
 
-**Perché DB separato `data/notes.db` e non `data/omnia.db`:**
+**Perché DB separato `data/notes.db` e non `data/alice.db`:**
 - La tabella virtuale FTS5 (`note_fts`) usa `content=note_entries` (external content FTS5),
   che richiede trigger DDL per il sync; SQLAlchemy non gestisce trigger né tabelle virtuali
 - Le tabelle sqlite-vec (`note_vectors`) sono incompatibili con `SQLModel.metadata.create_all`
@@ -76,13 +76,13 @@
 class NotesConfig(BaseSettings):
     """Note system (Obsidian-like vault) configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_NOTES__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_NOTES__")
 
     enabled: bool = False
     """Abilita il Note System. False di default (opt-in esplicito)."""
 
     db_path: str = "data/notes.db"
-    """Path del file SQLite dedicato alle note (separato da omnia.db e memory.db)."""
+    """Path del file SQLite dedicato alle note (separato da alice.db e memory.db)."""
 
     embedding_enabled: bool = True
     """Abilita ricerca semantica tramite EmbeddingClient (richiede LM Studio online
@@ -108,7 +108,7 @@ class NotesConfig(BaseSettings):
     """Massimo risultati per query di ricerca (FTS + semantica combinata)."""
 ```
 
-Aggiunta a `OmniaConfig` (dopo il campo `memory`):
+Aggiunta a `AliceConfig` (dopo il campo `memory`):
 ```python
 notes: NotesConfig = Field(default_factory=NotesConfig)
 ```
@@ -385,7 +385,7 @@ backend/plugins/notes/
 
 `__init__.py`:
 ```python
-"""O.M.N.I.A. — Notes plugin package.
+"""AL\CE — Notes plugin package.
 
 Importing this module registers NotesPlugin in the static PLUGIN_REGISTRY.
 """
@@ -609,9 +609,9 @@ Ogni endpoint usa `ctx: AppContext = Depends(get_context)` e restituisce `503` s
 
 ---
 
-#### 13.6 — OmniaEvent Updates (`backend/core/event_bus.py`)
+#### 13.6 — AliceEvent Updates (`backend/core/event_bus.py`)
 
-Tre nuovi eventi aggiunti al `OmniaEvent` StrEnum (senza modificare quelli esistenti):
+Tre nuovi eventi aggiunti al `AliceEvent` StrEnum (senza modificare quelli esistenti):
 
 ```python
 # Note events (Phase 13)
@@ -627,7 +627,7 @@ NOTE_DELETED = "note.deleted"
 
 Gli eventi vengono emessi dal plugin `notes` dopo ogni tool call write (come il pattern
 `calendar.reminder` in `CalendarPlugin`). Il plugin non ha dipendenze dirette sull'EventBus —
-li emette tramite `ctx.event_bus.emit(OmniaEvent.NOTE_CREATED, note_id=entry.id, ...)`.
+li emette tramite `ctx.event_bus.emit(AliceEvent.NOTE_CREATED, note_id=entry.id, ...)`.
 
 ---
 
@@ -861,7 +861,7 @@ backend/
 │   └── routes/
 │       └── notes.py                ← REST /api/notes/*
 ├── core/
-│   ├── config.py                   ← + NotesConfig + OmniaConfig.notes field
+│   ├── config.py                   ← + NotesConfig + AliceConfig.notes field
 │   ├── protocols.py                ← + NoteServiceProtocol
 │   ├── context.py                  ← + note_service: NoteServiceProtocol | None = None
 │   ├── event_bus.py                ← + NOTE_CREATED / NOTE_UPDATED / NOTE_DELETED
@@ -925,7 +925,7 @@ il costo aggiuntivo è solo UI, adottabile come pull request autonomo.
 #### 13.12 — Ordine di Implementazione Consigliato
 
 1. **`NotesConfig`** in `config.py` + `default.yaml` — aggiunta pura, zero dipendenze
-2. **`OmniaEvent` note events** in `event_bus.py` — aggiunta pura all'enum
+2. **`AliceEvent` note events** in `event_bus.py` — aggiunta pura all'enum
 3. **`NoteEntry` dataclass** in `note_service.py` — zero dipendenze dal resto
 4. **`NoteService`** completo — dipende da `aiosqlite` + `EmbeddingClient` (già presente)
 5. **`NoteServiceProtocol`** in `protocols.py` + campo `AppContext.note_service`

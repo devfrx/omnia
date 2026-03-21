@@ -1,14 +1,14 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
- * AssistantResponse.vue — OMNIA voice output.
+ * AssistantResponse.vue — AL\CE voice output.
  *
- * Renders OMNIA's response as if it's speaking directly — no chat card,
+ * Renders AL\CE's response as if it's speaking directly — no chat card,
  * centered flowing text that emanates from the orb. Supports markdown,
  * thinking/reasoning section, tool call/execution timeline, and streaming.
  */
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { renderMarkdown } from '../../utils/markdownRenderer'
-import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
+import AliceSpinner from '../../components/ui/AliceSpinner.vue'
 import ToolCallSection from '../chat/ToolCallSection.vue'
 import ToolExecutionIndicator from '../chat/ToolExecutionIndicator.vue'
 import type { ToolCall, ToolExecution } from '../../types/chat'
@@ -90,18 +90,18 @@ onMounted(() => {
 </script>
 
 <template>
-    <div ref="scrollContainer" class="omnia-voice" :class="{
-        'omnia-voice--thinking': isThinkingPhase,
-        'omnia-voice--generating': isGenerating,
-        'omnia-voice--complete': !isStreaming && !!content
+    <div ref="scrollContainer" class="alice-voice" :class="{
+        'alice-voice--thinking': isThinkingPhase,
+        'alice-voice--generating': isGenerating,
+        'alice-voice--complete': !isStreaming && !!content
     }">
         <!-- Glowing connector dot from orb -->
-        <div class="omnia-voice__connector">
-            <span class="omnia-voice__dot" />
+        <div class="alice-voice__connector">
+            <span class="alice-voice__dot" />
         </div>
 
         <!-- User query echo -->
-        <p v-if="userQuery" class="omnia-voice__query">
+        <p v-if="userQuery" class="alice-voice__query">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -153,14 +153,14 @@ onMounted(() => {
 
         <!-- Thinking phase placeholder (no content yet) -->
         <div v-if="isThinkingPhase && !content && !showToolExecution" class="thinking-placeholder">
-            <OmniaSpinner size="sm" variant="dots" />
+            <AliceSpinner size="sm" variant="dots" />
         </div>
     </div>
 </template>
 
 <style scoped>
 /* ── Container: borderless, open, emanates from orb ── */
-.omnia-voice {
+.alice-voice {
     position: relative;
     max-width: 600px;
     width: 100%;
@@ -176,31 +176,31 @@ onMounted(() => {
 }
 
 /* Scrollbar */
-.omnia-voice::-webkit-scrollbar {
+.alice-voice::-webkit-scrollbar {
     width: 3px;
 }
 
-.omnia-voice::-webkit-scrollbar-track {
+.alice-voice::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.omnia-voice::-webkit-scrollbar-thumb {
+.alice-voice::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: var(--radius-pill);
 }
 
-.omnia-voice:hover::-webkit-scrollbar-thumb {
+.alice-voice:hover::-webkit-scrollbar-thumb {
     background: var(--border-hover);
 }
 
 /* ── Connector dot from orb ── */
-.omnia-voice__connector {
+.alice-voice__connector {
     display: flex;
     justify-content: center;
     margin-bottom: var(--space-3);
 }
 
-.omnia-voice__dot {
+.alice-voice__dot {
     width: 6px;
     height: 6px;
     border-radius: var(--radius-full);
@@ -212,26 +212,26 @@ onMounted(() => {
         box-shadow 300ms var(--ease-smooth);
 }
 
-.omnia-voice--generating .omnia-voice__dot {
+.alice-voice--generating .alice-voice__dot {
     opacity: 1;
     box-shadow: 0 0 16px var(--accent-glow, var(--accent));
     animation: dot-pulse 2s ease-in-out infinite;
 }
 
-.omnia-voice--thinking .omnia-voice__dot {
+.alice-voice--thinking .alice-voice__dot {
     opacity: 0.8;
     background: var(--thinking);
     box-shadow: 0 0 12px var(--thinking);
     animation: dot-pulse 1.5s ease-in-out infinite;
 }
 
-.omnia-voice--complete .omnia-voice__dot {
+.alice-voice--complete .alice-voice__dot {
     opacity: 0.3;
     box-shadow: none;
 }
 
 /* ── User query echo ── */
-.omnia-voice__query {
+.alice-voice__query {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1-5);
@@ -240,28 +240,28 @@ onMounted(() => {
     font-size: var(--text-xs);
     color: var(--text-muted);
     background: rgba(255, 255, 255, 0.03);
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-md);
     max-width: 80%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.omnia-voice__query svg {
+.alice-voice__query svg {
     flex-shrink: 0;
     opacity: 0.5;
 }
 
 /* ── Phase states ── */
-.omnia-voice--thinking {
+.alice-voice--thinking {
     opacity: var(--opacity-visible);
 }
 
-.omnia-voice--generating .response-body {
+.alice-voice--generating .response-body {
     opacity: 0.92;
 }
 
-.omnia-voice--complete .response-body {
+.alice-voice--complete .response-body {
     opacity: 1;
     transition: opacity var(--transition-fast);
 }

@@ -1,6 +1,6 @@
-### Fase 11 — MCP Client (Strumenti Esterni via Model Context Protocol)
+﻿### Fase 11 — MCP Client (Strumenti Esterni via Model Context Protocol)
 
-> **Obiettivo**: permettere a OMNIA di connettersi a qualsiasi server MCP esterno
+> **Obiettivo**: permettere a AL\CE di connettersi a qualsiasi server MCP esterno
 > (filesystem, database, git, browser, motori di ricerca, ecc.) tramite il
 > Model Context Protocol. I tool esposti dai server MCP entrano automaticamente
 > nel `ToolRegistry` esistente e diventano disponibili all'LLM — senza modifiche
@@ -10,7 +10,7 @@
 - [x] `McpSession` service (stdio + SSE transport) — §11.2
 - [x] `McpClientPlugin` (aggregazione + dispatch) — §11.3
 - [x] Tool namespacing `mcp_{server}_{tool}` — §11.4
-- [x] `OmniaEvent.MCP_SERVER_CONNECTED` + `MCP_SERVER_DISCONNECTED` — §11.5
+- [x] `AliceEvent.MCP_SERVER_CONNECTED` + `MCP_SERVER_DISCONNECTED` — §11.5
 - [x] Dipendenza `mcp` in `pyproject.toml` — §11.6
 - [x] File structure — §11.7
 - [x] Test suite (2 file, 14+ test case) — §11.8
@@ -35,11 +35,11 @@
 **Perché il SDK ufficiale `mcp` e non raw JSON-RPC:**
 - `mcp` è il package ufficiale Anthropic, mantenuto attivamente
 - Gestisce transport abstraction (stdio/SSE), capabilities negotiation e framing messaggi
-- Riduce il codice OMNIA a ~150 LOC totali senza duplicare logica di protocollo
+- Riduce il codice AL\CE a ~150 LOC totali senza duplicare logica di protocollo
 - Usa `httpx` (già presente) per SSE e `anyio`/`asyncio` per subprocess stdio
 
 **Tool namespacing — `mcp_{server}_{tool}`:**
-- I plugin nativi OMNIA usano `{plugin_name}_{tool_name}` (es. `system_info_get_cpu_usage`)
+- I plugin nativi AL\CE usano `{plugin_name}_{tool_name}` (es. `system_info_get_cpu_usage`)
 - I tool MCP vengono prefissati `mcp_{server_name}_{tool_name}` da `McpClientPlugin.get_tools()`; il `ToolRegistry` aggiunge il prefisso `mcp_client_` → l’LLM vede `mcp_client_mcp_{server}_{tool}` (es. `mcp_client_mcp_filesystem_read_file`)
 - Nessuna collisione possibile: il prefisso `mcp_` non è mai usato da plugin nativi
 - Parsing inverso deterministico: iterare le sessioni cercando il prefisso corrispondente
@@ -104,13 +104,13 @@ class McpServerConfig(BaseModel):
 class McpConfig(BaseSettings):
     """MCP client configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_MCP__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_MCP__")
 
     servers: list[McpServerConfig] = Field(default_factory=list)
     """List of MCP servers to connect at startup. Empty by default (opt-in)."""
 ```
 
-Campo aggiunto a `OmniaConfig` (dopo `memory`):
+Campo aggiunto a `AliceConfig` (dopo `memory`):
 
 ```python
 mcp: McpConfig = Field(default_factory=McpConfig)
@@ -147,7 +147,7 @@ Per attivarlo: aggiungere `"mcp_client"` a `plugins.enabled` e configurare almen
 #### 11.2 — McpSession (`backend/services/mcp_session.py`)
 
 **Ruolo**: gestisce il ciclo di vita di una singola connessione MCP. Non conosce il
-plugin, il context OMNIA né il ToolRegistry. Si occupa solo di connettersi, listare
+plugin, il context AL\CE né il ToolRegistry. Si occupa solo di connettersi, listare
 tool e fare dispatch delle chiamate.
 
 ```
@@ -273,7 +273,7 @@ le chiusure al trasporto e al processo subprocess.
 
 #### 11.3 — McpClientPlugin (`backend/plugins/mcp_client/plugin.py`)
 
-**Ruolo**: plugin OMNIA che gestisce N sessioni MCP, aggrega i loro tool nel ToolRegistry
+**Ruolo**: plugin AL\CE che gestisce N sessioni MCP, aggrega i loro tool nel ToolRegistry
 e fa dispatch delle esecuzioni alla sessione corretta.
 
 ```
@@ -288,7 +288,7 @@ McpClientPlugin
 
 ```python
 class McpClientPlugin(BasePlugin):
-    """Bridges OMNIA to external MCP servers.
+    """Bridges AL\CE to external MCP servers.
 
     At startup, connects to every enabled server in config.mcp.servers.
     Each server's tools are namespaced as mcp_{server_name}_{tool_name}
@@ -298,7 +298,7 @@ class McpClientPlugin(BasePlugin):
     plugin_name = "mcp_client"
     plugin_version = "1.0.0"
     plugin_description = (
-        "Bridges OMNIA to external MCP servers "
+        "Bridges AL\CE to external MCP servers "
         "(filesystem, git, browser, search engine, …)"
     )
 
@@ -321,12 +321,12 @@ class McpClientPlugin(BasePlugin):
                     len(session.get_tools()),
                 )
                 await ctx.event_bus.emit(
-                    OmniaEvent.MCP_SERVER_CONNECTED, server=server_cfg.name,
+                    AliceEvent.MCP_SERVER_CONNECTED, server=server_cfg.name,
                 )
             except Exception as exc:
                 self.logger.error("MCP '{}' fallito: {}", server_cfg.name, exc)
                 await ctx.event_bus.emit(
-                    OmniaEvent.MCP_SERVER_DISCONNECTED,
+                    AliceEvent.MCP_SERVER_DISCONNECTED,
                     server=server_cfg.name,
                     reason=str(exc),
                 )
@@ -414,7 +414,7 @@ esterno (`mcp_client_mcp_filesystem_read_file`). Il plugin itera le sessioni cer
 il cui `f"mcp_{name}_"` è un prefisso di `tool_name`, quindi estrae il nome MCP originale.
 
 **Collisioni impossibili per construction**: il prefisso `mcp_` non è mai usato nei
-plugin nativi OMNIA (tutti usano `{plugin_name}_` senza tale prefisso).
+plugin nativi AL\CE (tutti usano `{plugin_name}_` senza tale prefisso).
 
 **Nome server con caratteri speciali**: il `name` deve essere `lowercase_snake_case`
 (validato da `McpServerConfig`). Nomi come `brave-search` devono essere scritti come
@@ -422,9 +422,9 @@ plugin nativi OMNIA (tutti usano `{plugin_name}_` senza tale prefisso).
 
 ---
 
-#### 11.5 — OmniaEvent (`backend/core/event_bus.py`)
+#### 11.5 — AliceEvent (`backend/core/event_bus.py`)
 
-Due nuovi eventi aggiunti all'enum `OmniaEvent`:
+Due nuovi eventi aggiunti all'enum `AliceEvent`:
 
 ```python
 MCP_SERVER_CONNECTED = "mcp.server.connected"
@@ -460,7 +460,7 @@ backend/
 │       ├── __init__.py             ← PLUGIN_REGISTRY["mcp_client"] = McpClientPlugin
 │       └── plugin.py              ← McpClientPlugin (aggregazione N sessioni)
 ├── core/
-│   ├── config.py                  ← + McpServerConfig + McpConfig + OmniaConfig.mcp
+│   ├── config.py                  ← + McpServerConfig + McpConfig + AliceConfig.mcp
 │   └── event_bus.py               ← + MCP_SERVER_CONNECTED + MCP_SERVER_DISCONNECTED
 └── tests/
     ├── test_mcp_session.py        ← unit test McpSession (mock mcp SDK)
@@ -507,7 +507,7 @@ Nessun file modificato nei layer esistenti: `app.py`, `protocols.py`, `context.p
 #### 11.9 — Ordine di Implementazione
 
 1. `McpServerConfig` + `McpConfig` in `config.py` + `default.yaml`
-2. `OmniaEvent.MCP_SERVER_CONNECTED` + `MCP_SERVER_DISCONNECTED` in `event_bus.py`
+2. `AliceEvent.MCP_SERVER_CONNECTED` + `MCP_SERVER_DISCONNECTED` in `event_bus.py`
 3. `mcp >= 1.0` in `pyproject.toml` + `uv pip install -e ".[dev]"` ← dipendenza SDK necessaria prima di `mcp_session.py`
 4. `McpSession` service (`backend/services/mcp_session.py`)
 5. `McpClientPlugin` (`backend/plugins/mcp_client/__init__.py` + `plugin.py`)

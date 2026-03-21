@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — SQLModel database models."""
+"""AL\CE — SQLModel database models."""
 
 import uuid
 from datetime import datetime, timezone

@@ -1,7 +1,7 @@
 [project]
-name = "omnia-backend"
+name = "alice-backend"
 version = "0.1.0"
-description = "O.M.N.I.A. — Orchestrated Modular Network for Intelligent Automation (Backend)"
+description = "AL\\CE — Adaptive Learning Interface for Computing & Execution (Backend)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

@@ -1,4 +1,4 @@
-"""Shared fixtures for the OMNIA test suite."""
+﻿"""Shared fixtures for the AL\CE test suite."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from backend.core.app import create_app
-from backend.core.config import OmniaConfig, load_config
+from backend.core.config import AliceConfig, load_config
 from backend.core.event_bus import EventBus
 
 
 @pytest.fixture
-def config() -> OmniaConfig:
+def config() -> AliceConfig:
     """Load the real default.yaml configuration."""
     return load_config()
 

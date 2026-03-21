@@ -1,9 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ConversationDrawer.vue — Slide-in panel showing full conversation history.
  *
  * Allows the user to see the complete message thread in assistant mode
- * without breaking the "OMNIA speaks" illusion. Slides from the left.
+ * without breaking the "AL\CE speaks" illusion. Slides from the left.
  */
 import { ref, watch, nextTick } from 'vue'
 import { renderMarkdown } from '../../utils/markdownRenderer'
@@ -48,7 +48,7 @@ watch(() => props.open, async (isOpen) => {
 function roleLabel(role: string): string {
     switch (role) {
         case 'user': return 'Tu'
-        case 'assistant': return 'OMNIA'
+        case 'assistant': return 'AL\CE'
         case 'tool': return 'Strumento'
         case 'system': return 'Sistema'
         default: return role

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ModelManager.vue — Full model management panel for LM Studio models.
  *
@@ -8,7 +8,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { LMStudioModel } from '../../types/settings'
-import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
+import AliceSpinner from '../../components/ui/AliceSpinner.vue'
 
 const settingsStore = useSettingsStore()
 
@@ -172,7 +172,7 @@ onMounted(() => {
 
         <!-- ── Loading spinner ── -->
         <div v-if="settingsStore.isLoadingModels" class="mm-loading">
-            <OmniaSpinner size="sm" label="Caricamento lista modelli…" />
+            <AliceSpinner size="sm" label="Caricamento lista modelli…" />
         </div>
 
         <!-- ── Models List ── -->

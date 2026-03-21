@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Notifications plugin.
+"""AL\CE — Notifications plugin.
 
 Windows toast notifications and timer management.  Uses *winotify* for
 native Windows notifications and :class:`TimerManager` for persistent
@@ -12,7 +12,7 @@ import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import (
     ConnectionStatus,
@@ -96,7 +96,7 @@ class NotificationsPlugin(BasePlugin):
 
         # Subscribe to calendar reminders for toast integration
         self.ctx.event_bus.subscribe(
-            OmniaEvent.CALENDAR_REMINDER,
+            AliceEvent.CALENDAR_REMINDER,
             self._on_calendar_reminder,
         )
 

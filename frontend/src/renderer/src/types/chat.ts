@@ -1,5 +1,5 @@
-/**
- * Chat-related types aligned with the OMNIA backend API.
+﻿/**
+ * Chat-related types aligned with the AL\CE backend API.
  *
  * Every interface here mirrors the JSON shapes returned by
  * `backend/api/routes/chat.py` so the frontend can consume
@@ -216,7 +216,7 @@ export interface WsToolCallMessage {
 // CAD / 3D Model
 // ---------------------------------------------------------------------------
 
-/** Payload from cad_generate tool (content_type='application/vnd.omnia.cad-model+json'). */
+/** Payload from cad_generate tool (content_type='application/vnd.alice.cad-model+json'). */
 export interface CadModelPayload {
   model_name: string
   /** Relative URL of the proxy route: /api/cad/models/{name} */
@@ -231,7 +231,7 @@ export interface CadModelPayload {
 // Charts
 // ---------------------------------------------------------------------------
 
-/** Payload from chart_generate tool (content_type='application/vnd.omnia.chart+json'). */
+/** Payload from chart_generate tool (content_type='application/vnd.alice.chart+json'). */
 export interface ChartPayload {
   chart_id: string
   title: string

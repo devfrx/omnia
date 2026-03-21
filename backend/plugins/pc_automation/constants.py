@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — PC Automation plugin constants.
+"""AL\CE — PC Automation plugin constants.
 
 Whitelists and configuration constants for safe PC automation.
 All security-critical data is defined here for easy auditing.

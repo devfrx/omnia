@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — FastAPI application factory."""
+"""AL\CE — FastAPI application factory."""
 
 from __future__ import annotations
 
@@ -13,9 +13,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from backend.core.config import OmniaConfig, PROJECT_ROOT, load_config
+from backend.core.config import AliceConfig, PROJECT_ROOT, load_config
 from backend.core.context import AppContext, create_context
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 from backend.db.database import create_engine_and_session, init_db
 from backend.services.conversation_file_manager import ConversationFileManager
 from backend.services.llm_service import LLMService
@@ -39,9 +39,9 @@ __version__ = "0.1.0"
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Manage startup / shutdown of the OMNIA backend."""
+    """Manage startup / shutdown of the AL\CE backend."""
     # -- Startup ------------------------------------------------------------
-    config: OmniaConfig = app.state._config  # set by create_app
+    config: AliceConfig = app.state._config  # set by create_app
     testing: bool = app.state._testing
 
     if testing:
@@ -249,8 +249,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
                     if stt_cfg.compute_type == "float16":
                         object.__setattr__(stt_cfg, "compute_type", "int8")
 
-        ctx.event_bus.subscribe(OmniaEvent.VRAM_WARNING, _handle_vram_warning)
-        ctx.event_bus.subscribe(OmniaEvent.VRAM_CRITICAL, _handle_vram_critical)
+        ctx.event_bus.subscribe(AliceEvent.VRAM_WARNING, _handle_vram_warning)
+        ctx.event_bus.subscribe(AliceEvent.VRAM_CRITICAL, _handle_vram_critical)
 
     # -- Plugin system ------------------------------------------------------
     plugin_manager = PluginManager(ctx)
@@ -295,10 +295,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             })
 
     ctx.event_bus.subscribe(
-        OmniaEvent.MCP_SERVER_CONNECTED, _forward_mcp_connected,
+        AliceEvent.MCP_SERVER_CONNECTED, _forward_mcp_connected,
     )
     ctx.event_bus.subscribe(
-        OmniaEvent.MCP_SERVER_DISCONNECTED, _forward_mcp_disconnected,
+        AliceEvent.MCP_SERVER_DISCONNECTED, _forward_mcp_disconnected,
     )
 
     # -- Bridge Email events to the events WebSocket --------------------
@@ -317,10 +317,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             })
 
     ctx.event_bus.subscribe(
-        OmniaEvent.EMAIL_RECEIVED, _forward_email_received,
+        AliceEvent.EMAIL_RECEIVED, _forward_email_received,
     )
     ctx.event_bus.subscribe(
-        OmniaEvent.EMAIL_SENT, _forward_email_sent,
+        AliceEvent.EMAIL_SENT, _forward_email_sent,
     )
 
     # -- Bridge Note events to the events WebSocket ---------------------
@@ -347,19 +347,19 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             })
 
     ctx.event_bus.subscribe(
-        OmniaEvent.NOTE_CREATED, _forward_note_created,
+        AliceEvent.NOTE_CREATED, _forward_note_created,
     )
     ctx.event_bus.subscribe(
-        OmniaEvent.NOTE_UPDATED, _forward_note_updated,
+        AliceEvent.NOTE_UPDATED, _forward_note_updated,
     )
     ctx.event_bus.subscribe(
-        OmniaEvent.NOTE_DELETED, _forward_note_deleted,
+        AliceEvent.NOTE_DELETED, _forward_note_deleted,
     )
 
     app.state.context = ctx
     app.state.engine = engine
 
-    logger.info("OMNIA backend started (v{})", __version__)
+    logger.info("AL\CE backend started (v{})", __version__)
 
     yield
 
@@ -410,7 +410,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         await engine.dispose()
     except Exception as exc:
         logger.error("Engine disposal error: {}", exc)
-    logger.info("OMNIA backend stopped")
+    logger.info("AL\CE backend stopped")
 
 
 # ---------------------------------------------------------------------------
@@ -430,7 +430,7 @@ def create_app(testing: bool = False) -> FastAPI:
     config = load_config()
 
     app = FastAPI(
-        title="O.M.N.I.A.",
+        title="AL\CE",
         version=__version__,
         lifespan=_lifespan,
     )

@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Media Control plugin package.
+"""AL\CE — Media Control plugin package.
 
 Importing this module registers :class:`MediaControlPlugin` in the
 static ``PLUGIN_REGISTRY`` so the plugin manager can discover it.

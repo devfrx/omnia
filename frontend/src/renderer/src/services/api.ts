@@ -1,5 +1,5 @@
-/**
- * REST API client for the OMNIA backend.
+﻿/**
+ * REST API client for the AL\CE backend.
  *
  * Every method is strongly typed against the shapes defined in
  * `types/chat.ts` which mirror the backend JSON responses exactly.

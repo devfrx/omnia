@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — VRAM monitoring service with budget tracking and alerts."""
+"""AL\CE — VRAM monitoring service with budget tracking and alerts."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 
 if TYPE_CHECKING:
     from backend.core.event_bus import EventBus
@@ -173,7 +173,7 @@ class VRAMMonitor:
                     if not self._critical_warned:
                         logger.warning("VRAM critical: {} MB used", usage.used_mb)
                         await self._event_bus.emit(
-                            OmniaEvent.VRAM_CRITICAL, usage=usage,
+                            AliceEvent.VRAM_CRITICAL, usage=usage,
                         )
                         self._critical_warned = True
                         self._warned = True
@@ -182,7 +182,7 @@ class VRAMMonitor:
                     if not self._warned:
                         logger.warning("VRAM warning: {} MB used", usage.used_mb)
                         await self._event_bus.emit(
-                            OmniaEvent.VRAM_WARNING, usage=usage,
+                            AliceEvent.VRAM_WARNING, usage=usage,
                         )
                         self._warned = True
                 else:

@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Plugin manager (discovery, lifecycle, dependency resolution).
+"""AL\CE — Plugin manager (discovery, lifecycle, dependency resolution).
 
 Manages the full plugin lifecycle: registration, dependency resolution via
 topological sort, initialisation, hot-reload, and graceful shutdown.  The
@@ -23,7 +23,7 @@ from sqlmodel import SQLModel
 if TYPE_CHECKING:
     from backend.core.context import AppContext
 
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import ConnectionStatus
 
@@ -82,7 +82,7 @@ class PluginManager:
 
         # Dynamic discovery — DEVELOPMENT ONLY.
         # Disabled in production to prevent code injection via plugins dir.
-        if os.environ.get("OMNIA_PLUGIN_DISCOVERY") == "dynamic":
+        if os.environ.get("ALICE_PLUGIN_DISCOVERY") == "dynamic":
             if self._ctx.config.server.environment != "development":
                 self._logger.error(
                     "Dynamic plugin discovery is disabled outside "
@@ -148,7 +148,7 @@ class PluginManager:
                 self._plugins[name] = plugin
                 loaded += 1
                 await self._ctx.event_bus.emit(
-                    OmniaEvent.PLUGIN_LOADED,
+                    AliceEvent.PLUGIN_LOADED,
                     plugin_name=name,
                     version=plugin.plugin_version,
                 )
@@ -165,7 +165,7 @@ class PluginManager:
                 )
                 self._failed_plugins.add(name)
                 await self._ctx.event_bus.emit(
-                    OmniaEvent.PLUGIN_FAILED,
+                    AliceEvent.PLUGIN_FAILED,
                     plugin_name=name,
                     error=str(exc),
                 )
@@ -361,7 +361,7 @@ class PluginManager:
                 self._failed_plugins.discard(name)
 
                 await self._ctx.event_bus.emit(
-                    OmniaEvent.PLUGIN_LOADED,
+                    AliceEvent.PLUGIN_LOADED,
                     plugin_name=name,
                     version=plugin.plugin_version,
                 )
@@ -551,7 +551,7 @@ class PluginManager:
                 name, prev, status,
             )
             await self._ctx.event_bus.emit(
-                OmniaEvent.PLUGIN_STATUS_CHANGED,
+                AliceEvent.PLUGIN_STATUS_CHANGED,
                 plugin_name=name,
                 new_status=status,
             )
@@ -660,7 +660,7 @@ class PluginManager:
         """Scan ``backend/plugins/`` for plugin modules.
 
         Only executed when the environment variable
-        ``OMNIA_PLUGIN_DISCOVERY=dynamic`` is set.  Each plugin
+        ``ALICE_PLUGIN_DISCOVERY=dynamic`` is set.  Each plugin
         subdirectory must contain a ``plugin.py`` exporting a class
         that extends ``BasePlugin``.
         """

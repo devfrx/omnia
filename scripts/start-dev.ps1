@@ -1,5 +1,5 @@
-# ------------------------------------------------
-# O.M.N.I.A. - Start Development Environment
+﻿# ------------------------------------------------
+# AL\CE - Start Development Environment
 # ------------------------------------------------
 # Run: .\scripts\start-dev.ps1
 #
@@ -11,7 +11,6 @@
 param(
     [switch]$BackendOnly,
     [switch]$FrontendOnly,
-    [switch]$SkipOllama,
     [switch]$Trellis,
     [switch]$Mail
 )
@@ -20,20 +19,17 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
 Write-Host "=======================================" -ForegroundColor Cyan
-Write-Host "  O.M.N.I.A. - Dev Mode" -ForegroundColor Cyan
+Write-Host "  AL\CE - Dev Mode" -ForegroundColor Cyan
 Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host ""
 
-# -- 1. Ensure Ollama is running --
-if (-not $SkipOllama -and -not $FrontendOnly) {
-    $ollamaProc = Get-Process ollama -ErrorAction SilentlyContinue
-    if (-not $ollamaProc) {
-        Write-Host "  -> Starting Ollama..." -ForegroundColor Yellow
-        Start-Process ollama -ArgumentList "serve" -WindowStyle Hidden
-        Start-Sleep -Seconds 2
-        Write-Host "  [OK] Ollama running on :11434" -ForegroundColor Green
-    } else {
-        Write-Host "  [OK] Ollama already running" -ForegroundColor Green
+# -- 1. Check LM Studio is reachable (optional, non-blocking) --
+if (-not $FrontendOnly) {
+    try {
+        $null = Invoke-WebRequest -Uri "http://localhost:1234/v1/models" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+        Write-Host "  [OK] LM Studio running on :1234" -ForegroundColor Green
+    } catch {
+        Write-Host "  [!] LM Studio not detected on :1234 - start it manually if needed" -ForegroundColor Yellow
     }
 }
 

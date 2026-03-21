@@ -1,5 +1,5 @@
-appId: com.omnia.app
-productName: OMNIA
+﻿appId: com.alice.app
+productName: AL\CE
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: omnia
+  executableName: alice
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

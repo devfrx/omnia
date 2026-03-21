@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — HTTP security utilities for outbound request validation.
+"""AL\CE — HTTP security utilities for outbound request validation.
 
 Shared SSRF-prevention module used by web_search, weather, news and any
 plugin that makes outbound HTTP requests.

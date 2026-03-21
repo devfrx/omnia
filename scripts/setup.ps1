@@ -1,5 +1,5 @@
-# ──────────────────────────────────────────────────
-# O.M.N.I.A. — Full Setup Script (Windows)
+﻿# ──────────────────────────────────────────────────
+# AL\CE — Full Setup Script (Windows)
 # ──────────────────────────────────────────────────
 # Run from project root:  .\scripts\setup.ps1
 #
@@ -7,13 +7,11 @@
 #   -CpuOnly        Skip NVIDIA/CUDA packages (use CPU for STT)
 #   -SkipModels     Skip downloading Piper TTS voice model
 #   -SkipFrontend   Skip npm install
-#   -SkipOllama     Skip Ollama install + model pull
 
 param(
     [switch]$CpuOnly,
     [switch]$SkipModels,
-    [switch]$SkipFrontend,
-    [switch]$SkipOllama
+    [switch]$SkipFrontend
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,13 +19,12 @@ $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  O.M.N.I.A. — Full Setup" -ForegroundColor Cyan
+Write-Host "  AL\CE — Full Setup" -ForegroundColor Cyan
 Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 
-$steps = 7
+$steps = 6
 if ($SkipFrontend) { $steps-- }
-if ($SkipOllama)   { $steps-- }
 if ($SkipModels)   { $steps-- }
 $step = 0
 
@@ -53,12 +50,6 @@ if (-not $node) {
 $nodeVersion = node --version 2>&1
 Write-Host "  ✓ Node.js $nodeVersion" -ForegroundColor Green
 
-# pip
-$pip = & "$Root\backend\.venv\Scripts\python.exe" -m pip --version 2>$null
-if (-not $pip -and -not (Test-Path "$Root\backend\.venv")) {
-    Write-Host "  → No venv found, will create one" -ForegroundColor Yellow
-}
-
 # ── 2. Create directories ───────────────────────
 $step++
 Write-Host ""
@@ -81,39 +72,37 @@ $step++
 Write-Host ""
 Write-Host "[$step/$steps] Setting up Python backend..." -ForegroundColor Yellow
 
+# Check uv is available
+$uv = Get-Command uv -ErrorAction SilentlyContinue
+if (-not $uv) {
+    Write-Host "  ✗ uv not found. Install it: winget install astral-sh.uv" -ForegroundColor Red
+    exit 1
+}
+Write-Host "  ✓ uv $(uv --version)" -ForegroundColor Green
+
 Push-Location "$Root\backend"
 
-# Create venv if missing
-if (-not (Test-Path ".venv")) {
-    Write-Host "  → Creating virtual environment..." -ForegroundColor Yellow
-    python -m venv .venv
+# Install core + dev dependencies via uv
+Write-Host "  → Installing core + dev dependencies (uv sync)..." -ForegroundColor Yellow
+uv sync --extra dev
+
+# Voice dependencies
+if ($CpuOnly) {
+    Write-Host "  → Installing voice packages (CPU mode)..." -ForegroundColor Yellow
+    uv sync --extra dev --extra voice
+} else {
+    Write-Host "  → Installing voice packages (GPU + CUDA)..." -ForegroundColor Yellow
+    uv sync --extra dev --extra voice --extra voice-gpu
 }
 
 $pip_exe = "$Root\backend\.venv\Scripts\python.exe"
 
-# Core + dev dependencies
-Write-Host "  → Installing core + dev dependencies..." -ForegroundColor Yellow
-& $pip_exe -m pip install -e ".[dev]" --quiet 2>$null
-
-# Voice dependencies (STT + TTS + VRAM)
-if ($CpuOnly) {
-    Write-Host "  → Installing voice packages (CPU mode)..." -ForegroundColor Yellow
-    & $pip_exe -m pip install -e ".[voice]" --quiet 2>$null
-} else {
-    Write-Host "  → Installing voice packages (GPU + CUDA)..." -ForegroundColor Yellow
-    & $pip_exe -m pip install -e ".[voice-gpu]" --quiet 2>$null
-}
-
-# File reader (PDF, DOCX)
-Write-Host "  → Installing file-reader packages..." -ForegroundColor Yellow
-& $pip_exe -m pip install -e ".[file-reader]" --quiet 2>$null
-
 # Add project root to Python path so 'from backend.X' imports resolve.
 $siteDir = & $pip_exe -c "import sysconfig; print(sysconfig.get_path('purelib'))"
-$Root | Out-File -FilePath "$siteDir\omnia_root.pth" -Encoding ASCII -NoNewline
+$Root | Out-File -FilePath "$siteDir\alice_root.pth" -Encoding ASCII -NoNewline
 
 Pop-Location
-Write-Host "  ✓ Backend ready (core + voice + file-reader)" -ForegroundColor Green
+Write-Host "  ✓ Backend ready" -ForegroundColor Green
 
 # ── 4. Download Piper TTS voice model ───────────
 if (-not $SkipModels) {
@@ -155,34 +144,18 @@ if (-not $SkipFrontend) {
     Write-Host "  ✓ Frontend dependencies installed" -ForegroundColor Green
 }
 
-# ── 6. Ollama (optional LLM provider) ──────────
-if (-not $SkipOllama) {
-    $step++
-    Write-Host ""
-    Write-Host "[$step/$steps] Checking Ollama..." -ForegroundColor Yellow
-
-    $ollama = Get-Command ollama -ErrorAction SilentlyContinue
-    if (-not $ollama) {
-        Write-Host "  → Installing Ollama via winget..." -ForegroundColor Yellow
-        winget install Ollama.Ollama --accept-package-agreements --accept-source-agreements
-    }
-    Write-Host "  ✓ Ollama installed" -ForegroundColor Green
-}
-
-# ── 7. Verify installation ──────────────────────
+# ── 6. Verify installation ──────────────────────
 $step++
 Write-Host ""
 Write-Host "[$step/$steps] Verifying installation..." -ForegroundColor Yellow
 
-$pip_exe = "$Root\backend\.venv\Scripts\python.exe"
+$uv_python = "$Root\backend\.venv\Scripts\python.exe"
 $checks = @(
     @{ Name = "FastAPI";         Cmd = "import fastapi" },
     @{ Name = "faster-whisper";  Cmd = "import faster_whisper" },
     @{ Name = "piper-tts";      Cmd = "import piper" },
     @{ Name = "kokoro-onnx";    Cmd = "import kokoro_onnx" },
-    @{ Name = "pynvml";         Cmd = "import pynvml" },
-    @{ Name = "pdfplumber";     Cmd = "import pdfplumber" },
-    @{ Name = "python-docx";    Cmd = "import docx" }
+    @{ Name = "pynvml";         Cmd = "import pynvml" }
 )
 
 if (-not $CpuOnly) {
@@ -190,9 +163,10 @@ if (-not $CpuOnly) {
     $checks += @{ Name = "nvidia-cudnn-cu12";  Cmd = "import nvidia.cudnn" }
 }
 
+Push-Location "$Root\backend"
 $allOk = $true
 foreach ($check in $checks) {
-    $result = & $pip_exe -c $check.Cmd 2>&1
+    $result = & $uv_python -c $check.Cmd 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  ✓ $($check.Name)" -ForegroundColor Green
     } else {
@@ -200,6 +174,7 @@ foreach ($check in $checks) {
         $allOk = $false
     }
 }
+Pop-Location
 
 # Check Piper model files
 $onnxOk = Test-Path "$Root\models\tts\it_IT-paola-medium.onnx"
@@ -215,7 +190,7 @@ if ($onnxOk -and $jsonOk) {
 Write-Host ""
 if ($allOk) {
     Write-Host "═══════════════════════════════════════" -ForegroundColor Green
-    Write-Host "  O.M.N.I.A. setup complete!" -ForegroundColor Green
+    Write-Host "  AL\CE setup complete!" -ForegroundColor Green
     Write-Host "═══════════════════════════════════════" -ForegroundColor Green
 } else {
     Write-Host "═══════════════════════════════════════" -ForegroundColor Yellow

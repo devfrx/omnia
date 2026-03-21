@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Shared calendar utilities.
+"""AL\CE — Shared calendar utilities.
 
 Contains validation helpers and constants shared between the calendar
 plugin and the calendar REST routes.

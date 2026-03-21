@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 /**
- * OmniaOrb.vue — Fluid Aurora Orb
+ * AliceOrb.vue — Fluid Aurora Orb
  *
  * A living, breathing gradient orb with organic morphing shapes,
  * screen-blended internal light pools, and state-reactive colors.
@@ -58,16 +58,16 @@ function onHoverLeave(): void {
 </script>
 
 <template>
-    <div class="omnia-orb" :class="{ 'omnia-orb--compact': compact }" role="button" tabindex="0"
+    <div class="alice-orb" :class="{ 'alice-orb--compact': compact }" role="button" tabindex="0"
         :aria-label="state === 'idle' ? 'Clicca per parlare' : `Stato: ${state}`" @click="handleClick"
         @mouseenter="onHoverEnter" @mouseleave="onHoverLeave" @keydown.enter="handleClick"
         @keydown.space.prevent="handleClick">
-        <canvas ref="canvasRef" class="omnia-orb__canvas" />
+        <canvas ref="canvasRef" class="alice-orb__canvas" />
     </div>
 </template>
 
 <style scoped>
-.omnia-orb {
+.alice-orb {
     position: relative;
     width: v-bind(containerSize);
     height: v-bind(containerSize);
@@ -78,13 +78,13 @@ function onHoverLeave(): void {
     overflow: visible;
 }
 
-.omnia-orb:focus-visible {
+.alice-orb:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 8px;
     border-radius: var(--radius-full);
 }
 
-.omnia-orb__canvas {
+.alice-orb__canvas {
     position: absolute;
     inset: -30%;
     width: 160%;

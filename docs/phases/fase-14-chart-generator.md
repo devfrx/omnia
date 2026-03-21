@@ -9,7 +9,7 @@
 >
 > **Pattern architetturale**: `chart_generator` segue esattamente il pattern di
 > `cad_generator` (Fase 12): plugin-only (no service separato), `ToolResult` con
-> `content_type='application/vnd.omnia.chart+json'`, REST proxy `/api/charts/`,
+> `content_type='application/vnd.alice.chart+json'`, REST proxy `/api/charts/`,
 > `ChartViewer.vue` lazy-loaded via `defineAsyncComponent` in `MessageBubble.vue`.
 > La libreria di rendering è **Apache ECharts** (utilizzo diretto senza wrapper Vue,
 > consistente con il pattern Three.js in `CADViewer.vue`).
@@ -79,10 +79,10 @@ Il plugin è un puro "salva e servi". L'LLM è responsabile di:
 class ChartConfig(BaseSettings):
     """Configurazione plugin chart_generator."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_CHART__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_CHART__")
 
     enabled: bool = False
-    """Abilita il plugin chart_generator (opt-in, come tutti i plugin OMNIA)."""
+    """Abilita il plugin chart_generator (opt-in, come tutti i plugin AL\CE)."""
 
     chart_output_dir: str = "data/charts"
     """Directory dove vengono salvati i chart spec JSON."""
@@ -100,7 +100,7 @@ class ChartConfig(BaseSettings):
     """
 ```
 
-Nella classe `OmniaConfig`:
+Nella classe `AliceConfig`:
 
 ```python
 chart: ChartConfig = Field(default_factory=ChartConfig)
@@ -366,7 +366,7 @@ class ChartStore:
 **`backend/plugins/chart_generator/__init__.py`**
 
 ```python
-"""O.M.N.I.A. — Chart Generator plugin package.
+"""AL\CE — Chart Generator plugin package.
 
 Importing this module registers ChartGeneratorPlugin in the static PLUGIN_REGISTRY
 so the plugin manager can discover it.
@@ -504,7 +504,7 @@ class ChartGeneratorPlugin(BasePlugin):
     L'LLM costruisce autonomamente la `echarts_option` JSON dai dati
     disponibili (note, vision, ricerca web, prompt). Il plugin si occupa
     di persistere la spec su disco e di restituire un `ToolResult` con
-    `content_type='application/vnd.omnia.chart+json'` che il frontend
+    `content_type='application/vnd.alice.chart+json'` che il frontend
     renderizza come `ChartViewer.vue`.
     """
 
@@ -668,7 +668,7 @@ class ChartGeneratorPlugin(BasePlugin):
         return ToolResult(
             success=True,
             content=payload.model_dump_json(),
-            content_type="application/vnd.omnia.chart+json",
+            content_type="application/vnd.alice.chart+json",
         )
 
     async def _update_chart(self, args: dict[str, Any]) -> ToolResult:
@@ -704,7 +704,7 @@ class ChartGeneratorPlugin(BasePlugin):
         return ToolResult(
             success=True,
             content=payload.model_dump_json(),
-            content_type="application/vnd.omnia.chart+json",
+            content_type="application/vnd.alice.chart+json",
         )
 
     async def _get_chart(self, args: dict[str, Any]) -> ToolResult:
@@ -973,7 +973,7 @@ onUnmounted(() => {
 
 #### `MessageBubble.vue` — aggiornamento
 
-Aggiungere il supporto per `application/vnd.omnia.chart+json` nei messaggi `role='tool'`
+Aggiungere il supporto per `application/vnd.alice.chart+json` nei messaggi `role='tool'`
 già persistiti nella cronologia della chat. Pattern identico a `cadPayload`:
 
 ```typescript
@@ -1014,8 +1014,8 @@ La condizione del contenuto testuale deve diventare:
 
 #### `ToolExecutionIndicator.vue` — aggiornamento
 
-Aggiungere il case per `application/vnd.omnia.chart+json` accanto al case esistente
-per `application/vnd.omnia.cad-model+json` (rendering inline durante lo streaming).
+Aggiungere il case per `application/vnd.alice.chart+json` accanto al case esistente
+per `application/vnd.alice.cad-model+json` (rendering inline durante lo streaming).
 Siccome `ToolExecutionIndicator.vue` itera su `executions: ToolExecution[]` (non espone
 `contentType`/`result` come props atomici), si usa una funzione helper per-elemento
 anziché un `computed` top-level:
@@ -1040,7 +1040,7 @@ function parseChartPayload(result: string): ChartPayload | null {
 Nel template (dopo il blocco `cad-model+json` esistente):
 
 ```vue
-<template v-else-if="exec.contentType === 'application/vnd.omnia.chart+json' && exec.result">
+<template v-else-if="exec.contentType === 'application/vnd.alice.chart+json' && exec.result">
   <ChartViewer
     v-if="parseChartPayload(exec.result)"
     :payload="parseChartPayload(exec.result)!"
@@ -1108,7 +1108,7 @@ backend/
       charts.py                       # GET /{id}, GET /, DELETE /{id}
       __init__.py                     # + charts_router
   core/
-    config.py                         # + ChartConfig, OmniaConfig.chart
+    config.py                         # + ChartConfig, AliceConfig.chart
 
 frontend/
   package.json                        # + echarts ^5.6.0
@@ -1256,7 +1256,7 @@ async def test_generate_chart_success(plugin) -> None:
         "echarts_option": VALID_OPTION,
     }, context=None)
     assert result.success is True
-    assert result.content_type == "application/vnd.omnia.chart+json"
+    assert result.content_type == "application/vnd.alice.chart+json"
     import json
     payload = json.loads(result.content)
     assert "chart_id" in payload
@@ -1372,7 +1372,7 @@ async def test_list_charts_empty(client) -> None:
 
 1. `backend/plugins/chart_generator/models.py` — modelli Pydantic
 2. `backend/plugins/chart_generator/chart_store.py` — ChartStore
-3. `backend/core/config.py` — `ChartConfig` + campo `chart` in `OmniaConfig`
+3. `backend/core/config.py` — `ChartConfig` + campo `chart` in `AliceConfig`
 4. `config/default.yaml` — sezione `chart:`
 5. `backend/plugins/chart_generator/plugin.py` — ChartGeneratorPlugin completo
 6. `backend/plugins/chart_generator/__init__.py` — export
@@ -1393,14 +1393,14 @@ async def test_list_charts_empty(client) -> None:
 
 | Scenario | Risultato atteso |
 |---|---|
-| "Fai un grafico a barre: Gen=150, Feb=230, Mar=180" | LLM costruisce echarts_option → `generate_chart(...)` → ToolResult `application/vnd.omnia.chart+json` → `ChartViewer` in chat |
+| "Fai un grafico a barre: Gen=150, Feb=230, Mar=180" | LLM costruisce echarts_option → `generate_chart(...)` → ToolResult `application/vnd.alice.chart+json` → `ChartViewer` in chat |
 | "Fai un grafico dalla nota 'statistiche vendite'" | LLM chiama `read_note` → estrae dati → `generate_chart(...)` → viewer in chat |
 | Upload immagine con tabella + "Grafico da questa tabella" | LLM legge immagine via vision → estrae valori → `generate_chart(...)` → viewer |
 | `list_charts(limit=5)` | Lista con titolo, tipo, date; paginazione `offset` funzionante |
 | `get_chart(chart_id)` | Metadati + `echarts_option` del grafico restituiti correttamente; chart inesistente → errore descrittivo |
 | `update_chart(chart_id, echarts_option)` | Spec aggiornata su disco; `ChartViewer` ricarica e mostra grafico aggiornato |
 | `delete_chart(chart_id)` | Dialog di conferma → approvazione → file eliminato; `GET /api/charts/{id}` → 404 |
-| Ricaricamento conversazione con grafico precedente dal DB | `MessageBubble.vue` rileva `application/vnd.omnia.chart+json` → `ChartViewer` renderizza correttamente |
+| Ricaricamento conversazione con grafico precedente dal DB | `MessageBubble.vue` rileva `application/vnd.alice.chart+json` → `ChartViewer` renderizza correttamente |
 | `echarts_option` serializzata > 10.000 caratteri | Errore descrittivo con hint "aggrega i dati" |
 | `chart.enabled=False` in config | Plugin non registrato; tool LLM non disponibili; REST → 503 |
 | 1.000 grafici già presenti nel vault | `generate_chart` → errore limit con hint `delete_chart` |
@@ -1411,7 +1411,7 @@ async def test_list_charts_empty(client) -> None:
 
 | Fase | Test |
 |---|---|
-| 1-2 | "Ciao OMNIA" → risposta streammata in italiano |
+| 1-2 | "Ciao AL\CE" → risposta streammata in italiano |
 | 1.5 | Immagine + "Cosa vedi?" → descrizione; Thinking model → blocco ragionamento collassabile |
 | 1.6 | Export conversazione → file JSON valido; import → conversazione ripristinata; recovery DB → dati intatti |
 | 1.7 | Codice in chat → syntax highlighting colorato; click "Copia" → codice nella clipboard + feedback "Copiato!" |
@@ -1438,5 +1438,5 @@ async def test_list_charts_empty(client) -> None:
 | 12 (edge) | TRELLIS microservizio non avviato → errore descrittivo con istruzioni; CUDA OOM → errore + LLM comunque ricaricato; `auto_vram_swap: false` su GPU ≥ 24GB → coesistenza senza swap; `model_name="../../../etc"` → sanitizzato; GLB > 100MB → ValueError; conversazione ricaricata da DB → viewer non compare (noto v1) |
 | 13 | "Crea una nota sulla carbonara" → `create_note(title=..., content=..., folder_path="cucina")` → nota salvata in notes.db → conferma all'utente; "Trova note su Python" → `search_notes("Python")` → FTS5 + semantic → lista titoli; UI NoteEditor autosave dopo 800ms |
 | 13 (edge) | `notes.enabled=False` → service non avviato, tool restituiscono errore graceful, REST 503, zero impatto test esistenti; `embedding_enabled=False` → solo FTS5, nessun sqlite-vec caricato; LM Studio offline → nota creata senza embedding, search solo keyword; `delete_note` → `requires_confirmation=True` → dialog conferma |
-| 14 | "Fai un grafico a barre: Gen=150, Feb=230, Mar=180" → LLM costruisce echarts_option → `generate_chart(...)` → ToolResult `application/vnd.omnia.chart+json` → `ChartViewer.vue` ECharts renderizzato in chat; `get_chart` → metadati+option corretti; `list_charts` → lista paginata; `update_chart` → grafico aggiornato; ricaricamento conversazione da DB → viewer ripristinato |
+| 14 | "Fai un grafico a barre: Gen=150, Feb=230, Mar=180" → LLM costruisce echarts_option → `generate_chart(...)` → ToolResult `application/vnd.alice.chart+json` → `ChartViewer.vue` ECharts renderizzato in chat; `get_chart` → metadati+option corretti; `list_charts` → lista paginata; `update_chart` → grafico aggiornato; ricaricamento conversazione da DB → viewer ripristinato |
 | 14 (edge) | `chart.enabled=False` → tool LLM non disponibili, REST 503; `echarts_option` > 10.000 char → errore descrittivo con hint; 1.000 grafici presenti → errore limit con hint `delete_chart`; `delete_chart` → dialog conferma prima di eliminare; `chart_id` con `../` → sanitizzato, file scritto dentro `data/charts/` |

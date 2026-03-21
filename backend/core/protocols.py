@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Service protocols (structural typing for DI).
+"""AL\CE — Service protocols (structural typing for DI).
 
 Defines :class:`~typing.Protocol` classes that describe the public API
 expected from each pluggable service.  ``AppContext`` references these
@@ -22,7 +22,7 @@ from backend.core.plugin_models import (
 )
 
 if TYPE_CHECKING:
-    from backend.core.config import OmniaConfig
+    from backend.core.config import AliceConfig
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +319,7 @@ class PreferencesServiceProtocol(Protocol):
         ...
 
     def apply_to_config(
-        self, config: OmniaConfig, prefs: dict[str, Any],
+        self, config: AliceConfig, prefs: dict[str, Any],
     ) -> None:
         """Overlay persisted preferences onto config."""
         ...

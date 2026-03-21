@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * O.M.N.I.A. — Global toast notification renderer.
+ * AL\CE — Global toast notification renderer.
  *
  * Mount once in App.vue. Reads from the useToast() singleton
  * and renders all active toasts via a Teleport to <body>.

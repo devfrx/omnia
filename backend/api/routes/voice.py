@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Voice WebSocket endpoint (STT + TTS streaming)."""
+"""AL\CE — Voice WebSocket endpoint (STT + TTS streaming)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from loguru import logger
 from starlette.websockets import WebSocketState
 
 from backend.core.context import AppContext
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 from backend.services.audio_utils import MAX_AUDIO_SIZE_BYTES
 
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -159,7 +159,7 @@ async def ws_voice(websocket: WebSocket) -> None:
         _voice_connections[client_ip] += 1
     logger.debug("Voice WS connected: session={} ip={}", session_id, client_ip)
     _active_voice_sockets.add(websocket)
-    await ctx.event_bus.emit(OmniaEvent.VOICE_SESSION_START, session_id=session_id)
+    await ctx.event_bus.emit(AliceEvent.VOICE_SESSION_START, session_id=session_id)
 
     # Per-session state.
     audio_buffer = bytearray()
@@ -265,7 +265,7 @@ async def ws_voice(websocket: WebSocket) -> None:
                     wav_data: bytes, sid: str, stt_svc: object,
                 ) -> None:
                     try:
-                        await ctx.event_bus.emit(OmniaEvent.STT_STARTED, session_id=sid)
+                        await ctx.event_bus.emit(AliceEvent.STT_STARTED, session_id=sid)
                         result = await stt_svc.transcribe(wav_data)
                         logger.debug(
                             "STT result: text={!r} lang={} conf={:.3f} dur={:.1f}s",
@@ -273,7 +273,7 @@ async def ws_voice(websocket: WebSocket) -> None:
                             result.confidence, result.duration_s,
                         )
                         await ctx.event_bus.emit(
-                            OmniaEvent.STT_RESULT, session_id=sid, text=result.text,
+                            AliceEvent.STT_RESULT, session_id=sid, text=result.text,
                         )
                         await _send_json(websocket, {
                             "type": "transcript",
@@ -285,7 +285,7 @@ async def ws_voice(websocket: WebSocket) -> None:
                     except RuntimeError as exc:
                         logger.error("STT RuntimeError: {}", exc)
                         await ctx.event_bus.emit(
-                            OmniaEvent.STT_ERROR, session_id=sid, error=str(exc),
+                            AliceEvent.STT_ERROR, session_id=sid, error=str(exc),
                         )
                         await _send_json(websocket, {
                             "type": "voice_error",
@@ -295,7 +295,7 @@ async def ws_voice(websocket: WebSocket) -> None:
                     except Exception as exc:
                         logger.exception("STT transcription failed: {}", exc)
                         await ctx.event_bus.emit(
-                            OmniaEvent.STT_ERROR, session_id=sid, error=str(exc),
+                            AliceEvent.STT_ERROR, session_id=sid, error=str(exc),
                         )
                         await _send_json(websocket, {
                             "type": "voice_error",
@@ -360,7 +360,7 @@ async def ws_voice(websocket: WebSocket) -> None:
         cancel_event.set()
         try:
             await ctx.event_bus.emit(
-                OmniaEvent.VOICE_SESSION_END, session_id=session_id,
+                AliceEvent.VOICE_SESSION_END, session_id=session_id,
             )
         except Exception:
             pass

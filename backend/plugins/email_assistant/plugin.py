@@ -1,4 +1,4 @@
-"""OMNIA Email Assistant plugin — expose email tools to the LLM."""
+﻿"""AL\CE Email Assistant plugin — expose email tools to the LLM."""
 
 from __future__ import annotations
 

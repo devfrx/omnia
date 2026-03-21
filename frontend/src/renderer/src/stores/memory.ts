@@ -1,5 +1,5 @@
-/**
- * Pinia store for OMNIA memory management.
+﻿/**
+ * Pinia store for AL\CE memory management.
  *
  * Provides CRUD operations and semantic search over the
  * backend memory service at `/api/memory`.

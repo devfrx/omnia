@@ -1,5 +1,5 @@
-# ------------------------------------------------
-# O.M.N.I.A. - Start TRELLIS 3D Microservice
+﻿# ------------------------------------------------
+# AL\CE - Start TRELLIS 3D Microservice
 # ------------------------------------------------
 # Run: .\scripts\start-trellis.ps1
 #
@@ -21,14 +21,14 @@ $ErrorActionPreference = "Stop"
 
 # -- Resolve paths --
 $ScriptDir     = Split-Path -Parent $MyInvocation.MyCommand.Path
-$OmniaRoot     = Split-Path -Parent $ScriptDir
-$WorkspaceRoot = Split-Path -Parent $OmniaRoot
+$AliceRoot     = Split-Path -Parent $ScriptDir
+$WorkspaceRoot = Split-Path -Parent $AliceRoot
 $TrellisDir    = Join-Path $WorkspaceRoot "TRELLIS-for-windows"
-$ServerPy      = Join-Path $OmniaRoot "trellis_server\server.py"
+$ServerPy      = Join-Path $AliceRoot "trellis_server\server.py"
 
 Write-Host ""
 Write-Host "=======================================" -ForegroundColor Magenta
-Write-Host "  O.M.N.I.A. - TRELLIS 3D Service" -ForegroundColor Magenta
+Write-Host "  AL\CE - TRELLIS 3D Service" -ForegroundColor Magenta
 Write-Host "=======================================" -ForegroundColor Magenta
 Write-Host ""
 
@@ -90,7 +90,7 @@ if (-not (Test-Path $ServerPy)) {
 
 # -- Read model from config if not specified --
 if (-not $Model) {
-    $ConfigPath = Join-Path $OmniaRoot "config\default.yaml"
+    $ConfigPath = Join-Path $AliceRoot "config\default.yaml"
     if (Test-Path $ConfigPath) {
         $match = Select-String -Path $ConfigPath -Pattern '^\s*trellis_model:\s*"?([^"#]+)"?' | Select-Object -First 1
         if ($match) {
@@ -115,7 +115,7 @@ if ($portInUse) {
 }
 
 # -- Start the microservice --
-$OutputDir = Join-Path $OmniaRoot "data\3d_models"
+$OutputDir = Join-Path $AliceRoot "data\3d_models"
 if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 }

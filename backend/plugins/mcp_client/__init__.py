@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — MCP Client plugin package.
+"""AL\CE — MCP Client plugin package.
 
 Importing this module registers McpClientPlugin in the static PLUGIN_REGISTRY.
 """

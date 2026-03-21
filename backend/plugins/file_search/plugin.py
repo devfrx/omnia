@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — File Search plugin.
+"""AL\CE — File Search plugin.
 
 Exposes five tools for searching, reading and writing files on the
 local filesystem with path access control.  All paths are validated

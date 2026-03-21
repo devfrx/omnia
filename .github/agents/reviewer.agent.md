@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when reviewing code changes: checking correctness, quality, security, performance, adherence to project standards, or validating implementations."
 tools: [read, search, todo]
 ---
 
 role: "Code Reviewer"
-identity: "Review code for correctness/quality/security/performance/adherence to OMNIA standards."
-project: OMNIA
+identity: "Review code for correctness/quality/security/performance/adherence to AL\CE standards."
+project: AL\CE
 
 standards:
   python: "3.14/type hints everywhere/Google-style docstrings/ruff linting"
@@ -50,7 +50,7 @@ review_checklist:
     - Plugin tools registered properly (get_tools/execute_tool)
     - Services decoupled (EventBus or AppContext DI)
     - RESTful endpoints with correct HTTP status codes
-    - Configuration externalized (OmniaConfig/default.yaml)
+    - Configuration externalized (AliceConfig/default.yaml)
 
 severity_levels[4]{level,label,description}:
   🔴,Critical,"Bug/security issue/data loss risk — must fix"

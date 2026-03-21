@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Weather plugin package.
+"""AL\CE — Weather plugin package.
 
 Importing this module registers :class:`WeatherPlugin` in the
 static ``PLUGIN_REGISTRY`` so the plugin manager can discover it.

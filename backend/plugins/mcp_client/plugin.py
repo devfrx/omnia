@@ -1,6 +1,6 @@
-"""O.M.N.I.A. — MCP Client plugin.
+"""AL\CE — MCP Client plugin.
 
-Bridges OMNIA to external MCP servers. Each server's tools are
+Bridges AL\CE to external MCP servers. Each server's tools are
 namespaced as ``mcp_{server_name}_{tool_name}`` and exposed via
 ``get_tools()``, making them available to the LLM automatically.
 """
@@ -11,7 +11,7 @@ import re
 from typing import Any
 
 from backend.core.context import AppContext
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import (
     ConnectionStatus,
@@ -23,7 +23,7 @@ from backend.services.mcp_session import McpSession
 
 
 class McpClientPlugin(BasePlugin):
-    """Bridges OMNIA to external MCP servers.
+    """Bridges AL\CE to external MCP servers.
 
     At startup, connects to every enabled server in ``config.mcp.servers``.
     Each server's tools are namespaced as ``mcp_{server_name}_{tool_name}``
@@ -33,7 +33,7 @@ class McpClientPlugin(BasePlugin):
     plugin_name = "mcp_client"
     plugin_version = "1.0.0"
     plugin_description = (
-        "Bridges OMNIA to external MCP servers "
+        "Bridges AL\CE to external MCP servers "
         "(filesystem, git, browser, search engine, …)"
     )
     plugin_dependencies: list[str] = []
@@ -65,7 +65,7 @@ class McpClientPlugin(BasePlugin):
                     len(session.get_tools()),
                 )
                 await ctx.event_bus.emit(
-                    OmniaEvent.MCP_SERVER_CONNECTED,
+                    AliceEvent.MCP_SERVER_CONNECTED,
                     server=server_cfg.name,
                 )
             except Exception as exc:
@@ -75,7 +75,7 @@ class McpClientPlugin(BasePlugin):
                     exc,
                 )
                 await ctx.event_bus.emit(
-                    OmniaEvent.MCP_SERVER_DISCONNECTED,
+                    AliceEvent.MCP_SERVER_DISCONNECTED,
                     server=server_cfg.name,
                     reason=str(exc),
                 )

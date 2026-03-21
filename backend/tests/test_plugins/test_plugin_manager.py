@@ -1,4 +1,4 @@
-"""Tests for backend.core.plugin_base and backend.core.plugin_manager.
+﻿"""Tests for backend.core.plugin_base and backend.core.plugin_manager.
 
 Covers BasePlugin lifecycle, PluginManager startup/shutdown, dependency
 resolution (Kahn's algorithm), crash isolation, collision detection,
@@ -14,7 +14,7 @@ import pytest
 
 from backend.core.config import load_config
 from backend.core.context import AppContext
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import (
     ConnectionStatus,
@@ -382,7 +382,7 @@ class TestPluginManagerStartup:
         async def _on_loaded(**kw: object) -> None:
             events.append(kw["plugin_name"])
 
-        ctx.event_bus.subscribe(OmniaEvent.PLUGIN_LOADED, _on_loaded)
+        ctx.event_bus.subscribe(AliceEvent.PLUGIN_LOADED, _on_loaded)
         await manager.startup()
         assert "stub" in events
 
@@ -494,7 +494,7 @@ class TestCrashIsolation:
         async def _on_failed(**kw: object) -> None:
             failures.append(kw["plugin_name"])
 
-        ctx.event_bus.subscribe(OmniaEvent.PLUGIN_FAILED, _on_failed)
+        ctx.event_bus.subscribe(AliceEvent.PLUGIN_FAILED, _on_failed)
         await manager.startup()
         assert "crasher" in failures
 
@@ -665,7 +665,7 @@ class TestCheckHealth:
         async def _on_status(**kw: object) -> None:
             events.append(dict(kw))
 
-        ctx.event_bus.subscribe(OmniaEvent.PLUGIN_STATUS_CHANGED, _on_status)
+        ctx.event_bus.subscribe(AliceEvent.PLUGIN_STATUS_CHANGED, _on_status)
 
         # First check_health → status goes from None (unknown) to CONNECTED
         await manager.check_health()

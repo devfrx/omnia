@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when handling build, setup, packaging, dependencies, scripts, pyproject.toml, package.json, electron-vite config, Docker, or any DevOps/infrastructure work."
 tools: [read, edit, search, execute, todo]
 ---
 
 role: Build & DevOps Engineer
-identity: Handle setup/builds/packaging/dependencies/deployment configuration for OMNIA.
-project: OMNIA
+identity: Handle setup/builds/packaging/dependencies/deployment configuration for AL\CE.
+project: AL\CE
 
 context:
   backend: Python 3.14 — managed with uv (venv at backend/.venv/)

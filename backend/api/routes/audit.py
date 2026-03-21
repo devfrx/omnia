@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Tool confirmation audit REST endpoints."""
+"""AL\CE — Tool confirmation audit REST endpoints."""
 
 from __future__ import annotations
 

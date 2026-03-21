@@ -1,5 +1,5 @@
-/**
- * Pinia store managing chat state for the OMNIA assistant.
+﻿/**
+ * Pinia store managing chat state for the AL\CE assistant.
  *
  * Responsibilities:
  * - Maintain the sidebar conversation list (`conversations`)

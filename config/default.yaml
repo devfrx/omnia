@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────
-# O.M.N.I.A. — Default Configuration
+# AL\CE — Default Configuration
 # ──────────────────────────────────────────────────
 
 server:
@@ -56,7 +56,7 @@ tts:
   kokoro_language: "it"
 
 database:
-  url: "sqlite+aiosqlite:///data/omnia.db"
+  url: "sqlite+aiosqlite:///data/alice.db"
 
 plugins:
   enabled:
@@ -89,7 +89,7 @@ mqtt:
   password: ""
 
 voice:
-  wake_word: "omnia"
+  wake_word: "alice"
   activation_mode: "push_to_talk"  # push_to_talk | wake_word | always_on
   silence_timeout_ms: 1500
   auto_tts_response: true
@@ -143,7 +143,7 @@ clipboard:
   max_content_chars: 4000
 
 notifications:
-  app_id: "OMNIA"
+  app_id: 'AL\CE'
   sound_enabled: true
   default_timeout_s: 5
   max_active_timers: 20
@@ -224,7 +224,7 @@ chart:
 # ──────────────────────────────────────────────────
 
 email:
-  enabled: false           # abilitare via OMNIA_EMAIL__ENABLED=true (.env.email)
+  enabled: false           # abilitare via ALICE_EMAIL__ENABLED=true (.env.email)
   imap_host: "imap.gmail.com"
   imap_port: 993
   imap_ssl: true
@@ -233,7 +233,7 @@ email:
   smtp_ssl: false               # false = STARTTLS su 587; true = SSL su 465
   username: "itavfx04@gmail.com"
   use_keyring: false
-  # password: set via OMNIA_EMAIL__PASSWORD env var (never commit)
+  # password: set via ALICE_EMAIL__PASSWORD env var (never commit)
   fetch_last_n: 20
   max_fetch: 50
   max_email_body_chars: 8000
@@ -282,11 +282,11 @@ mcp:
   #    command: ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"]
   #    enabled: true
   #
-  # SQLITE — query SQL sul DB di OMNIA (lettura + scrittura)
+  # SQLITE — query SQL sul DB di AL\CE (lettura + scrittura)
   # Utile per analisi conversazioni, debug, query custom sull'agente.
   # - name: sqlite
   #   transport: stdio
-  #   command: ["uvx", "mcp-server-sqlite", "--db-path", "C:/Users/Jays/Desktop/omnia/omnia/data/omnia.db"]
+  #   command: ["uvx", "mcp-server-sqlite", "--db-path", "C:/Users/Jays/Desktop/omnia/omnia/data/alice.db"]
   #   enabled: true
   #
   # MEMORY — knowledge graph persistente locale (entities + relations)
@@ -309,7 +309,7 @@ mcp:
   # Chromium installato in: C:\Users\Jays\AppData\Local\ms-playwright
   #  - name: browser
   #    transport: stdio
-  #    command: ["npx", "--yes", "@playwright/mcp", "--headless", "--browser", "chromium", "--user-data-dir", "C:\\Users\\Jays\\AppData\\Local\\omnia-browser-profile"]
+  #    command: ["npx", "--yes", "@playwright/mcp", "--headless", "--browser", "chromium", "--user-data-dir", "C:\\Users\\Jays\\AppData\\Local\\alice-browser-profile"]
   #    env:
   #      PLAYWRIGHT_BROWSERS_PATH: "C:\\Users\\Jays\\AppData\\Local\\ms-playwright"
   #    enabled: true

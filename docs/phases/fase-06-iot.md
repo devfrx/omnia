@@ -26,7 +26,7 @@
 
 #### 6.4 — Event-Driven Updates
 - [ ] **Unsolicited messages**: quando un dispositivo cambia stato, inviare al frontend:
-  - `{"type": "iot_state_update", "device_id": "...", "new_state": "...", "changed_by": "external|omnia"}`
+  - `{"type": "iot_state_update", "device_id": "...", "new_state": "...", "changed_by": "external|alice"}`
 - [ ] **Notification vs message**: gli update IoT NON finiscono nella chat history; sono notifiche separate
 - [ ] Frontend: notification toast per state changes (opzionale, configurabile per dispositivo)
 

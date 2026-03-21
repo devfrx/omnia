@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Settings endpoints (runtime toggles)."""
+"""AL\CE — Settings endpoints (runtime toggles)."""
 
 from __future__ import annotations
 

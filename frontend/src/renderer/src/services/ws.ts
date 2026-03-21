@@ -1,5 +1,5 @@
-/**
- * WebSocket connection manager for the OMNIA backend.
+﻿/**
+ * WebSocket connection manager for the AL\CE backend.
  *
  * Provides typed event dispatching, automatic reconnection with
  * exponential back-off, and clean teardown via {@link disconnect}.
@@ -57,7 +57,7 @@ export class WebSocketManager {
     this.ws = new WebSocket(this.url)
 
     this.ws.onopen = (): void => {
-      console.log('[OMNIA WS] Connected to', this.url)
+      console.log('[ALICE WS] Connected to', this.url)
       this.reconnectAttempts = 0
       this.emit('connected', null)
     }
@@ -73,7 +73,7 @@ export class WebSocketManager {
     }
 
     this.ws.onclose = (): void => {
-      console.log('[OMNIA WS] Disconnected')
+      console.log('[ALICE WS] Disconnected')
       this.emit('disconnected', null)
       if (!this.intentionalClose) {
         this.attemptReconnect()
@@ -81,7 +81,7 @@ export class WebSocketManager {
     }
 
     this.ws.onerror = (error: Event): void => {
-      console.error('[OMNIA WS] Error:', error)
+      console.error('[ALICE WS] Error:', error)
       this.emit('error', error)
     }
   }
@@ -119,7 +119,7 @@ export class WebSocketManager {
 
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('[OMNIA WS] Max reconnect attempts reached, will retry after delay')
+      console.error('[ALICE WS] Max reconnect attempts reached, will retry after delay')
       this.emit('reconnect_failed', null)
       // Reset and try again after a long delay (30s)
       this.reconnectAttempts = 0
@@ -129,7 +129,7 @@ export class WebSocketManager {
 
     this.reconnectAttempts++
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
-    console.log(`[OMNIA WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
+    console.log(`[ALICE WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
     this.reconnectTimer = setTimeout(() => this.connect(), delay)
   }
 
@@ -149,10 +149,10 @@ export class WebSocketManager {
     }
 
     // Buffer is full — queue the message
-    console.warn(`[OMNIA WS] Backpressure: bufferedAmount=${this.ws.bufferedAmount}, queueing message`)
+    console.warn(`[ALICE WS] Backpressure: bufferedAmount=${this.ws.bufferedAmount}, queueing message`)
     if (this.sendQueue.length >= this.maxQueueSize) {
       this.sendQueue.shift() // drop oldest
-      console.warn('[OMNIA WS] Queue full, dropping oldest message')
+      console.warn('[ALICE WS] Queue full, dropping oldest message')
     }
     this.sendQueue.push(payload)
     this.scheduleDrain()

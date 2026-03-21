@@ -1,5 +1,5 @@
-/**
- * O.M.N.I.A. UI Component Library
+﻿/**
+ * AL\CE UI Component Library
  *
  * Reusable, accessible, world-class base components.
  * Import from '@/components/ui' for clean imports.
@@ -17,5 +17,5 @@ export { default as UiToast } from './UiToast.vue'
 export { default as UiContextMenu } from './UiContextMenu.vue'
 export { default as UiContextMenuItem } from './UiContextMenuItem.vue'
 export { default as UiContextMenuDivider } from './UiContextMenuDivider.vue'
-export { default as OmniaLoader } from './OmniaLoader.vue'
-export { default as OmniaSpinner } from './OmniaSpinner.vue'
+export { default as AliceLoader } from './AliceLoader.vue'
+export { default as AliceSpinner } from './AliceSpinner.vue'

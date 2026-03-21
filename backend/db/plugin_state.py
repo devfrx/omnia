@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Plugin state persistence repository.
+"""AL\CE — Plugin state persistence repository.
 
 Provides a thin async repository over the ``plugin_states`` table so
 that plugin enable/disable toggles survive application restarts.

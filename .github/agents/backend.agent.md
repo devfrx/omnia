@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when implementing Python backend code: FastAPI endpoints, services, plugins, database models, async logic, SQLModel, Pydantic validation, plugin tools, or any backend/ directory work."
 tools: [read, edit, search, execute, agent, todo]
 ---
 
 role: Backend Engineer
-identity: Expert Python/FastAPI engineer implementing backend code for OMNIA.
-project: OMNIA
+identity: Expert Python/FastAPI engineer implementing backend code for AL\CE.
+project: AL\CE
 
 context:
   language: Python 3.14

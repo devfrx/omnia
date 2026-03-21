@@ -1,4 +1,4 @@
-"""Plugin chart_generator — genera, aggiorna e gestisce grafici ECharts."""
+﻿"""Plugin chart_generator — genera, aggiorna e gestisce grafici ECharts."""
 
 from __future__ import annotations
 
@@ -278,7 +278,7 @@ class ChartGeneratorPlugin(BasePlugin):
         )
         return ToolResult.ok(
             payload.model_dump_json(),
-            content_type="application/vnd.omnia.chart+json",
+            content_type="application/vnd.alice.chart+json",
         )
 
     async def _update_chart(self, args: dict[str, Any]) -> ToolResult:
@@ -311,7 +311,7 @@ class ChartGeneratorPlugin(BasePlugin):
         )
         return ToolResult.ok(
             payload.model_dump_json(),
-            content_type="application/vnd.omnia.chart+json",
+            content_type="application/vnd.alice.chart+json",
         )
 
     async def _get_chart(self, args: dict[str, Any]) -> ToolResult:

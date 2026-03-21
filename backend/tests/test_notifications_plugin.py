@@ -1,4 +1,4 @@
-"""Tests for backend.plugins.notifications — NotificationsPlugin & TimerManager."""
+﻿"""Tests for backend.plugins.notifications — NotificationsPlugin & TimerManager."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import pytest
 
 from backend.core.config import load_config
 from backend.core.context import AppContext
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 from backend.core.plugin_models import ConnectionStatus, ExecutionContext, ToolResult
 
 
@@ -829,7 +829,7 @@ class TestEventBusIntegration:
         async def handler(**kwargs):
             received_events.append(kwargs)
 
-        bus.subscribe(OmniaEvent.TIMER_FIRED, handler)
+        bus.subscribe(AliceEvent.TIMER_FIRED, handler)
 
         callback = AsyncMock()
         await manager._fire_timer("evt-1", "Event test", callback)
@@ -852,7 +852,7 @@ class TestEventBusIntegration:
         async def handler(**kwargs):
             received_events.append(kwargs)
 
-        bus.subscribe(OmniaEvent.TIMER_FIRED, handler)
+        bus.subscribe(AliceEvent.TIMER_FIRED, handler)
 
         callback = AsyncMock()
         await manager.create_timer(
@@ -885,8 +885,8 @@ class TestEventBusIntegration:
         await plugin.on_app_startup()
 
         # Verify CALENDAR_REMINDER handler was subscribed
-        assert OmniaEvent.CALENDAR_REMINDER in bus._handlers
-        assert len(bus._handlers[OmniaEvent.CALENDAR_REMINDER]) == 1
+        assert AliceEvent.CALENDAR_REMINDER in bus._handlers
+        assert len(bus._handlers[AliceEvent.CALENDAR_REMINDER]) == 1
 
 
 # ===========================================================================

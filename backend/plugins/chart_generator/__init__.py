@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Chart Generator plugin package.
+"""AL\CE — Chart Generator plugin package.
 
 Importing this module registers ChartGeneratorPlugin in the static PLUGIN_REGISTRY
 so the plugin manager can discover it.

@@ -1,10 +1,10 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * CADViewer.vue — Interactive 3D model viewer for TRELLIS-generated GLB files.
  *
  * Uses Three.js + GLTFLoader with OrbitControls for drag/scroll/pinch
  * interaction. Auto-fits the camera to the loaded model bounding box.
- * Visual style matches the OMNIA dark charcoal + warm cream theme.
+ * Visual style matches the AL\CE dark charcoal + warm cream theme.
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as THREE from 'three'

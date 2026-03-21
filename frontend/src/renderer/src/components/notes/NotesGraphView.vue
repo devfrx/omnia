@@ -1,6 +1,6 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
- * Interactive Cytoscape.js graph visualization of the OMNIA note vault.
+ * Interactive Cytoscape.js graph visualization of the AL\CE note vault.
  * Nodes = notes, edges = wikilink references between notes.
  * Colored by folder, sized by incoming link count.
  * Uses cytoscape-cola for continuous force-directed physics (Obsidian-like).

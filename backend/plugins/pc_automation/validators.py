@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — PC Automation input validation and safe subprocess execution.
+"""AL\CE — PC Automation input validation and safe subprocess execution.
 
 Provides a hardened subprocess wrapper that enforces shell=False,
 argument lists, timeouts, and output truncation.

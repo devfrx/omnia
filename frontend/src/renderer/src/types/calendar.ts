@@ -1,5 +1,5 @@
-/**
- * Calendar-related types aligned with the OMNIA backend calendar API.
+﻿/**
+ * Calendar-related types aligned with the AL\CE backend calendar API.
  */
 
 /** A single calendar event from the backend. */

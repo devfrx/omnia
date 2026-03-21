@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — File content readers for different formats."""
+"""AL\CE — File content readers for different formats."""
 
 from __future__ import annotations
 

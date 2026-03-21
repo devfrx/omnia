@@ -1,4 +1,4 @@
-# Fase 16 — Canvas AI Visiva (Lavagna Intelligente)
+﻿# Fase 16 — Canvas AI Visiva (Lavagna Intelligente)
 
 > **Obiettivo**: Integrare una lavagna interattiva basata su **Fabric.js** come vista full-screen
 > con pop-out Electron, connessa al modello vision (Qwen 3.5 9B) tramite tre modalità:
@@ -7,7 +7,7 @@
 
 - [ ] §16.1  Canvas DB model in `backend/db/models.py`
 - [ ] §16.2  `CanvasService` (`backend/services/canvas_service.py`) + `CanvasServiceProtocol`
-- [ ] §16.3  `AppContext.canvas_service` + `OmniaEvent.CANVAS_*` + `protocols.py`
+- [ ] §16.3  `AppContext.canvas_service` + `AliceEvent.CANVAS_*` + `protocols.py`
 - [ ] §16.4  REST API `/api/canvas` (5 endpoint + 1 analyze)
 - [ ] §16.5  App lifespan wiring (`backend/core/app.py`) + `routes/__init__.py`
 - [ ] §16.6  `npm install fabric` + tipi TypeScript + note CSP
@@ -47,7 +47,7 @@
   `SQLModel.metadata.create_all(engine)` se assente. Il service riceve il `session_factory`
   nell'`__init__` (pattern `PreferencesService`) e gestisce le session internamente
 - **Diversamente da `NoteService`/`MemoryService`** (che usano aiosqlite dedicato), `CanvasService`
-  usa l'engine condiviso dell'app — la tabella `Canvas` vive in `omnia.db`
+  usa l'engine condiviso dell'app — la tabella `Canvas` vive in `alice.db`
 - I test usano `create_async_engine("sqlite+aiosqlite:///:memory:")` + `SQLModel.metadata.create_all()`
 - Testabile in isolamento tramite un fixture locale (vedi §16.17), route = HTTP layer sottile
 
@@ -179,7 +179,7 @@ circular imports e rispettare il pattern DI già usato per tutti gli altri servi
 canvas_service: CanvasServiceProtocol | None = None
 ```
 
-In `event_bus.py` — aggiungere a `OmniaEvent`:
+In `event_bus.py` — aggiungere a `AliceEvent`:
 ```python
 CANVAS_CREATED = "canvas.created"
 CANVAS_UPDATED = "canvas.updated"
@@ -869,7 +869,7 @@ config/
 **Step 1** (backend, sequenziali per dipendenze di import):
 - §16.1 DB model (`Canvas` in `models.py`)
 - §16.2 `CanvasService` + `CanvasServiceProtocol` in `protocols.py` *(dipende da §16.1)*
-- §16.3 `AppContext.canvas_service` + `OmniaEvent.CANVAS_*` *(dipende da §16.2)*
+- §16.3 `AppContext.canvas_service` + `AliceEvent.CANVAS_*` *(dipende da §16.2)*
 
 **Step 2** (dipende da Step 1):
 - §16.4 REST routes `canvas.py`

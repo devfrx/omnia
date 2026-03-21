@@ -1,5 +1,5 @@
-/**
- * useModal — Centralized modal composable for OMNIA.
+﻿/**
+ * useModal — Centralized modal composable for AL\CE.
  *
  * Provides a singleton reactive state and helper methods to show
  * confirm / alert / custom modals without native browser dialogs.

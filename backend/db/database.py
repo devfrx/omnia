@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Database engine and session helpers."""
+"""AL\CE — Database engine and session helpers."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def create_engine_and_session(
 
     Args:
         db_url: SQLAlchemy-style database URL
-                (e.g. ``sqlite+aiosqlite:///data/omnia.db``).
+                (e.g. ``sqlite+aiosqlite:///data/alice.db``).
 
     Returns:
         A tuple of ``(AsyncEngine, async_sessionmaker)`` where sessions

@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — WebSocket endpoint for background event streaming.
+"""AL\CE — WebSocket endpoint for background event streaming.
 
 Clients connect once at startup to ``/api/events/ws`` and receive
 push notifications whenever a background task completes, fails,

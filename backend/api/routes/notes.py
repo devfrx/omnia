@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Notes REST endpoints."""
+"""AL\CE — Notes REST endpoints."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
@@ -182,7 +182,7 @@ async def create_note(
 
     ctx = request.app.state.context
     await ctx.event_bus.emit(
-        OmniaEvent.NOTE_CREATED, note_id=entry.id, title=entry.title,
+        AliceEvent.NOTE_CREATED, note_id=entry.id, title=entry.title,
     )
     return _serialize_note(entry)
 
@@ -251,7 +251,7 @@ async def update_note(
 
     ctx = request.app.state.context
     await ctx.event_bus.emit(
-        OmniaEvent.NOTE_UPDATED, note_id=note_id,
+        AliceEvent.NOTE_UPDATED, note_id=note_id,
     )
     logger.info("Note updated via API: {}", note_id)
     return _serialize_note(entry)
@@ -272,7 +272,7 @@ async def delete_note(
 
     ctx = request.app.state.context
     await ctx.event_bus.emit(
-        OmniaEvent.NOTE_DELETED, note_id=note_id,
+        AliceEvent.NOTE_DELETED, note_id=note_id,
     )
     logger.info("Note deleted via API: {}", note_id)
     return {"deleted": True}

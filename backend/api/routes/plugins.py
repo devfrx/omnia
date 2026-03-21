@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Plugin management endpoints."""
+"""AL\CE — Plugin management endpoints."""
 
 from __future__ import annotations
 

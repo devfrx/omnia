@@ -1,4 +1,4 @@
-### Fase 3 — Plugin System
+﻿### Fase 3 — Plugin System
 
 #### 3.1 — BasePlugin ABC + PluginManager
 - [x] `BasePlugin` ABC con interfaccia completa:
@@ -45,7 +45,7 @@
 - [x] `ConnectionStatus` enum: `UNKNOWN`, `CONNECTED`, `DISCONNECTED`, `DEGRADED`, `ERROR`
 - [x] `PluginManager` con:
   - Registro **statico** (`PLUGIN_REGISTRY` dict) per compatibilità PyInstaller (Fase 8)
-  - Flag env `OMNIA_PLUGIN_DISCOVERY=dynamic` per scan `importlib` in dev
+  - Flag env `ALICE_PLUGIN_DISCOVERY=dynamic` per scan `importlib` in dev
   - **Risoluzione dipendenze**: topological sort (algoritmo di Kahn) con cycle detection
   - **Load order deterministico**: dipendenze prima, poi per `plugin_priority`
   - Isolamento crash per ogni plugin: `ImportError`, `SyntaxError`, `AttributeError` non abbattono il server

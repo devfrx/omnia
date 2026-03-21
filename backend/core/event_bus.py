@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Async event bus for inter-component communication."""
+"""AL\CE — Async event bus for inter-component communication."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ CIRCUIT_BREAKER_COOLDOWN_S: float = 60.0
 # ---------------------------------------------------------------------------
 
 
-class OmniaEvent(StrEnum):
+class AliceEvent(StrEnum):
     """Enumeration of well-known event names used by the bus."""
 
     LLM_RESPONSE = "llm.response"
@@ -104,12 +104,12 @@ class EventBus:
     # -- public API ---------------------------------------------------------
 
     def subscribe(
-        self, event_name: str | OmniaEvent, handler: AsyncHandler,
+        self, event_name: str | AliceEvent, handler: AsyncHandler,
     ) -> None:
         """Register *handler* for *event_name*.
 
         Args:
-            event_name: The event to listen for (str or ``OmniaEvent``).
+            event_name: The event to listen for (str or ``AliceEvent``).
             handler: An async callable to invoke when the event fires.
         """
         self._handlers[event_name].append(handler)
@@ -118,7 +118,7 @@ class EventBus:
         )
 
     def unsubscribe(
-        self, event_name: str | OmniaEvent, handler: AsyncHandler,
+        self, event_name: str | AliceEvent, handler: AsyncHandler,
     ) -> None:
         """Remove *handler* from *event_name*.
 
@@ -148,7 +148,7 @@ class EventBus:
             )
 
     def once(
-        self, event_name: str | OmniaEvent, handler: AsyncHandler,
+        self, event_name: str | AliceEvent, handler: AsyncHandler,
     ) -> None:
         """Register *handler* so it fires exactly once then auto-unsubscribes.
 
@@ -171,7 +171,7 @@ class EventBus:
         self.subscribe(event_name, _wrapper)
 
     async def emit(
-        self, event_name: str | OmniaEvent, **kwargs: Any,
+        self, event_name: str | AliceEvent, **kwargs: Any,
     ) -> None:
         """Fire *event_name*, calling all registered handlers concurrently.
 

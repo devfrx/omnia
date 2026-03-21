@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * StreamingIndicator.vue — Shows the in-progress assistant response.
  *
@@ -14,7 +14,7 @@ import { useCodeBlocks } from '../../composables/useCodeBlocks'
 import { useChatStore } from '../../stores/chat'
 import ThinkingSection from './ThinkingSection.vue'
 import ToolExecutionIndicator from './ToolExecutionIndicator.vue'
-import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
+import AliceSpinner from '../../components/ui/AliceSpinner.vue'
 
 const props = defineProps<{
   /** Accumulated tokens so far (`currentStreamContent` from the store). */
@@ -39,7 +39,7 @@ const chatStore = useChatStore()
     <div class="streaming-bubble">
       <!-- Thinking-only state indicator -->
       <div v-if="thinkingContent && !content" class="streaming-bubble__thinking-state">
-        <OmniaSpinner size="xs" />
+        <AliceSpinner size="xs" />
         <span class="streaming-bubble__thinking-label">Ragionamento in corso…</span>
       </div>
 

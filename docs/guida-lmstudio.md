@@ -1,9 +1,9 @@
-# Guida: Configurare LM Studio con OMNIA
+﻿# Guida: Configurare LM Studio con AL\CE
 
 ## Indice
 
 - [1. Installare e configurare LM Studio](#1-installare-e-configurare-lm-studio)
-- [2. Configurare OMNIA per LM Studio](#2-configurare-omnia-per-lm-studio)
+- [2. Configurare AL\CE per LM Studio](#2-configurare-alce-per-lm-studio)
 - [3. Passare da Ollama a LM Studio (e viceversa)](#3-passare-da-ollama-a-lm-studio-e-viceversa)
 - [4. Differenze tra Ollama e LM Studio](#4-differenze-tra-ollama-e-lm-studio)
 - [5. Troubleshooting](#5-troubleshooting)
@@ -31,7 +31,7 @@
 3. Clicca **Start Server**. Il server si avvierà su `http://localhost:1234`.
 4. Verifica che lo stato mostri **Server running** con l'indicatore verde.
 
-> **Nota:** LM Studio carica il modello in memoria solo quando avvii il server (o la chat). Assicurati che il modello sia effettivamente caricato prima di usare OMNIA.
+> **Nota:** LM Studio carica il modello in memoria solo quando avvii il server (o la chat). Assicurati che il modello sia effettivamente caricato prima di usare AL\CE.
 
 ### 1.4 — Trovare il nome esatto del modello
 
@@ -42,11 +42,11 @@ Il nome del modello in LM Studio è visibile in due modi:
   ```bash
   curl http://localhost:1234/v1/models
   ```
-  La risposta JSON conterrà il campo `id` con il nome esatto da usare nella configurazione OMNIA.
+  La risposta JSON conterrà il campo `id` con il nome esatto da usare nella configurazione AL\CE.
 
 ---
 
-## 2. Configurare OMNIA per LM Studio
+## 2. Configurare AL\CE per LM Studio
 
 Apri il file `config/default.yaml` nella root del progetto e modifica la sezione `llm`:
 
@@ -83,11 +83,11 @@ llm:
 | `supports_vision` | `true` / `false` | Attivare solo con modelli multimodali (es. LLaVA, Qwen2-VL) |
 | `supports_thinking` | `true` / `false` | Attivare solo con modelli reasoning (es. QwQ, DeepSeek-R1) |
 
-> **Attenzione:** Se il modello non è nella lista `KNOWN_MODELS` di OMNIA, i flag `supports_vision` e `supports_thinking` **non vengono auto-rilevati**. Devi impostarli manualmente nel YAML.
+> **Attenzione:** Se il modello non è nella lista `KNOWN_MODELS` di AL\CE, i flag `supports_vision` e `supports_thinking` **non vengono auto-rilevati**. Devi impostarli manualmente nel YAML.
 
 ### Riavviare il backend
 
-Dopo aver salvato il file, riavvia il backend OMNIA:
+Dopo aver salvato il file, riavvia il backend AL\CE:
 
 ```powershell
 cd omnia
@@ -98,7 +98,7 @@ cd omnia
 
 ## 3. Passare da Ollama a LM Studio (e viceversa)
 
-Il cambio è semplice: OMNIA usa il protocollo **OpenAI-compatible** per entrambi. Basta modificare due campi in `config/default.yaml`:
+Il cambio è semplice: AL\CE usa il protocollo **OpenAI-compatible** per entrambi. Basta modificare due campi in `config/default.yaml`:
 
 | | Ollama | LM Studio |
 |---|---|---|
@@ -110,12 +110,12 @@ Il cambio è semplice: OMNIA usa il protocollo **OpenAI-compatible** per entramb
 1. Assicurati che il server del provider scelto sia in esecuzione.
 2. Modifica `base_url` e `model` nel YAML.
 3. Aggiorna `supports_vision` e `supports_thinking` se il modello cambia.
-4. Riavvia il backend OMNIA.
+4. Riavvia il backend AL\CE.
 
 > **Alternativa con variabili d'ambiente** (senza modificare il YAML):
 > ```powershell
-> $env:OMNIA_LLM__BASE_URL = "http://localhost:1234"
-> $env:OMNIA_LLM__MODEL = "qwen2.5-7b-instruct"
+> $env:ALICE_LLM__BASE_URL = "http://localhost:1234"
+> $env:ALICE_LLM__MODEL = "qwen2.5-7b-instruct"
 > ```
 
 ---
@@ -133,7 +133,7 @@ Il cambio è semplice: OMNIA usa il protocollo **OpenAI-compatible** per entramb
 | **GPU offloading** | Automatico | Configurabile dalla UI (slider n_gpu_layers) |
 | **Formato modelli** | Proprietario (basato su GGUF) | GGUF diretto da HuggingFace |
 
-**Entrambi** supportano il protocollo OpenAI-compatible, quindi OMNIA funziona senza modifiche al codice.
+**Entrambi** supportano il protocollo OpenAI-compatible, quindi AL\CE funziona senza modifiche al codice.
 
 ---
 
@@ -180,7 +180,7 @@ Non tutti i modelli supportano il function calling. In LM Studio:
 
 ### Errore di connessione dal backend
 
-Se nel log OMNIA vedi `ConnectionRefusedError`:
+Se nel log AL\CE vedi `ConnectionRefusedError`:
 1. Verifica che il server LM Studio sia in esecuzione
 2. Verifica che la porta nel YAML corrisponda a quella di LM Studio
 3. Se usi WSL o Docker, `localhost` potrebbe non risolvere — usa l'IP locale

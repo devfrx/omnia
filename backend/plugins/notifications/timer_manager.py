@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Timer management for the notifications plugin.
+"""AL\CE — Timer management for the notifications plugin.
 
 Manages persistent timers backed by SQLite. Each timer is an
 ``asyncio.Task`` that sleeps until ``fires_at`` and then invokes a
@@ -17,7 +17,7 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlmodel import Field, SQLModel, select
 
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 
 # ---------------------------------------------------------------------------
 # Type aliases
@@ -240,7 +240,7 @@ class TimerManager:
 
         await self._update_status(timer_id, "fired")
         await self._event_bus.emit(
-            OmniaEvent.TIMER_FIRED,
+            AliceEvent.TIMER_FIRED,
             timer_id=timer_id,
             label=label,
         )

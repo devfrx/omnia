@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Composable for the persistent events WebSocket connection.
  *
  * Connects to `/api/events/ws` on setup and dispatches incoming
@@ -32,7 +32,7 @@ export function useEventsWebSocket() {
     ws = new WebSocket(WS_URL)
 
     ws.onopen = (): void => {
-      console.log('[OMNIA Events WS] Connected')
+      console.log('[ALICE Events WS] Connected')
       isConnected.value = true
       reconnectAttempts = 0
 
@@ -85,7 +85,7 @@ export function useEventsWebSocket() {
           })
         }
       } catch {
-        console.warn('[OMNIA Events WS] Failed to parse message')
+        console.warn('[ALICE Events WS] Failed to parse message')
       }
     }
 

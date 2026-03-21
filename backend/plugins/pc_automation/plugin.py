@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — PC Automation plugin.
+"""AL\CE — PC Automation plugin.
 
 Exposes ten tools for controlling the local PC: opening/closing apps,
 keyboard input, screenshots, mouse control, and shell commands.

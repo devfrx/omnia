@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ToolExecutionIndicator.vue — Live tool execution timeline during streaming.
  *
@@ -9,7 +9,7 @@
 import { computed, reactive, defineAsyncComponent } from 'vue'
 
 import type { ToolExecution, ChartPayload } from '../../types/chat'
-import OmniaSpinner from '../../components/ui/OmniaSpinner.vue'
+import AliceSpinner from '../../components/ui/AliceSpinner.vue'
 
 const CADViewer = defineAsyncComponent(
     () => import('./CADViewer.vue')
@@ -69,8 +69,8 @@ function chartPayloadOf(result: string): ChartPayload {
 function isPlainResult(exec: ToolExecution): boolean {
     if (!exec.result) return false
     if (exec.contentType?.startsWith('image/')) return false
-    if (exec.contentType === 'application/vnd.omnia.cad-model+json') return false
-    if (exec.contentType === 'application/vnd.omnia.chart+json' && parseChartPayload(exec.result)) return false
+    if (exec.contentType === 'application/vnd.alice.cad-model+json') return false
+    if (exec.contentType === 'application/vnd.alice.chart+json' && parseChartPayload(exec.result)) return false
     return true
 }
 </script>
@@ -89,7 +89,7 @@ function isPlainResult(exec: ToolExecution): boolean {
             <div class="tool-exec__body">
                 <!-- Tool name + status row -->
                 <div class="tool-exec__header">
-                    <OmniaSpinner v-if="exec.status === 'running'" size="xs" aria-label="In esecuzione" />
+                    <AliceSpinner v-if="exec.status === 'running'" size="xs" aria-label="In esecuzione" />
                     <svg v-else-if="exec.status === 'done' && exec.success" class="tool-exec__status-icon" width="12"
                         height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -110,13 +110,13 @@ function isPlainResult(exec: ToolExecution): boolean {
                     <img v-if="exec.contentType?.startsWith('image/')" class="tool-exec__image"
                         :src="`data:${exec.contentType};base64,${exec.result}`" alt="Screenshot" />
                     <!-- CAD model -->
-                    <template v-else-if="exec.contentType === 'application/vnd.omnia.cad-model+json'">
+                    <template v-else-if="exec.contentType === 'application/vnd.alice.cad-model+json'">
                         <CADViewer :model-url="parseCadPayload(exec.result)?.export_url ?? ''"
                             :model-name="parseCadPayload(exec.result)?.model_name" />
                     </template>
                     <!-- Chart -->
                     <template
-                        v-else-if="exec.contentType === 'application/vnd.omnia.chart+json' && parseChartPayload(exec.result)">
+                        v-else-if="exec.contentType === 'application/vnd.alice.chart+json' && parseChartPayload(exec.result)">
                         <ChartViewer :payload="chartPayloadOf(exec.result)" />
                     </template>
                     <!-- Plain text result (collapsible) -->

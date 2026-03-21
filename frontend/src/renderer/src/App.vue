@@ -1,12 +1,12 @@
-<script setup lang="ts">
-// O.M.N.I.A. — Root App Component
+﻿<script setup lang="ts">
+// AL\CE — Root App Component
 import { onMounted, provide, computed, ref, watchEffect } from 'vue'
 
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
 import ModalContainer from './components/ModalContainer.vue'
 // ModeSwitcher is managed inside AssistantFab for assistant mode
-import { UiToast, OmniaLoader } from './components/ui'
+import { UiToast, AliceLoader } from './components/ui'
 import { useChat, ChatApiKey } from './composables/useChat'
 import { useEventsWebSocket } from './composables/useEventsWebSocket'
 import { useSettingsStore } from './stores/settings'
@@ -48,7 +48,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="omnia-app" :class="`omnia-app--${uiStore.mode}`">
+  <div id="alice-app" :class="`alice-app--${uiStore.mode}`">
     <TitleBar />
     <div v-if="settingsStore.isAnyOperationInProgress" class="global-operation-bar">
       <div class="global-operation-bar__track" role="progressbar" aria-label="Operazione modello in corso">
@@ -66,14 +66,14 @@ onMounted(() => {
     <!-- <ModeSwitcher v-if="uiStore.mode !== 'assistant'" /> NON ATTIVARE! -->
     <ModalContainer />
     <UiToast />
-    <OmniaLoader :visible="startupLoading" :message="startupMessage" />
+    <AliceLoader :visible="startupLoading" :message="startupMessage" />
   </div>
 </template>
 
 <style>
 /* Theme tokens & global reset are loaded via main.css → styles/theme.css */
 
-#omnia-app {
+#alice-app {
   width: 100vw;
   height: 100vh;
   display: flex;
@@ -139,11 +139,11 @@ onMounted(() => {
 }
 
 /* ── Mode-specific adjustments ──────────────────────────────────── */
-.omnia-app--assistant .app-body {
+.alice-app--assistant .app-body {
   background: var(--surface-0);
 }
 
-.omnia-app--assistant .app-content {
+.alice-app--assistant .app-content {
   display: flex;
   align-items: center;
   justify-content: center;

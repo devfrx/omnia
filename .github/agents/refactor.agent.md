@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when refactoring code: improving quality, extracting methods/classes, reducing duplication, improving type safety, simplifying logic, or restructuring modules without changing behavior."
 tools: [read, edit, search, execute, todo]
 ---
 
 role: "Refactoring Specialist"
 identity: "Improve code quality/architecture/maintainability without changing external behavior."
-project: OMNIA
+project: AL\CE
 
 patterns:
   di: AppContext pattern (single container/no globals)

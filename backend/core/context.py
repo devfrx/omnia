@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Application context (lightweight DI container).
+"""AL\CE — Application context (lightweight DI container).
 
 The ``AppContext`` holds references to every shared service so they can be
 injected where needed without relying on module-level globals.
@@ -12,7 +12,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
-from backend.core.config import OmniaConfig
+from backend.core.config import AliceConfig
 from backend.core.event_bus import EventBus
 from backend.core.protocols import (
     ConversationFileManagerProtocol,
@@ -39,7 +39,7 @@ class AppContext:
     stored on ``app.state.context``.
     """
 
-    config: OmniaConfig
+    config: AliceConfig
     event_bus: EventBus
     db: async_sessionmaker | None = None
     engine: AsyncEngine | None = None
@@ -107,11 +107,11 @@ class AppContext:
         self.plugin_local_state[plugin_name][key] = value
 
 
-def create_context(config: OmniaConfig) -> AppContext:
+def create_context(config: AliceConfig) -> AppContext:
     """Create a fresh application context.
 
     Args:
-        config: The validated OMNIA configuration.
+        config: The validated AL\CE configuration.
 
     Returns:
         An ``AppContext`` wired with the config and a new ``EventBus``.

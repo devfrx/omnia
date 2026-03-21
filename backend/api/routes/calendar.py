@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Calendar REST endpoints."""
+"""AL\CE — Calendar REST endpoints."""
 
 from __future__ import annotations
 

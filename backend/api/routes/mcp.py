@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — MCP server management REST endpoints."""
+"""AL\CE — MCP server management REST endpoints."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from loguru import logger
 
 from backend.core.context import AppContext
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 
 if TYPE_CHECKING:
     from backend.plugins.mcp_client.plugin import McpClientPlugin
@@ -135,7 +135,7 @@ async def reconnect_mcp_server(
             server_name, server_config,
         )
         await ctx.event_bus.emit(
-            OmniaEvent.MCP_SERVER_CONNECTED, server=server_name,
+            AliceEvent.MCP_SERVER_CONNECTED, server=server_name,
         )
         return {
             "status": "connected",
@@ -146,7 +146,7 @@ async def reconnect_mcp_server(
             "MCP reconnect '{}' failed: {}", server_name, exc,
         )
         await ctx.event_bus.emit(
-            OmniaEvent.MCP_SERVER_DISCONNECTED,
+            AliceEvent.MCP_SERVER_DISCONNECTED,
             server=server_name,
             reason=str(exc),
         )

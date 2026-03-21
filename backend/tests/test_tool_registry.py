@@ -1,4 +1,4 @@
-"""Comprehensive tests for ToolRegistry (Phase 3.2).
+﻿"""Comprehensive tests for ToolRegistry (Phase 3.2).
 
 Covers: registration, namespacing, validation, collision detection, lookup,
 dynamic availability, execution, result processing, event emission, and
@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import (
     ConnectionStatus,
@@ -575,8 +575,8 @@ class TestEventEmission:
         async def on_succeeded(**kwargs):
             events_received.append("succeeded")
 
-        event_bus.subscribe(OmniaEvent.TOOL_EXECUTION_START, on_start)
-        event_bus.subscribe(OmniaEvent.TOOL_EXECUTION_SUCCEEDED, on_succeeded)
+        event_bus.subscribe(AliceEvent.TOOL_EXECUTION_START, on_start)
+        event_bus.subscribe(AliceEvent.TOOL_EXECUTION_SUCCEEDED, on_succeeded)
 
         plugin = MockPlugin(tools=[_make_tool("action")], name="plug")
         pm = MockPluginManager({"plug": plugin})
@@ -599,8 +599,8 @@ class TestEventEmission:
         async def on_failed(**kwargs):
             events_received.append("failed")
 
-        event_bus.subscribe(OmniaEvent.TOOL_EXECUTION_START, on_start)
-        event_bus.subscribe(OmniaEvent.TOOL_EXECUTION_FAILED, on_failed)
+        event_bus.subscribe(AliceEvent.TOOL_EXECUTION_START, on_start)
+        event_bus.subscribe(AliceEvent.TOOL_EXECUTION_FAILED, on_failed)
 
         async def broken_fn(tool_name, args, context):
             raise RuntimeError("boom")

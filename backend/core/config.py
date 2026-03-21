@@ -1,7 +1,7 @@
-"""O.M.N.I.A. — Configuration system.
+"""AL\CE — Configuration system.
 
 Loads configuration from ``config/default.yaml`` with environment-variable
-overrides (prefix ``OMNIA_``, nested via double-underscore).  Uses Pydantic
+overrides (prefix ``ALICE_``, nested via double-underscore).  Uses Pydantic
 Settings v2 for validation and env parsing.
 """
 
@@ -23,7 +23,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # ---------------------------------------------------------------------------
 
 PROJECT_ROOT: Path = Path(__file__).resolve().parents[2]
-"""Absolute path to the OMNIA project root (two levels up from core/)."""
+"""Absolute path to the AL\CE project root (two levels up from core/)."""
 
 DEFAULT_CONFIG_PATH: Path = PROJECT_ROOT / "config" / "default.yaml"
 
@@ -70,7 +70,7 @@ KNOWN_MODELS: dict[str, dict[str, bool]] = {
 class ServerConfig(BaseSettings):
     """HTTP server configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_SERVER__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_SERVER__")
 
     host: str = "127.0.0.1"
     port: int = 8000
@@ -114,7 +114,7 @@ class ServerConfig(BaseSettings):
 class LLMConfig(BaseSettings):
     """LLM provider configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_LLM__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_LLM__")
 
     provider: str = "lmstudio"
     base_url: str = "http://localhost:1234"
@@ -184,7 +184,7 @@ class LLMConfig(BaseSettings):
 class STTConfig(BaseSettings):
     """Speech-to-text configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_STT__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_STT__")
 
     engine: Literal["faster-whisper"] = "faster-whisper"
     model: str = "large-v3"
@@ -204,7 +204,7 @@ class STTConfig(BaseSettings):
 class TTSConfig(BaseSettings):
     """Text-to-speech configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_TTS__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_TTS__")
 
     engine: Literal["piper", "xtts", "kokoro"] = "piper"
     voice: str = "models/tts/it_IT-paola-medium"
@@ -234,15 +234,15 @@ class TTSConfig(BaseSettings):
 class DatabaseConfig(BaseSettings):
     """Database configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_DATABASE__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_DATABASE__")
 
-    url: str = "sqlite+aiosqlite:///data/omnia.db"
+    url: str = "sqlite+aiosqlite:///data/alice.db"
 
 
 class PluginsConfig(BaseSettings):
     """Plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_PLUGINS__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_PLUGINS__")
 
     enabled: list[str] = Field(
         default_factory=lambda: [
@@ -254,7 +254,7 @@ class PluginsConfig(BaseSettings):
 class HomeAssistantConfig(BaseSettings):
     """Home Assistant integration configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_HOME_ASSISTANT__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_HOME_ASSISTANT__")
 
     url: str = "http://homeassistant.local:8123"
     token: str = ""
@@ -263,7 +263,7 @@ class HomeAssistantConfig(BaseSettings):
 class MQTTConfig(BaseSettings):
     """MQTT broker configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_MQTT__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_MQTT__")
 
     broker: str = "localhost"
     port: int = 1883
@@ -274,9 +274,9 @@ class MQTTConfig(BaseSettings):
 class VoiceConfig(BaseSettings):
     """Voice interaction configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_VOICE__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_VOICE__")
 
-    wake_word: str = "omnia"
+    wake_word: str = "alice"
     activation_mode: str = "push_to_talk"
     silence_timeout_ms: int = 1500
     auto_tts_response: bool = True
@@ -288,7 +288,7 @@ class VoiceConfig(BaseSettings):
 class PcAutomationConfig(BaseSettings):
     """PC Automation plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_PC_AUTOMATION__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_PC_AUTOMATION__")
 
     enabled: bool = False
     """Whether PC automation tools are available."""
@@ -307,7 +307,7 @@ class PcAutomationConfig(BaseSettings):
 class VRAMConfig(BaseSettings):
     """VRAM monitoring configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_VRAM__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_VRAM__")
 
     monitoring_enabled: bool = True
     """Enable GPU VRAM monitoring."""
@@ -324,7 +324,7 @@ class VRAMConfig(BaseSettings):
 class WebSearchConfig(BaseSettings):
     """Web search plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_WEB_SEARCH__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_WEB_SEARCH__")
 
     max_results: int = 5
     """Default number of search results."""
@@ -345,7 +345,7 @@ class WebSearchConfig(BaseSettings):
 class UIConfig(BaseSettings):
     """UI configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_UI__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_UI__")
 
     theme: str = "dark"
     global_hotkey: str = "Ctrl+Shift+O"
@@ -355,7 +355,7 @@ class UIConfig(BaseSettings):
 class CalendarConfig(BaseSettings):
     """Calendar plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_CALENDAR__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_CALENDAR__")
 
     timezone: str = "Europe/Rome"
     reminder_check_interval_s: int = 60
@@ -364,7 +364,7 @@ class CalendarConfig(BaseSettings):
 class WeatherConfig(BaseSettings):
     """Weather plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_WEATHER__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_WEATHER__")
 
     default_city: str = "Rome"
     units: Literal["metric", "imperial"] = "metric"
@@ -376,7 +376,7 @@ class WeatherConfig(BaseSettings):
 class ClipboardConfig(BaseSettings):
     """Clipboard plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_CLIPBOARD__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_CLIPBOARD__")
 
     max_content_chars: int = 4000
 
@@ -384,9 +384,9 @@ class ClipboardConfig(BaseSettings):
 class NotificationsConfig(BaseSettings):
     """Notifications plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_NOTIFICATIONS__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_NOTIFICATIONS__")
 
-    app_id: str = "OMNIA"
+    app_id: str = "AL\\CE"
     sound_enabled: bool = True
     default_timeout_s: int = 5
     max_active_timers: int = 20
@@ -395,7 +395,7 @@ class NotificationsConfig(BaseSettings):
 class MediaControlConfig(BaseSettings):
     """Media control plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_MEDIA_CONTROL__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_MEDIA_CONTROL__")
 
     volume_step: int = 10
     brightness_step: int = 10
@@ -404,7 +404,7 @@ class MediaControlConfig(BaseSettings):
 class FileSearchConfig(BaseSettings):
     """File search plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_FILE_SEARCH__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_FILE_SEARCH__")
 
     allowed_paths: list[str] = Field(default_factory=list)
     forbidden_paths: list[str] = Field(default_factory=lambda: [
@@ -420,7 +420,7 @@ class FileSearchConfig(BaseSettings):
 class NewsConfig(BaseSettings):
     """News/briefing plugin configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_NEWS__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_NEWS__")
 
     feeds: list[str] = Field(default_factory=lambda: [
         "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -436,13 +436,13 @@ class NewsConfig(BaseSettings):
 class MemoryConfig(BaseSettings):
     """Persistent semantic memory configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_MEMORY__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_MEMORY__")
 
     enabled: bool = False
     """Enable the Memory Service. False by default (opt-in)."""
 
     db_path: str = "data/memory.db"
-    """Path to the dedicated memory SQLite file (separate from omnia.db)."""
+    """Path to the dedicated memory SQLite file (separate from alice.db)."""
 
     embedding_model: str = "text-embedding-mxbai-embed-large-v1"
     """Embedding model name for LM Studio/Ollama /v1/embeddings."""
@@ -475,13 +475,13 @@ class MemoryConfig(BaseSettings):
 class NotesConfig(BaseSettings):
     """Note system (Obsidian-like vault) configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_NOTES__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_NOTES__")
 
     enabled: bool = False
     """Enable the Note System. False by default (opt-in)."""
 
     db_path: str = "data/notes.db"
-    """Path to the dedicated notes SQLite file (separate from omnia.db)."""
+    """Path to the dedicated notes SQLite file (separate from alice.db)."""
 
     embedding_enabled: bool = True
     """Enable semantic search via sqlite-vec embeddings."""
@@ -555,10 +555,10 @@ class McpServerConfig(BaseModel):
 class ChartConfig(BaseSettings):
     """Configurazione plugin chart_generator."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_CHART__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_CHART__")
 
     enabled: bool = False
-    """Abilita il plugin chart_generator (opt-in, come tutti i plugin OMNIA)."""
+    """Abilita il plugin chart_generator (opt-in, come tutti i plugin AL\CE)."""
 
     chart_output_dir: str = "data/charts"
     """Directory dove vengono salvati i chart spec JSON."""
@@ -573,7 +573,7 @@ class ChartConfig(BaseSettings):
 class EmailConfig(BaseSettings):
     """Email assistant (IMAP / SMTP) configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_EMAIL__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_EMAIL__")
 
     enabled: bool = False
     imap_host: str = ""
@@ -599,7 +599,7 @@ class EmailConfig(BaseSettings):
 class TrellisServiceConfig(BaseSettings):
     """TRELLIS 3D generation microservice configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_TRELLIS__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_TRELLIS__")
 
     enabled: bool = False
     """Enable the cad_generator plugin. Requires the TRELLIS microservice installed."""
@@ -638,7 +638,7 @@ class TrellisServiceConfig(BaseSettings):
 class McpConfig(BaseSettings):
     """MCP client configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_MCP__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_MCP__")
 
     servers: list[McpServerConfig] = Field(default_factory=list)
     """List of MCP servers to connect at startup. Empty by default (opt-in)."""
@@ -649,11 +649,11 @@ class McpConfig(BaseSettings):
 # ---------------------------------------------------------------------------
 
 
-class OmniaConfig(BaseSettings):
+class AliceConfig(BaseSettings):
     """Root configuration aggregating every sub-section."""
 
     model_config = SettingsConfigDict(
-        env_prefix="OMNIA_",
+        env_prefix="ALICE_",
         env_nested_delimiter="__",
     )
 
@@ -726,7 +726,7 @@ class OmniaConfig(BaseSettings):
         db_data = data.get("database", {})
         if isinstance(db_data, dict):
             db_url = db_data.get(
-                "url", "sqlite+aiosqlite:///data/omnia.db"
+                "url", "sqlite+aiosqlite:///data/alice.db"
             )
             if db_url.startswith("sqlite") and ":///" in db_url:
                 prefix, db_path = db_url.split(":///", 1)
@@ -752,7 +752,7 @@ class OmniaConfig(BaseSettings):
 # ---------------------------------------------------------------------------
 
 
-def load_config(path: Path | None = None) -> OmniaConfig:
+def load_config(path: Path | None = None) -> AliceConfig:
     """Load configuration from a YAML file and apply env-var overrides.
 
     Args:
@@ -760,7 +760,7 @@ def load_config(path: Path | None = None) -> OmniaConfig:
               ``config/default.yaml`` relative to the project root.
 
     Returns:
-        A fully validated ``OmniaConfig`` instance.
+        A fully validated ``AliceConfig`` instance.
     """
     config_path = path or DEFAULT_CONFIG_PATH
 
@@ -774,4 +774,4 @@ def load_config(path: Path | None = None) -> OmniaConfig:
             config_path,
         )
 
-    return OmniaConfig(**raw)
+    return AliceConfig(**raw)

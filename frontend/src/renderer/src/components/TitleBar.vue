@@ -1,6 +1,6 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
- * TitleBar.vue — Custom frameless window title bar for O.M.N.I.A.
+ * TitleBar.vue — Custom frameless window title bar for AL\CE.
  *
  * Provides a draggable region with app title and native-style
  * window control buttons (minimize, maximize/restore, close).
@@ -11,7 +11,7 @@ import { useVoiceStore } from '../stores/voice'
 import { useUIStore } from '../stores/ui'
 import { usePluginsStore } from '../stores/plugins'
 import WeatherWidget from './plugins/WeatherWidget.vue'
-import OmniaSpinner from './ui/OmniaSpinner.vue'
+import AliceSpinner from './ui/AliceSpinner.vue'
 
 /** Tracks whether the window is currently maximized */
 const isMaximized = ref(false)
@@ -100,7 +100,7 @@ onUnmounted(() => {
 
     <!-- Draggable region -->
     <div class="titlebar__drag-region">
-      <span class="titlebar__title">O.M.N.I.A.</span>
+      <span class="titlebar__title">AL\CE</span>
 
       <span class="titlebar__separator">&middot;</span>
 
@@ -110,7 +110,7 @@ onUnmounted(() => {
           :title="modelDisplayName">
           {{ modelDisplayName }}
         </span>
-        <OmniaSpinner v-if="connectionStatus === 'loading'" size="xs" />
+        <AliceSpinner v-if="connectionStatus === 'loading'" size="xs" />
       </div>
 
       <template v-if="voiceStore.sttAvailable || voiceStore.ttsAvailable">

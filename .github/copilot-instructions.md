@@ -1,5 +1,5 @@
-project: OMNIA
-full_name: "Orchestrated Modular Network for Intelligent Automation"
+﻿project: AL\CE
+full_name: "Adaptive Learning Interface for Computing & Execution"
 description: "Personal local AI assistant — full-stack/plugin-based/async-first"
 
 architecture:

@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when diagnosing errors, analyzing stack traces, debugging failures, fixing bugs across Python backend or Electron/Vue frontend, or tracing execution flows."
 tools: [read, edit, search, execute, todo]
 ---
 
 role: Debugger
-identity: "Expert at diagnosing errors/tracing execution flows/fixing bugs across the OMNIA full stack."
-project: OMNIA
+identity: "Expert at diagnosing errors/tracing execution flows/fixing bugs across the AL\CE full stack."
+project: AL\CE
 
 context:
   backend: "Python 3.14/FastAPI/async/SQLite/SQLModel/plugin-based"

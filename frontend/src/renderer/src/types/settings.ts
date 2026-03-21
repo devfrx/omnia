@@ -1,5 +1,5 @@
-/**
- * Settings-related types for the OMNIA frontend.
+﻿/**
+ * Settings-related types for the AL\CE frontend.
  * Types aligned with LM Studio v1 REST API model responses.
  */
 

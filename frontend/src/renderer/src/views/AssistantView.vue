@@ -1,8 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * AssistantView.vue — Living AI consciousness mode.
  *
- * Centers the OMNIA orb as the primary interaction point.
+ * Centers the AL\CE orb as the primary interaction point.
  * Voice-first: the user speaks, the orb reacts, and responds.
  * Shows floating status bubbles for current activity.
  *
@@ -10,7 +10,7 @@
  * from the right with an interactive 3D viewer + prev/next navigation.
  */
 import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import OmniaOrb from '../components/assistant/OmniaOrb.vue'
+import AliceOrb from '../components/assistant/AliceOrb.vue'
 import AmbientBackground from '../components/assistant/AmbientBackground.vue'
 import StatusBubbles from '../components/assistant/StatusBubbles.vue'
 import AssistantFab from '../components/assistant/AssistantFab.vue'
@@ -212,7 +212,7 @@ const pendingConfirmationsList = computed(() =>
     Object.values(chatStore.pendingConfirmations)
 )
 
-/** Determine the orb's state based on what OMNIA is doing. */
+/** Determine the orb's state based on what AL\CE is doing. */
 const orbState = computed<'idle' | 'listening' | 'thinking' | 'speaking' | 'processing'>(() => {
     if (voiceStore.isSpeaking) return 'speaking'
     if (voiceStore.isListening) return 'listening'
@@ -234,7 +234,7 @@ const lastResponse = computed(() => {
     return ''
 })
 
-/** Last user message for echo display above OMNIA's response. */
+/** Last user message for echo display above AL\CE's response. */
 const lastUserQuery = computed(() => {
     const msgs = chatStore.messages
     for (let i = msgs.length - 1; i >= 0; i--) {
@@ -365,7 +365,7 @@ onMounted(() => {
         <div class="assistant-view__main">
             <div class="assistant-view__center">
                 <div class="assistant-view__orb-wrapper">
-                    <OmniaOrb :state="orbState" :audio-level="audioLevel" @click="handleOrbClick" />
+                    <AliceOrb :state="orbState" :audio-level="audioLevel" @click="handleOrbClick" />
                     <!-- <Transition name="stop-hint-fade">
                         <button v-if="isInterruptible" class="assistant-view__stop-hint" @click.stop="handleOrbClick"
                             aria-label="Interrompi">

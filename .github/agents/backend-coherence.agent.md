@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when auditing or restoring coherence across the Python backend: aligning signatures, types, contracts, imports, plugin conventions, DB schema usage, service interfaces, API responses, error handling patterns, config keys, event names, and dependency consistency."
 tools: [read, edit, search, execute, agent, todo]
 ---
 
 role: Backend Coherence Auditor
 identity: Detect and resolve every inconsistency across the Python backend — from DB models to API responses, plugin contracts to service interfaces.
-project: OMNIA
+project: AL\CE
 
 context:
   language: Python 3.14
@@ -15,7 +15,7 @@ context:
   architecture: Plugin-based/async-first
   protocols: Structural typing for service interfaces
   events: Async pub/sub with circuit-breaker
-  config: YAML + Pydantic Settings v2 / OMNIA_ env prefix
+  config: YAML + Pydantic Settings v2 / ALICE_ env prefix
 
 structure:
   core[10]: app.py,config.py,context.py,event_bus.py,plugin_base.py,plugin_manager.py,plugin_models.py,protocols.py,tool_registry.py,http_security.py
@@ -74,7 +74,7 @@ audit_dimensions[12]:
       - pathlib.Path used for file paths/never os.path
   - name: Event System Coherence
     checks[5]:
-      - Event names are defined in OmniaEvent enum — no raw strings
+      - Event names are defined in AliceEvent enum — no raw strings
       - event_bus.emit() and event_bus.on() use matching event names
       - Event payloads have consistent structure per event type
       - No event handler performs blocking I/O
@@ -82,8 +82,8 @@ audit_dimensions[12]:
   - name: Configuration Coherence
     checks[5]:
       - All config keys used in code exist in default.yaml
-      - Config access uses OmniaConfig fields/not raw dict lookups
-      - Environment variable overrides follow OMNIA_ prefix convention
+      - Config access uses AliceConfig fields/not raw dict lookups
+      - Environment variable overrides follow ALICE_ prefix convention
       - Config sections match service expectations (LLM/STT/TTS/plugins/etc.)
       - No hardcoded values that belong in config
   - name: Import & Dependency Coherence

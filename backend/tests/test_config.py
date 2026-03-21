@@ -1,4 +1,4 @@
-"""Tests for backend.core.config."""
+﻿"""Tests for backend.core.config."""
 
 from __future__ import annotations
 
@@ -8,17 +8,17 @@ from backend.core.config import (
     DEFAULT_MODEL,
     KNOWN_MODELS,
     PROJECT_ROOT,
-    OmniaConfig,
+    AliceConfig,
     LLMConfig,
     load_config,
 )
 
 
-def test_load_config_returns_omnia_config(config: OmniaConfig) -> None:
-    assert isinstance(config, OmniaConfig)
+def test_load_config_returns_alice_config(config: AliceConfig) -> None:
+    assert isinstance(config, AliceConfig)
 
 
-def test_all_sections_exist(config: OmniaConfig) -> None:
+def test_all_sections_exist(config: AliceConfig) -> None:
     assert config.server is not None
     assert config.llm is not None
     assert config.stt is not None
@@ -31,50 +31,50 @@ def test_all_sections_exist(config: OmniaConfig) -> None:
     assert config.ui is not None
 
 
-def test_server_port(config: OmniaConfig) -> None:
+def test_server_port(config: AliceConfig) -> None:
     assert config.server.port == 8000
 
 
-def test_server_host(config: OmniaConfig) -> None:
+def test_server_host(config: AliceConfig) -> None:
     assert config.server.host == "127.0.0.1"
 
 
-def test_llm_provider(config: OmniaConfig) -> None:
+def test_llm_provider(config: AliceConfig) -> None:
     assert config.llm.provider == "lmstudio"
 
 
-def test_llm_base_url(config: OmniaConfig) -> None:
+def test_llm_base_url(config: AliceConfig) -> None:
     assert isinstance(config.llm.base_url, str)
     assert config.llm.base_url.startswith("http")
     assert len(config.llm.base_url) > 0
 
 
-def test_llm_model(config: OmniaConfig) -> None:
+def test_llm_model(config: AliceConfig) -> None:
     assert isinstance(config.llm.model, str)
     assert len(config.llm.model) > 0
 
 
-def test_llm_temperature(config: OmniaConfig) -> None:
+def test_llm_temperature(config: AliceConfig) -> None:
     assert config.llm.temperature == 0.7
 
 
-def test_llm_max_tokens(config: OmniaConfig) -> None:
+def test_llm_max_tokens(config: AliceConfig) -> None:
     assert isinstance(config.llm.max_tokens, int)
     assert config.llm.max_tokens > 0
 
 
-def test_system_prompt_file_is_absolute(config: OmniaConfig) -> None:
+def test_system_prompt_file_is_absolute(config: AliceConfig) -> None:
     """system_prompt_file should be resolved to an absolute path."""
     prompt_path = Path(config.llm.system_prompt_file)
     assert prompt_path.is_absolute()
     assert str(PROJECT_ROOT) in config.llm.system_prompt_file
 
 
-def test_database_url(config: OmniaConfig) -> None:
+def test_database_url(config: AliceConfig) -> None:
     assert "sqlite+aiosqlite" in config.database.url
 
 
-def test_plugins_enabled_list(config: OmniaConfig) -> None:
+def test_plugins_enabled_list(config: AliceConfig) -> None:
     enabled = config.plugins.enabled
     assert isinstance(enabled, list)
     assert "system_info" in enabled
@@ -84,23 +84,23 @@ def test_plugins_enabled_list(config: OmniaConfig) -> None:
     assert len(enabled) == 12
 
 
-def test_stt_defaults(config: OmniaConfig) -> None:
+def test_stt_defaults(config: AliceConfig) -> None:
     assert config.stt.engine == "faster-whisper"
     assert config.stt.model == "large-v3"
     assert config.stt.language is None  # auto-detect by default
 
 
-def test_tts_defaults(config: OmniaConfig) -> None:
+def test_tts_defaults(config: AliceConfig) -> None:
     assert config.tts.engine == "piper"
     assert config.tts.sample_rate == 22050
 
 
-def test_voice_defaults(config: OmniaConfig) -> None:
-    assert config.voice.wake_word == "omnia"
+def test_voice_defaults(config: AliceConfig) -> None:
+    assert config.voice.wake_word == "alice"
     assert config.voice.activation_mode == "push_to_talk"
 
 
-def test_ui_defaults(config: OmniaConfig) -> None:
+def test_ui_defaults(config: AliceConfig) -> None:
     assert config.ui.theme == "dark"
     assert config.ui.language == "it"
 
@@ -108,7 +108,7 @@ def test_ui_defaults(config: OmniaConfig) -> None:
 def test_load_config_missing_file_uses_defaults() -> None:
     """When the config file does not exist, defaults + env vars are used."""
     cfg = load_config(Path("/nonexistent/path.yaml"))
-    assert isinstance(cfg, OmniaConfig)
+    assert isinstance(cfg, AliceConfig)
     # Defaults should still be valid
     assert cfg.server.port == 8000
 

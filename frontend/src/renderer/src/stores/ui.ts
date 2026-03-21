@@ -1,5 +1,5 @@
-/**
- * Pinia store managing UI mode state for OMNIA.
+﻿/**
+ * Pinia store managing UI mode state for AL\CE.
  *
  * Supports two modes:
  * - 'assistant' — Living AI orb, voice-first interaction
@@ -28,7 +28,7 @@ export const useUIStore = defineStore('ui', () => {
   function setMode(newMode: UIMode): void {
     mode.value = newMode
     try {
-      localStorage.setItem('omnia_ui_mode', newMode)
+      localStorage.setItem('alice_ui_mode', newMode)
     } catch {
       /* localStorage may be unavailable */
     }
@@ -36,7 +36,7 @@ export const useUIStore = defineStore('ui', () => {
 
   function loadMode(): UIMode {
     try {
-      const stored = localStorage.getItem('omnia_ui_mode')
+      const stored = localStorage.getItem('alice_ui_mode')
       if (stored === 'assistant' || stored === 'hybrid') return stored
     } catch {
       /* localStorage may be unavailable */

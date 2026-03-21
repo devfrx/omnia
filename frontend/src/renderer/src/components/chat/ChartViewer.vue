@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ChartViewer.vue — Visualizza un grafico Apache ECharts nella chat.
  *
@@ -25,11 +25,11 @@ const error = ref<string | null>(null)
 let fetchedOption: Record<string, unknown> | null = null
 
 /**
- * OMNIA chart color palette — warm, muted tones that harmonise with the
+ * AL\CE chart color palette — warm, muted tones that harmonise with the
  * dark cream-accented interface. Derived from the CSS design tokens:
  * accent #E8DCC8 · success #5C9A6E · warning #D4A72C · danger #B85C5C.
  */
-const OMNIA_PALETTE = [
+const ALICE_PALETTE = [
     '#E8DCC8', // cream — primary accent
     '#7BAE8A', // sage green — success-adjacent
     '#D4A72C', // warm amber — warning
@@ -98,7 +98,7 @@ function fixSingleDataPointSeries(opt: Record<string, unknown>): void {
  * - Remove visualMap (almost never looks good in chat context)
  * - Remove dataZoom with restrictive start/end that clips data
  * - Force containLabel so axis labels never overflow
- * - Apply OMNIA color palette for consistent look
+ * - Apply AL\CE color palette for consistent look
  * - Fix markPoint/markLine entries with malformed coord arrays
  * - Clean up tooltip, legend, and axis styling for dark theme
  */
@@ -122,8 +122,8 @@ function sanitizeOption(opt: Record<string, unknown>): Record<string, unknown> {
     // Remove toolbox — takes space and is not useful in chat context.
     delete opt.toolbox
 
-    // Apply OMNIA palette.
-    opt.color = OMNIA_PALETTE
+    // Apply AL\CE palette.
+    opt.color = ALICE_PALETTE
 
     // Fix common LLM mistake: N cartesian series each with 1 data point
     // for N xAxis categories. Merge them into a single series.
@@ -420,7 +420,7 @@ async function loadAndRender(): Promise<void> {
         if (unmounted) return
 
         // Do NOT use ECharts' built-in 'dark' theme — its navy background
-        // (#100C2A) conflicts with OMNIA's warm-dark surfaces. We style
+        // (#100C2A) conflicts with AL\CE's warm-dark surfaces. We style
         // everything manually and set backgroundColor: 'transparent' so the
         // container CSS background shows through correctly.
         instance = echarts.init(containerRef.value)

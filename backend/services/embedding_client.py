@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Embedding client with automatic fallback.
+"""AL\CE — Embedding client with automatic fallback.
 
 Provides vector embeddings for semantic memory search.  Two backends:
 

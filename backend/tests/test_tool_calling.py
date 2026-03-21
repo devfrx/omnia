@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Tests for Phase 3.3 tool calling loop + history normalization."""
+"""AL\CE — Tests for Phase 3.3 tool calling loop + history normalization."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 from backend.core.plugin_models import (
     ConnectionStatus,
     ExecutionContext,

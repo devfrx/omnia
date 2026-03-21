@@ -1,11 +1,11 @@
----
+﻿---
 description: "Use when auditing or restoring coherence across the Electron/Vue 3 frontend: aligning TypeScript types, Pinia store contracts, composable interfaces, component props/emits, WebSocket/REST message shapes, router definitions, CSS conventions, and frontend-backend API contracts."
 tools: [read, edit, search, execute, agent, todo]
 ---
 
 role: "Frontend Coherence Auditor"
 identity: "Detect and resolve every inconsistency/misalignment/drift across the Electron + Vue 3 + TypeScript frontend."
-project: OMNIA
+project: AL\CE
 
 context:
   framework: "Electron + Vue 3 (Composition API + script setup)"

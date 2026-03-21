@@ -8,14 +8,14 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 conflicts = [[
-    { package = "omnia-backend", extra = "tts-kokoro" },
-    { package = "omnia-backend", extra = "tts-xtts" },
+    { package = "alice-backend", extra = "tts-kokoro" },
+    { package = "alice-backend", extra = "tts-xtts" },
 ], [
-    { package = "omnia-backend", extra = "tts-xtts" },
-    { package = "omnia-backend", extra = "voice" },
+    { package = "alice-backend", extra = "tts-xtts" },
+    { package = "alice-backend", extra = "voice" },
 ], [
-    { package = "omnia-backend", extra = "tts-xtts" },
-    { package = "omnia-backend", extra = "voice-gpu" },
+    { package = "alice-backend", extra = "tts-xtts" },
+    { package = "alice-backend", extra = "voice-gpu" },
 ]]
 
 [[package]]
@@ -179,6 +179,179 @@ wheels = [
 ]
 
 [[package]]
+name = "alice-backend"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "aioimaplib" },
+    { name = "aiosmtplib" },
+    { name = "aiosqlite" },
+    { name = "beautifulsoup4" },
+    { name = "comtypes" },
+    { name = "ddgs" },
+    { name = "fastapi" },
+    { name = "feedparser" },
+    { name = "httpx" },
+    { name = "jsonschema" },
+    { name = "loguru" },
+    { name = "mcp" },
+    { name = "paho-mqtt" },
+    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-xtts'" },
+    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "psutil" },
+    { name = "pyautogui" },
+    { name = "pycaw" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pynput" },
+    { name = "pyperclip" },
+    { name = "python-dateutil" },
+    { name = "python-multipart" },
+    { name = "pywin32" },
+    { name = "pywinauto" },
+    { name = "pyyaml" },
+    { name = "slowapi" },
+    { name = "sqlite-vec" },
+    { name = "sqlmodel" },
+    { name = "tzdata" },
+    { name = "uvicorn", extra = ["standard"] },
+    { name = "watchfiles" },
+    { name = "websockets" },
+    { name = "winotify" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+email = [
+    { name = "keyring" },
+]
+file-reader = [
+    { name = "pdfplumber" },
+    { name = "python-docx" },
+]
+memory = [
+    { name = "fastembed", version = "0.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "fastembed", version = "0.7.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+]
+stt = [
+    { name = "faster-whisper" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-xtts'" },
+    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+]
+stt-gpu = [
+    { name = "nvidia-cublas-cu12" },
+    { name = "nvidia-cudnn-cu12" },
+]
+tts-kokoro = [
+    { name = "kokoro-onnx" },
+    { name = "soundfile" },
+]
+tts-piper = [
+    { name = "piper-tts" },
+]
+tts-xtts = [
+    { name = "tts" },
+]
+voice = [
+    { name = "faster-whisper" },
+    { name = "kokoro-onnx" },
+    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "piper-tts" },
+    { name = "pynvml" },
+    { name = "soundfile" },
+]
+voice-gpu = [
+    { name = "faster-whisper" },
+    { name = "kokoro-onnx" },
+    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "nvidia-cublas-cu12" },
+    { name = "nvidia-cudnn-cu12" },
+    { name = "piper-tts" },
+    { name = "pynvml" },
+    { name = "soundfile" },
+]
+vram = [
+    { name = "pynvml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aioimaplib", specifier = ">=1.0.1" },
+    { name = "aiosmtplib", specifier = ">=3.0" },
+    { name = "aiosqlite", specifier = ">=0.20" },
+    { name = "beautifulsoup4", specifier = ">=4.12" },
+    { name = "comtypes", specifier = ">=1.4" },
+    { name = "ddgs", specifier = ">=9.0" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "fastembed", marker = "extra == 'memory'", specifier = ">=0.3" },
+    { name = "faster-whisper", marker = "extra == 'stt'", specifier = ">=1.1,<2" },
+    { name = "faster-whisper", marker = "extra == 'voice'", specifier = ">=1.1,<2" },
+    { name = "faster-whisper", marker = "extra == 'voice-gpu'", specifier = ">=1.1,<2" },
+    { name = "feedparser", specifier = ">=6.0" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "jsonschema", specifier = ">=4.0" },
+    { name = "keyring", marker = "extra == 'email'", specifier = ">=24.0" },
+    { name = "kokoro-onnx", marker = "extra == 'tts-kokoro'", specifier = ">=0.4" },
+    { name = "kokoro-onnx", marker = "extra == 'voice'", specifier = ">=0.4" },
+    { name = "kokoro-onnx", marker = "extra == 'voice-gpu'", specifier = ">=0.4" },
+    { name = "loguru", specifier = ">=0.7" },
+    { name = "mcp", specifier = ">=1.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13" },
+    { name = "numpy", marker = "extra == 'stt'", specifier = ">=1.26" },
+    { name = "numpy", marker = "extra == 'voice'", specifier = ">=1.26" },
+    { name = "numpy", marker = "extra == 'voice-gpu'", specifier = ">=1.26" },
+    { name = "nvidia-cublas-cu12", marker = "extra == 'stt-gpu'", specifier = ">=12.4,<13" },
+    { name = "nvidia-cublas-cu12", marker = "extra == 'voice-gpu'", specifier = ">=12.4,<13" },
+    { name = "nvidia-cudnn-cu12", marker = "extra == 'stt-gpu'", specifier = ">=9.0,<10" },
+    { name = "nvidia-cudnn-cu12", marker = "extra == 'voice-gpu'", specifier = ">=9.0,<10" },
+    { name = "paho-mqtt", specifier = ">=2.1" },
+    { name = "pdfplumber", marker = "extra == 'file-reader'", specifier = ">=0.11" },
+    { name = "pillow", specifier = ">=10.0" },
+    { name = "piper-tts", marker = "extra == 'tts-piper'", specifier = ">=1.2,<2" },
+    { name = "piper-tts", marker = "extra == 'voice'", specifier = ">=1.2,<2" },
+    { name = "piper-tts", marker = "extra == 'voice-gpu'", specifier = ">=1.2,<2" },
+    { name = "psutil", specifier = ">=6.0" },
+    { name = "pyautogui", specifier = ">=0.9.54" },
+    { name = "pycaw", specifier = ">=20230407" },
+    { name = "pydantic", specifier = ">=2.9" },
+    { name = "pydantic-settings", specifier = ">=2.5" },
+    { name = "pynput", specifier = ">=1.7" },
+    { name = "pynvml", marker = "extra == 'voice'", specifier = ">=12.0,<13" },
+    { name = "pynvml", marker = "extra == 'voice-gpu'", specifier = ">=12.0,<13" },
+    { name = "pynvml", marker = "extra == 'vram'", specifier = ">=12.0,<13" },
+    { name = "pyperclip", specifier = ">=1.9" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
+    { name = "python-dateutil", specifier = ">=2.9" },
+    { name = "python-docx", marker = "extra == 'file-reader'", specifier = ">=1.1" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "pywin32", specifier = ">=306" },
+    { name = "pywinauto", specifier = ">=0.6.8" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
+    { name = "slowapi", specifier = ">=0.1.9" },
+    { name = "soundfile", marker = "extra == 'tts-kokoro'", specifier = ">=0.12" },
+    { name = "soundfile", marker = "extra == 'voice'", specifier = ">=0.12" },
+    { name = "soundfile", marker = "extra == 'voice-gpu'", specifier = ">=0.12" },
+    { name = "sqlite-vec", specifier = ">=0.1.6" },
+    { name = "sqlmodel", specifier = ">=0.0.22" },
+    { name = "tts", marker = "extra == 'tts-xtts'", specifier = ">=0.22" },
+    { name = "tzdata", specifier = ">=2024.1" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },
+    { name = "watchfiles", specifier = ">=0.24" },
+    { name = "websockets", specifier = ">=13.0" },
+    { name = "winotify", specifier = ">=1.1" },
+]
+provides-extras = ["dev", "stt", "stt-gpu", "tts-piper", "tts-xtts", "tts-kokoro", "email", "vram", "voice", "voice-gpu", "file-reader", "memory"]
+
+[[package]]
 name = "annotated-doc"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -211,7 +384,7 @@ version = "4.12.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/f0/5eb65b2bb0d09ac6776f2eb54adee6abe8228ea05b20a5ad0e4945de8aac/anyio-4.12.1.tar.gz", hash = "sha256:41cfcc3a4c85d3f05c932da7c26d0201ac36f72abd4435ba90d0464a3ffed703", size = 228685, upload-time = "2026-01-06T11:45:21.246Z" }
 wheels = [
@@ -472,7 +645,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "pycparser", marker = "implementation_name != 'PyPy' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
@@ -615,7 +788,7 @@ name = "click"
 version = "8.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3d/fa/656b739db8587d7b5dfa22e22ed02566950fbfbcdc20311993483657a5c0/click-8.3.1.tar.gz", hash = "sha256:12ff4785d337a1bb490bb7e9c2b1ee5da3112e94a8622f26a6c77f5d2fc6842a", size = 295065, upload-time = "2025-11-15T20:45:42.706Z" }
 wheels = [
@@ -645,7 +818,7 @@ name = "coloredlogs"
 version = "15.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "humanfriendly", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "humanfriendly", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cc/c7/eed8f27100517e8c0e6b923d5f0845d0cb99763da6fdee00478f91db7325/coloredlogs-15.0.1.tar.gz", hash = "sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0", size = 278520, upload-time = "2021-06-11T10:22:45.202Z" }
 wheels = [
@@ -866,7 +1039,7 @@ wheels = [
 
 [package.optional-dependencies]
 toml = [
-    { name = "tomli", marker = "python_full_version <= '3.11' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "tomli", marker = "python_full_version <= '3.11' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 
 [[package]]
@@ -874,7 +1047,7 @@ name = "cryptography"
 version = "46.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/60/04/ee2a9e8542e4fa2773b81771ff8349ff19cdd56b7258a0cc442639052edb/cryptography-46.0.5.tar.gz", hash = "sha256:abace499247268e3757271b2f1e244b36b06f8515cf27c4d49468fc9eb16e93d", size = 750064, upload-time = "2026-02-10T19:18:38.255Z" }
 wheels = [
@@ -955,8 +1128,8 @@ name = "ctranslate2"
 version = "4.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-xtts'" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-xtts'" },
+    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "pyyaml" },
     { name = "setuptools" },
 ]
@@ -1253,17 +1426,17 @@ resolution-markers = [
     "python_full_version == '3.13.*'",
 ]
 dependencies = [
-    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "loguru", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "mmh3", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "onnx", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "py-rust-stemmers", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "requests", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "tokenizers", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "tqdm", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "loguru", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "mmh3", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "onnx", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "py-rust-stemmers", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "requests", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "tokenizers", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "tqdm", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/02/f0/8d935e8ea2408ccd34405ccb61bbcc340633597841e56e621cc5c4768405/fastembed-0.4.2.tar.gz", hash = "sha256:4065344ed795c2c860f31953ab9ead91291ce77952a3f7823ae64e3c8dc1a21c", size = 42084, upload-time = "2024-11-13T13:38:28.282Z" }
 wheels = [
@@ -1275,24 +1448,24 @@ name = "fastembed"
 version = "0.7.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.14'",
-    "python_full_version == '3.13.*'",
     "python_full_version == '3.12.*'",
     "python_full_version < '3.12'",
+    "python_full_version >= '3.14'",
+    "python_full_version == '3.13.*'",
 ]
 dependencies = [
-    { name = "huggingface-hub", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "loguru", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "mmh3", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "onnxruntime", version = "1.24.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-kokoro') or (python_full_version >= '3.13' and extra != 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "py-rust-stemmers", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "requests", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "tokenizers", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "tqdm", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "huggingface-hub", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "loguru", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "mmh3", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "onnxruntime", version = "1.24.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "py-rust-stemmers", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "requests", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "tokenizers", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "tqdm", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4c/c2/9c708680de1b54480161e0505f9d6d3d8eb47a1dc1a1f7f3c5106ba355d2/fastembed-0.7.4.tar.gz", hash = "sha256:8b8a4ea860ca295002f4754e8f5820a636e1065a9444959e18d5988d7f27093b", size = 68807, upload-time = "2025-12-05T12:08:10.447Z" }
 wheels = [
@@ -1306,10 +1479,10 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "av" },
     { name = "ctranslate2" },
-    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "huggingface-hub", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "onnxruntime", version = "1.24.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "huggingface-hub", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "onnxruntime", version = "1.24.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "tokenizers" },
     { name = "tqdm" },
 ]
@@ -1832,14 +2005,14 @@ resolution-markers = [
     "python_full_version == '3.13.*'",
 ]
 dependencies = [
-    { name = "filelock", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "fsspec", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "hf-xet", marker = "(python_full_version >= '3.13' and platform_machine == 'aarch64' and extra == 'extra-13-omnia-backend-tts-xtts') or (python_full_version >= '3.13' and platform_machine == 'amd64' and extra == 'extra-13-omnia-backend-tts-xtts') or (python_full_version >= '3.13' and platform_machine == 'arm64' and extra == 'extra-13-omnia-backend-tts-xtts') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'aarch64' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'aarch64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'aarch64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'amd64' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'amd64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'amd64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'arm64' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'arm64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'arm64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'x86_64' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "packaging", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pyyaml", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "requests", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "tqdm", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "typing-extensions", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "filelock", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "fsspec", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "hf-xet", marker = "(python_full_version >= '3.13' and platform_machine == 'aarch64' and extra == 'extra-13-alice-backend-tts-xtts') or (python_full_version >= '3.13' and platform_machine == 'amd64' and extra == 'extra-13-alice-backend-tts-xtts') or (python_full_version >= '3.13' and platform_machine == 'arm64' and extra == 'extra-13-alice-backend-tts-xtts') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'aarch64' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'aarch64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'aarch64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'amd64' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'amd64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'amd64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'arm64' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'arm64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'arm64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'x86_64' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "packaging", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pyyaml", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "requests", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "tqdm", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "typing-extensions", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7c/b7/8cb61d2eece5fb05a83271da168186721c450eb74e3c31f7ef3169fa475b/huggingface_hub-0.36.2.tar.gz", hash = "sha256:1934304d2fb224f8afa3b87007d58501acfda9215b334eed53072dd5e815ff7a", size = 649782, upload-time = "2026-02-06T09:24:13.098Z" }
 wheels = [
@@ -1851,21 +2024,21 @@ name = "huggingface-hub"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.14'",
-    "python_full_version == '3.13.*'",
     "python_full_version == '3.12.*'",
     "python_full_version < '3.12'",
+    "python_full_version >= '3.14'",
+    "python_full_version == '3.13.*'",
 ]
 dependencies = [
-    { name = "filelock", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "fsspec", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "hf-xet", marker = "(python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'arm64') or (python_full_version < '3.13' and platform_machine == 'x86_64') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'AMD64' and extra == 'extra-13-omnia-backend-tts-kokoro') or (platform_machine == 'AMD64' and extra != 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'aarch64' and extra == 'extra-13-omnia-backend-tts-kokoro') or (platform_machine == 'aarch64' and extra != 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'amd64' and extra == 'extra-13-omnia-backend-tts-kokoro') or (platform_machine == 'amd64' and extra != 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'arm64' and extra == 'extra-13-omnia-backend-tts-kokoro') or (platform_machine == 'arm64' and extra != 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'x86_64' and extra == 'extra-13-omnia-backend-tts-kokoro') or (platform_machine == 'x86_64' and extra != 'extra-13-omnia-backend-tts-xtts') or (platform_machine == 'AMD64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'AMD64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'aarch64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'aarch64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'amd64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'amd64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'arm64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'arm64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (platform_machine == 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_machine == 'x86_64' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "httpx", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "packaging", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pyyaml", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "tqdm", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "typer", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "filelock", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "fsspec", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "hf-xet", marker = "(python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'arm64') or (python_full_version < '3.13' and platform_machine == 'x86_64') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'amd64' and platform_machine != 'arm64' and platform_machine != 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'AMD64' and extra == 'extra-13-alice-backend-tts-kokoro') or (platform_machine == 'AMD64' and extra != 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'aarch64' and extra == 'extra-13-alice-backend-tts-kokoro') or (platform_machine == 'aarch64' and extra != 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'amd64' and extra == 'extra-13-alice-backend-tts-kokoro') or (platform_machine == 'amd64' and extra != 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'arm64' and extra == 'extra-13-alice-backend-tts-kokoro') or (platform_machine == 'arm64' and extra != 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'x86_64' and extra == 'extra-13-alice-backend-tts-kokoro') or (platform_machine == 'x86_64' and extra != 'extra-13-alice-backend-tts-xtts') or (platform_machine == 'AMD64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'AMD64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'aarch64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'aarch64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'amd64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'amd64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'arm64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'arm64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (platform_machine == 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_machine == 'x86_64' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "httpx", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "packaging", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pyyaml", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "tqdm", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "typer", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ae/76/b5efb3033d8499b17f9386beaf60f64c461798e1ee16d10bc9c0077beba5/huggingface_hub-1.5.0.tar.gz", hash = "sha256:f281838db29265880fb543de7a23b0f81d3504675de82044307ea3c6c62f799d", size = 695872, upload-time = "2026-02-26T15:35:32.745Z" }
 wheels = [
@@ -1877,7 +2050,7 @@ name = "humanfriendly"
 version = "10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyreadline3", marker = "(python_full_version >= '3.13' and sys_platform == 'win32' and extra == 'extra-13-omnia-backend-tts-xtts') or (python_full_version < '3.13' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (python_full_version < '3.13' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (python_full_version < '3.13' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (sys_platform != 'win32' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (sys_platform != 'win32' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (sys_platform != 'win32' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "pyreadline3", marker = "(python_full_version >= '3.13' and sys_platform == 'win32' and extra == 'extra-13-alice-backend-tts-xtts') or (python_full_version < '3.13' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (python_full_version < '3.13' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (python_full_version < '3.13' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (sys_platform != 'win32' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (sys_platform != 'win32' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (sys_platform != 'win32' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cc/3f/2c29224acb2e2df4d2046e4c73ee2662023c58ff5b113c4c1adac0886c43/humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc", size = 360702, upload-time = "2021-09-17T21:40:43.31Z" }
 wheels = [
@@ -1898,7 +2071,7 @@ name = "importlib-metadata"
 version = "8.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "python_full_version < '3.12' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f3/49/3b30cad09e7771a4982d9975a8cbf64f00d4a1ececb53297f1d9a7be1b10/importlib_metadata-8.7.1.tar.gz", hash = "sha256:49fef1ae6440c182052f407c8d34a68f72efc36db9ca90dc0113398f2fdde8bb", size = 57107, upload-time = "2025-12-21T10:00:19.278Z" }
 wheels = [
@@ -1971,7 +2144,7 @@ name = "jaraco-context"
 version = "6.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "backports-tarfile", marker = "python_full_version < '3.12' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "backports-tarfile", marker = "python_full_version < '3.12' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/27/7b/c3081ff1af947915503121c649f26a778e1a2101fd525f74aef997d75b7e/jaraco_context-6.1.1.tar.gz", hash = "sha256:bc046b2dc94f1e5532bd02402684414575cc11f565d929b6563125deb0a6e581", size = 15832, upload-time = "2026-03-07T15:46:04.63Z" }
 wheels = [
@@ -2070,13 +2243,13 @@ name = "keyring"
 version = "25.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "importlib-metadata", marker = "python_full_version < '3.12' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "importlib-metadata", marker = "python_full_version < '3.12' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "jaraco-classes" },
     { name = "jaraco-context" },
     { name = "jaraco-functools" },
-    { name = "jeepney", marker = "sys_platform == 'linux' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pywin32-ctypes", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "secretstorage", marker = "sys_platform == 'linux' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "jeepney", marker = "sys_platform == 'linux' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pywin32-ctypes", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "secretstorage", marker = "sys_platform == 'linux' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/43/4b/674af6ef2f97d56f0ab5153bf0bfa28ccb6c3ed4d1babf4305449668807b/keyring-25.7.0.tar.gz", hash = "sha256:fe01bd85eb3f8fb3dd0405defdeac9a5b4f6f0439edbb3149577f244a2e8245b", size = 63516, upload-time = "2025-11-16T16:26:09.482Z" }
 wheels = [
@@ -2351,8 +2524,8 @@ name = "loguru"
 version = "0.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "win32-setctime", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "win32-setctime", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3a/05/a1dae3dffd1116099471c643b8924f5aa6524411dc6c63fdae648c4f1aca/loguru-0.7.3.tar.gz", hash = "sha256:19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6", size = 63559, upload-time = "2024-12-06T11:20:56.608Z" }
 wheels = [
@@ -2633,12 +2806,12 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyjwt", extra = ["crypto"] },
     { name = "python-multipart" },
-    { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "sse-starlette" },
     { name = "starlette" },
     { name = "typing-extensions" },
     { name = "typing-inspection" },
-    { name = "uvicorn", marker = "sys_platform != 'emscripten' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "uvicorn", marker = "sys_platform != 'emscripten' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/fc/6d/62e76bbb8144d6ed86e202b5edd8a4cb631e7c8130f3f4893c3f90262b10/mcp-1.26.0.tar.gz", hash = "sha256:db6e2ef491eecc1a0d93711a76f28dec2e05999f93afd48795da1c1137142c66", size = 608005, upload-time = "2026-01-24T19:40:32.468Z" }
 wheels = [
@@ -2659,7 +2832,7 @@ name = "ml-dtypes"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/fd/15/76f86faa0902836cc133939732f7611ace68cf54148487a99c539c272dc8/ml_dtypes-0.4.1.tar.gz", hash = "sha256:fad5f2de464fd09127e49b7fd1252b9006fb43d2edc1ff112d390c324af5ca7a", size = 692594, upload-time = "2024-09-13T19:07:11.624Z" }
 wheels = [
@@ -2728,8 +2901,8 @@ version = "0.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyperclip" },
-    { name = "python3-xlib", marker = "sys_platform == 'linux' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "rubicon-objc", marker = "sys_platform == 'darwin' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "python3-xlib", marker = "sys_platform == 'linux' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "rubicon-objc", marker = "sys_platform == 'darwin' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/28/fa/b2ba8229b9381e8f6381c1dcae6f4159a7f72349e414ed19cfbbd1817173/MouseInfo-0.1.3.tar.gz", hash = "sha256:2c62fb8885062b8e520a3cce0a297c657adcc08c60952eb05bc8256ef6f7f6e7", size = 10850, upload-time = "2020-03-27T21:20:10.136Z" }
 
@@ -2973,7 +3146,7 @@ name = "mypy"
 version = "1.19.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "librt", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "librt", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "mypy-extensions" },
     { name = "pathspec" },
     { name = "typing-extensions" },
@@ -3366,187 +3539,14 @@ wheels = [
 ]
 
 [[package]]
-name = "omnia-backend"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "aioimaplib" },
-    { name = "aiosmtplib" },
-    { name = "aiosqlite" },
-    { name = "beautifulsoup4" },
-    { name = "comtypes" },
-    { name = "ddgs" },
-    { name = "fastapi" },
-    { name = "feedparser" },
-    { name = "httpx" },
-    { name = "jsonschema" },
-    { name = "loguru" },
-    { name = "mcp" },
-    { name = "paho-mqtt" },
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-xtts'" },
-    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-kokoro') or (python_full_version >= '3.13' and extra != 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "psutil" },
-    { name = "pyautogui" },
-    { name = "pycaw" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pynput" },
-    { name = "pyperclip" },
-    { name = "python-dateutil" },
-    { name = "python-multipart" },
-    { name = "pywin32" },
-    { name = "pywinauto" },
-    { name = "pyyaml" },
-    { name = "slowapi" },
-    { name = "sqlite-vec" },
-    { name = "sqlmodel" },
-    { name = "tzdata" },
-    { name = "uvicorn", extra = ["standard"] },
-    { name = "watchfiles" },
-    { name = "websockets" },
-    { name = "winotify" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-email = [
-    { name = "keyring" },
-]
-file-reader = [
-    { name = "pdfplumber" },
-    { name = "python-docx" },
-]
-memory = [
-    { name = "fastembed", version = "0.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "fastembed", version = "0.7.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-]
-stt = [
-    { name = "faster-whisper" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-xtts'" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-]
-stt-gpu = [
-    { name = "nvidia-cublas-cu12" },
-    { name = "nvidia-cudnn-cu12" },
-]
-tts-kokoro = [
-    { name = "kokoro-onnx" },
-    { name = "soundfile" },
-]
-tts-piper = [
-    { name = "piper-tts" },
-]
-tts-xtts = [
-    { name = "tts" },
-]
-voice = [
-    { name = "faster-whisper" },
-    { name = "kokoro-onnx" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" } },
-    { name = "piper-tts" },
-    { name = "pynvml" },
-    { name = "soundfile" },
-]
-voice-gpu = [
-    { name = "faster-whisper" },
-    { name = "kokoro-onnx" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" } },
-    { name = "nvidia-cublas-cu12" },
-    { name = "nvidia-cudnn-cu12" },
-    { name = "piper-tts" },
-    { name = "pynvml" },
-    { name = "soundfile" },
-]
-vram = [
-    { name = "pynvml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aioimaplib", specifier = ">=1.0.1" },
-    { name = "aiosmtplib", specifier = ">=3.0" },
-    { name = "aiosqlite", specifier = ">=0.20" },
-    { name = "beautifulsoup4", specifier = ">=4.12" },
-    { name = "comtypes", specifier = ">=1.4" },
-    { name = "ddgs", specifier = ">=9.0" },
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "fastembed", marker = "extra == 'memory'", specifier = ">=0.3" },
-    { name = "faster-whisper", marker = "extra == 'stt'", specifier = ">=1.1,<2" },
-    { name = "faster-whisper", marker = "extra == 'voice'", specifier = ">=1.1,<2" },
-    { name = "faster-whisper", marker = "extra == 'voice-gpu'", specifier = ">=1.1,<2" },
-    { name = "feedparser", specifier = ">=6.0" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "jsonschema", specifier = ">=4.0" },
-    { name = "keyring", marker = "extra == 'email'", specifier = ">=24.0" },
-    { name = "kokoro-onnx", marker = "extra == 'tts-kokoro'", specifier = ">=0.4" },
-    { name = "kokoro-onnx", marker = "extra == 'voice'", specifier = ">=0.4" },
-    { name = "kokoro-onnx", marker = "extra == 'voice-gpu'", specifier = ">=0.4" },
-    { name = "loguru", specifier = ">=0.7" },
-    { name = "mcp", specifier = ">=1.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13" },
-    { name = "numpy", marker = "extra == 'stt'", specifier = ">=1.26" },
-    { name = "numpy", marker = "extra == 'voice'", specifier = ">=1.26" },
-    { name = "numpy", marker = "extra == 'voice-gpu'", specifier = ">=1.26" },
-    { name = "nvidia-cublas-cu12", marker = "extra == 'stt-gpu'", specifier = ">=12.4,<13" },
-    { name = "nvidia-cublas-cu12", marker = "extra == 'voice-gpu'", specifier = ">=12.4,<13" },
-    { name = "nvidia-cudnn-cu12", marker = "extra == 'stt-gpu'", specifier = ">=9.0,<10" },
-    { name = "nvidia-cudnn-cu12", marker = "extra == 'voice-gpu'", specifier = ">=9.0,<10" },
-    { name = "paho-mqtt", specifier = ">=2.1" },
-    { name = "pdfplumber", marker = "extra == 'file-reader'", specifier = ">=0.11" },
-    { name = "pillow", specifier = ">=10.0" },
-    { name = "piper-tts", marker = "extra == 'tts-piper'", specifier = ">=1.2,<2" },
-    { name = "piper-tts", marker = "extra == 'voice'", specifier = ">=1.2,<2" },
-    { name = "piper-tts", marker = "extra == 'voice-gpu'", specifier = ">=1.2,<2" },
-    { name = "psutil", specifier = ">=6.0" },
-    { name = "pyautogui", specifier = ">=0.9.54" },
-    { name = "pycaw", specifier = ">=20230407" },
-    { name = "pydantic", specifier = ">=2.9" },
-    { name = "pydantic-settings", specifier = ">=2.5" },
-    { name = "pynput", specifier = ">=1.7" },
-    { name = "pynvml", marker = "extra == 'voice'", specifier = ">=12.0,<13" },
-    { name = "pynvml", marker = "extra == 'voice-gpu'", specifier = ">=12.0,<13" },
-    { name = "pynvml", marker = "extra == 'vram'", specifier = ">=12.0,<13" },
-    { name = "pyperclip", specifier = ">=1.9" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "python-dateutil", specifier = ">=2.9" },
-    { name = "python-docx", marker = "extra == 'file-reader'", specifier = ">=1.1" },
-    { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "pywin32", specifier = ">=306" },
-    { name = "pywinauto", specifier = ">=0.6.8" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
-    { name = "slowapi", specifier = ">=0.1.9" },
-    { name = "soundfile", marker = "extra == 'tts-kokoro'", specifier = ">=0.12" },
-    { name = "soundfile", marker = "extra == 'voice'", specifier = ">=0.12" },
-    { name = "soundfile", marker = "extra == 'voice-gpu'", specifier = ">=0.12" },
-    { name = "sqlite-vec", specifier = ">=0.1.6" },
-    { name = "sqlmodel", specifier = ">=0.0.22" },
-    { name = "tts", marker = "extra == 'tts-xtts'", specifier = ">=0.22" },
-    { name = "tzdata", specifier = ">=2024.1" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },
-    { name = "watchfiles", specifier = ">=0.24" },
-    { name = "websockets", specifier = ">=13.0" },
-    { name = "winotify", specifier = ">=1.1" },
-]
-provides-extras = ["dev", "stt", "stt-gpu", "tts-piper", "tts-xtts", "tts-kokoro", "email", "vram", "voice", "voice-gpu", "file-reader", "memory"]
-
-[[package]]
 name = "onnx"
 version = "1.19.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ml-dtypes", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "protobuf", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "typing-extensions", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "ml-dtypes", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "protobuf", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "typing-extensions", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5b/bf/b0a63ee9f3759dcd177b28c6f2cb22f2aecc6d9b3efecaabc298883caa5f/onnx-1.19.0.tar.gz", hash = "sha256:aa3f70b60f54a29015e41639298ace06adf1dd6b023b9b30f1bca91bb0db9473", size = 11949859, upload-time = "2025-08-27T02:34:27.107Z" }
 wheels = [
@@ -3584,12 +3584,12 @@ resolution-markers = [
     "python_full_version == '3.13.*'",
 ]
 dependencies = [
-    { name = "coloredlogs", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "flatbuffers", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "packaging", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "protobuf", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "sympy", marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "coloredlogs", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "flatbuffers", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "packaging", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "protobuf", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "sympy", marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f0/ff/77bee5df55f034ee81d2e1bc58b2b8511b9c54f06ce6566cb562c5d95aa5/onnxruntime-1.19.2-cp311-cp311-macosx_11_0_universal2.whl", hash = "sha256:d863e8acdc7232d705d49e41087e10b274c42f09e259016a46f32c34e06dc4fd", size = 16779187, upload-time = "2024-09-04T06:37:18.245Z" },
@@ -3609,18 +3609,18 @@ name = "onnxruntime"
 version = "1.24.3"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.14'",
-    "python_full_version == '3.13.*'",
     "python_full_version == '3.12.*'",
     "python_full_version < '3.12'",
+    "python_full_version >= '3.14'",
+    "python_full_version == '3.13.*'",
 ]
 dependencies = [
-    { name = "flatbuffers", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "packaging", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "protobuf", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "sympy", marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "flatbuffers", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "packaging", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "protobuf", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "sympy", marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/15/41/3253db975a90c3ce1d475e2a230773a21cd7998537f0657947df6fb79861/onnxruntime-1.24.3-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:3e6456801c66b095c5cd68e690ca25db970ea5202bd0c5b84a2c3ef7731c5a3c", size = 17332766, upload-time = "2026-03-05T17:18:59.714Z" },
@@ -3714,8 +3714,8 @@ version = "0.11.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pdfminer-six" },
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-xtts'" },
-    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-kokoro') or (python_full_version >= '3.13' and extra != 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-xtts'" },
+    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "pypdfium2" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/38/37/9ca3519e92a8434eb93be570b131476cc0a4e840bb39c62ddb7813a39d53/pdfplumber-0.11.9.tar.gz", hash = "sha256:481224b678b2bbdbf376e2c39bf914144eef7c3d301b4a28eebf0f7f6109d6dc", size = 102768, upload-time = "2026-01-05T08:10:29.072Z" }
@@ -3793,6 +3793,8 @@ source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.14'",
     "python_full_version == '3.13.*'",
+    "python_full_version == '3.12.*'",
+    "python_full_version < '3.12'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f3/0d/d0d6dea55cd152ce3d6767bb38a8fc10e33796ba4ba210cbab9354b6d238/pillow-11.3.0.tar.gz", hash = "sha256:3828ee7586cd0b2091b6209e5ad53e20d0649bbe87164a459d0676e035e8f523", size = 47113069, upload-time = "2025-07-01T09:16:30.666Z" }
 wheels = [
@@ -3879,8 +3881,8 @@ name = "piper-tts"
 version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "onnxruntime", version = "1.24.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "onnxruntime", version = "1.24.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2f/df92a56383bbfb7a3a35ff539ba4081932bef0daf920ec089ab7269e1493/piper_tts-1.4.1.tar.gz", hash = "sha256:bf0640db9fe512392f0cf570d445f76b3894b29fbab6f81be42b784fd8f0afe0", size = 4364811, upload-time = "2026-02-05T09:58:25.233Z" }
 wheels = [
@@ -4201,10 +4203,10 @@ dependencies = [
     { name = "mouseinfo" },
     { name = "pygetwindow" },
     { name = "pymsgbox" },
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "pyobjc-core", marker = "sys_platform == 'darwin' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "pyscreeze" },
-    { name = "python3-xlib", marker = "sys_platform == 'linux' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "python3-xlib", marker = "sys_platform == 'linux' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "pytweening" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/65/ff/cdae0a8c2118a0de74b6cf4cbcdcaf8fd25857e6c3f205ce4b1794b27814/PyAutoGUI-0.9.54.tar.gz", hash = "sha256:dd1d29e8fd118941cb193f74df57e5c6ff8e9253b99c7b04f39cfc69f3ae04b2", size = 61236, upload-time = "2023-05-24T20:11:32.972Z" }
@@ -4419,10 +4421,10 @@ name = "pynput"
 version = "1.8.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "evdev", marker = "'linux' in sys_platform or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "python-xlib", marker = "'linux' in sys_platform or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "evdev", marker = "'linux' in sys_platform or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "python-xlib", marker = "'linux' in sys_platform or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "six" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f0/c3/dccf44c68225046df5324db0cc7d563a560635355b3e5f1d249468268a6f/pynput-1.8.1.tar.gz", hash = "sha256:70d7c8373ee98911004a7c938742242840a5628c004573d84ba849d4601df81e", size = 82289, upload-time = "2025-03-17T17:12:01.481Z" }
@@ -4614,7 +4616,8 @@ name = "pyscreeze"
 version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-13-alice-backend-tts-kokoro') or (python_full_version < '3.12' and extra != 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ee/f0/cb456ac4f1a73723d5b866933b7986f02bacea27516629c00f8e7da94c2d/pyscreeze-1.0.1.tar.gz", hash = "sha256:cf1662710f1b46aa5ff229ee23f367da9e20af4a78e6e365bee973cad0ead4be", size = 27826, upload-time = "2024-08-20T23:03:07.291Z" }
 
@@ -4623,7 +4626,7 @@ name = "pytest"
 version = "9.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
@@ -4640,7 +4643,7 @@ version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/90/2c/8af215c0f776415f3590cac4f9086ccefd6fd463befeae41cd4d3f193e5a/pytest_asyncio-1.3.0.tar.gz", hash = "sha256:d7f52f36d231b80ee124cd216ffb19369aa168fc10095013c6b014a34d3ee9e5", size = 50087, upload-time = "2025-11-10T16:07:47.256Z" }
 wheels = [
@@ -4813,9 +4816,9 @@ name = "pywinauto"
 version = "0.6.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "comtypes", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "python-xlib", marker = "sys_platform == 'linux' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "comtypes", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "python-xlib", marker = "sys_platform == 'linux' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "pywin32", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "six" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/2c/85/cc65e3b64e7473cc86c07f0b5c415d509402c03ef19dadc39c583835eb5f/pywinauto-0.6.9.tar.gz", hash = "sha256:94d710bfa796df245250f952ffa65d97233d9807bcd42e052b71b81af469b6de", size = 434734, upload-time = "2025-01-06T11:30:01.801Z" }
@@ -4897,7 +4900,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "rpds-py" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/22/f5/df4e9027acead3ecc63e50fe1e36aca1523e1719559c499951bb4b53188f/referencing-0.37.0.tar.gz", hash = "sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8", size = 78036, upload-time = "2025-10-13T15:30:48.871Z" }
 wheels = [
@@ -5419,8 +5422,8 @@ version = "0.13.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cffi" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-xtts'" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-xtts'" },
+    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e1/41/9b873a8c055582859b239be17902a85339bec6a30ad162f98c9b0288a2cc/soundfile-0.13.1.tar.gz", hash = "sha256:b2c68dab1e30297317080a5b43df57e302584c49e2942defdde0acccc53f0e5b", size = 46156, upload-time = "2025-01-25T09:17:04.831Z" }
 wheels = [
@@ -5557,7 +5560,7 @@ name = "sqlalchemy"
 version = "2.0.48"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "greenlet", marker = "platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "greenlet", marker = "platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1f/73/b4a9737255583b5fa858e0bb8e116eb94b88c910164ed2ed719147bde3de/sqlalchemy-2.0.48.tar.gz", hash = "sha256:5ca74f37f3369b45e1f6b7b06afb182af1fd5dde009e4ffd831830d98cbe5fe7", size = 9886075, upload-time = "2026-03-02T15:28:51.474Z" }
@@ -5729,7 +5732,7 @@ version = "0.52.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c4/68/79977123bb7be889ad680d79a40f339082c1978b5cfcf62c2d8d196873ac/starlette-0.52.1.tar.gz", hash = "sha256:834edd1b0a23167694292e94f597773bc3f89f362be6effee198165a35d62933", size = 2653702, upload-time = "2026-01-18T13:34:11.062Z" }
 wheels = [
@@ -5886,8 +5889,8 @@ name = "tokenizers"
 version = "0.22.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "huggingface-hub", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-omnia-backend-tts-kokoro' or extra != 'extra-13-omnia-backend-tts-xtts' or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "huggingface-hub", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' or extra == 'extra-13-alice-backend-tts-kokoro' or extra != 'extra-13-alice-backend-tts-xtts' or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/73/6f/f80cfef4a312e1fb34baf7d85c72d4411afde10978d4657f8cdd811d3ccc/tokenizers-0.22.2.tar.gz", hash = "sha256:473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917", size = 372115, upload-time = "2026-01-05T10:45:15.988Z" }
 wheels = [
@@ -6067,7 +6070,7 @@ name = "tqdm"
 version = "4.67.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/09/a9/6ba95a270c6f1fbcd8dac228323f2777d886cb206987444e4bce66338dd4/tqdm-4.67.3.tar.gz", hash = "sha256:7d825f03f89244ef73f1d4ce193cb1774a8179fd96f31d7e1dcde62092b960bb", size = 169598, upload-time = "2026-02-03T17:35:53.048Z" }
 wheels = [
@@ -6176,7 +6179,7 @@ dependencies = [
     { name = "flask" },
     { name = "fsspec" },
     { name = "g2pkk" },
-    { name = "gruut", extra = ["de", "es", "fr"], marker = "extra == 'extra-13-omnia-backend-tts-xtts'" },
+    { name = "gruut", extra = ["de", "es", "fr"], marker = "extra == 'extra-13-alice-backend-tts-xtts'" },
     { name = "hangul-romanize" },
     { name = "inflect" },
     { name = "jamo" },
@@ -6195,13 +6198,13 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "soundfile" },
-    { name = "spacy", extra = ["ja"], marker = "extra == 'extra-13-omnia-backend-tts-xtts'" },
+    { name = "spacy", extra = ["ja"], marker = "extra == 'extra-13-alice-backend-tts-xtts'" },
     { name = "torch" },
     { name = "torchaudio" },
     { name = "tqdm" },
     { name = "trainer" },
-    { name = "transformers", version = "4.57.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
-    { name = "transformers", version = "5.3.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "transformers", version = "4.57.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
+    { name = "transformers", version = "5.3.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "umap-learn" },
     { name = "unidecode" },
 ]
@@ -6350,11 +6353,11 @@ wheels = [
 
 [package.optional-dependencies]
 standard = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "httptools" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
-    { name = "uvloop", marker = "(platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32') or (platform_python_implementation == 'PyPy' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (platform_python_implementation == 'PyPy' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (platform_python_implementation == 'PyPy' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (sys_platform == 'cygwin' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (sys_platform == 'cygwin' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (sys_platform == 'cygwin' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu') or (sys_platform == 'win32' and extra == 'extra-13-omnia-backend-tts-kokoro' and extra == 'extra-13-omnia-backend-tts-xtts') or (sys_platform == 'win32' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice') or (sys_platform == 'win32' and extra == 'extra-13-omnia-backend-tts-xtts' and extra == 'extra-13-omnia-backend-voice-gpu')" },
+    { name = "uvloop", marker = "(platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32') or (platform_python_implementation == 'PyPy' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (platform_python_implementation == 'PyPy' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (platform_python_implementation == 'PyPy' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (sys_platform == 'cygwin' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (sys_platform == 'cygwin' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (sys_platform == 'cygwin' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu') or (sys_platform == 'win32' and extra == 'extra-13-alice-backend-tts-kokoro' and extra == 'extra-13-alice-backend-tts-xtts') or (sys_platform == 'win32' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice') or (sys_platform == 'win32' and extra == 'extra-13-alice-backend-tts-xtts' and extra == 'extra-13-alice-backend-voice-gpu')" },
     { name = "watchfiles" },
     { name = "websockets" },
 ]

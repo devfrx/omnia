@@ -1,14 +1,14 @@
 ### Fase 15 — Email Assistant (IMAP/SMTP locale)
 
-> **Obiettivo**: aggiungere a OMNIA un assistente email locale che usa IMAP/SMTP
+> **Obiettivo**: aggiungere a AL\CE un assistente email locale che usa IMAP/SMTP
 > per leggere, cercare, rispondere e inviare email senza dipendenze da API cloud.
 > L'LLM elabora contenuto e bozze; le credenziali rimangono esclusivamente locali
-> (OS keyring o env var). Con Fase 15 OMNIA diventa anche un hub di comunicazione
+> (OS keyring o env var). Con Fase 15 AL\CE diventa anche un hub di comunicazione
 > personale locale-first.
 
 - [x] §15.1 `EmailConfig` in `config.py` + `default.yaml`
 - [x] §15.2 `EmailServiceProtocol` in `protocols.py`
-- [x] §15.3 `AppContext.email_service` field + `OmniaEvent.EMAIL_*`
+- [x] §15.3 `AppContext.email_service` field + `AliceEvent.EMAIL_*`
 - [x] §15.4 `EmailService` (`aioimaplib` + `aiosmtplib` + cache in-memory)
 - [x] §15.5 App lifespan wiring (startup init + shutdown close)
 - [x] §15.6 `EmailPlugin` (6 tool LLM)
@@ -43,14 +43,14 @@
 - L'idea portante della feature è "credenziali mai in plaintext in `default.yaml`"
 - `keyring` usa Windows Credential Manager (o macOS Keychain, Linux Secret Service)
   per archiviare la password in modo sicuro e recuperarla a runtime
-- Flusso: `EmailService.initialize()` chiama `keyring.get_password("omnia", email_username)`
+- Flusso: `EmailService.initialize()` chiama `keyring.get_password("alice", email_username)`
   se `use_keyring=True`; fallback a `SecretStr` dal config (impostabile via env var
-  `OMNIA_EMAIL__PASSWORD`) se `use_keyring=False`
+  `ALICE_EMAIL__PASSWORD`) se `use_keyring=False`
 - La password non viene mai inclusa nei log (`SecretStr` non è serializzabile come str
   dalla loguru formatter standard — `logger.info("cfg={}", cfg)` stampa `'**'`)
 
 **Perché `aioimaplib` + `aiosmtplib` e non librerie sync:**
-- Tutto I/O in OMNIA è async-first — regola di progetto
+- Tutto I/O in AL\CE è async-first — regola di progetto
 - `aioimaplib` supporta IMAP4 SSL nativo + IDLE (push di nuove email senza polling)
 - `aiosmtplib` è il wrapper async di `smtplib` stdlib — STARTTLS, SSL, App Password
 
@@ -69,7 +69,7 @@
 **IMAP IDLE — background watcher:**
 - Se `imap_idle_enabled=True`, `EmailService.initialize()` avvia un task asyncio
   `_idle_watcher_task` che mantiene l'IDLE IMAP attivo e, alla ricezione di un EXISTS
-  notification, emette `OmniaEvent.EMAIL_RECEIVED` → il gateway WebSocket
+  notification, emette `AliceEvent.EMAIL_RECEIVED` → il gateway WebSocket
   lo forwardata come `{ "type": "email.received", "folder": "INBOX" }` a tutti i client
 - Identico al pattern `TimerManager` (Fase 7.5.2) e `asyncio.create_task()` in
   `MemoryService`
@@ -91,7 +91,7 @@
 class EmailConfig(BaseSettings):
     """Email assistant (IMAP / SMTP) configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_EMAIL__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_EMAIL__")
 
     enabled: bool = False
     """Enable the email assistant. False by default (opt-in esplicito)."""
@@ -119,12 +119,12 @@ class EmailConfig(BaseSettings):
 
     use_keyring: bool = True
     """Retrieve password from OS keyring instead of config.
-    If True: keyring.get_password('omnia', username) is called at startup.
+    If True: keyring.get_password('alice', username) is called at startup.
     If False: falls back to the 'password' field below (env var recommended)."""
 
     password: SecretStr = Field(default=SecretStr(""))
     """Password or App Password. Used only when use_keyring=False.
-    Set via env var OMNIA_EMAIL__PASSWORD — never commit to default.yaml."""
+    Set via env var ALICE_EMAIL__PASSWORD — never commit to default.yaml."""
 
     fetch_last_n: int = 20
     """Default number of emails fetched per inbox listing request."""
@@ -154,7 +154,7 @@ class EmailConfig(BaseSettings):
     """IMAP folder name used for archiving (Gmail uses '[Gmail]/All Mail')."""
 ```
 
-Aggiunta a `OmniaConfig` (dopo il campo `chart`):
+Aggiunta a `AliceConfig` (dopo il campo `chart`):
 ```python
 email: EmailConfig = Field(default_factory=EmailConfig)
 ```
@@ -263,7 +263,7 @@ class EmailServiceProtocol(Protocol):
 
 ---
 
-#### 15.3 — `AppContext` e `OmniaEvent`
+#### 15.3 — `AppContext` e `AliceEvent`
 
 **`backend/core/context.py`** — aggiungere import e campo:
 ```python
@@ -280,7 +280,7 @@ class AppContext:
     """Async IMAP/SMTP email assistant service."""
 ```
 
-**`backend/core/event_bus.py`** — aggiungere nel blocco `OmniaEvent`:
+**`backend/core/event_bus.py`** — aggiungere nel blocco `AliceEvent`:
 ```python
 # -- Email Assistant (Phase 15) --
 EMAIL_RECEIVED = "email.received"
@@ -307,7 +307,7 @@ EmailService
 ```
 
 ```python
-"""O.M.N.I.A. — Async email service (IMAP read + SMTP send)."""
+"""AL\CE — Async email service (IMAP read + SMTP send)."""
 
 from __future__ import annotations
 
@@ -330,7 +330,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 from backend.core.config import EmailConfig
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 
 _TRUNCATION_SUFFIX = "\n[…troncato]"
 
@@ -371,7 +371,7 @@ class EmailService:
 
     Credentials are never stored in plaintext; they are retrieved from
     the OS keyring (``use_keyring=True``, default) or from the
-    ``OMNIA_EMAIL__PASSWORD`` environment variable (``use_keyring=False``).
+    ``ALICE_EMAIL__PASSWORD`` environment variable (``use_keyring=False``).
 
     The service owns:
     - A persistent ``aioimaplib`` client for inbox operations
@@ -571,7 +571,7 @@ class EmailService:
         msg["From"] = self._config.username
         msg["To"] = ", ".join(to)
         msg["Subject"] = subject
-        message_id = f"<omnia-{uuid.uuid4()}@{self._config.smtp_host}>"
+        message_id = f"<alice-{uuid.uuid4()}@{self._config.smtp_host}>"
         msg["Message-ID"] = message_id
         if in_reply_to:
             msg["In-Reply-To"] = in_reply_to
@@ -595,7 +595,7 @@ class EmailService:
         self._send_log.append(now)
         logger.info("Email inviata a {} — subject: {}", to, subject)
         await self._bus.emit(
-            OmniaEvent.EMAIL_SENT,
+            AliceEvent.EMAIL_SENT,
             to=to,
             subject=subject,
             message_id=message_id,
@@ -652,13 +652,13 @@ class EmailService:
             try:
                 import keyring
                 pwd = await asyncio.to_thread(
-                    keyring.get_password, "omnia", self._config.username
+                    keyring.get_password, "alice", self._config.username
                 )
                 if pwd:
                     return pwd
                 logger.warning(
                     "Password non trovata nel keyring per '{}'. "
-                    "Esegui: keyring set omnia {}",
+                    "Esegui: keyring set alice {}",
                     self._config.username, self._config.username,
                 )
             except ImportError:
@@ -825,7 +825,7 @@ class EmailService:
                 if new_mail:
                     logger.debug("EMAIL_RECEIVED notification from IMAP IDLE")
                     await self._bus.emit(
-                        OmniaEvent.EMAIL_RECEIVED,
+                        AliceEvent.EMAIL_RECEIVED,
                         folder="INBOX",
                     )
                     # Invalidate inbox cache
@@ -881,8 +881,8 @@ async def _forward_email_sent(**kwargs):
             "message_id": kwargs.get("message_id"),
         })
 
-ctx.event_bus.subscribe(OmniaEvent.EMAIL_RECEIVED, _forward_email_received)
-ctx.event_bus.subscribe(OmniaEvent.EMAIL_SENT, _forward_email_sent)
+ctx.event_bus.subscribe(AliceEvent.EMAIL_RECEIVED, _forward_email_received)
+ctx.event_bus.subscribe(AliceEvent.EMAIL_SENT, _forward_email_sent)
 ```
 
 **Shutdown** — aggiungere dopo il blocco `note_service`:
@@ -900,7 +900,7 @@ if ctx.email_service:
 #### 15.6 — `EmailPlugin` (`backend/plugins/email_assistant/plugin.py`)
 
 ```python
-"""OMNIA Email Assistant plugin — expose email tools to the LLM."""
+"""AL\CE Email Assistant plugin — expose email tools to the LLM."""
 
 from __future__ import annotations
 
@@ -1950,10 +1950,10 @@ backend/
       email.py                    # REST: GET inbox, GET uid, POST search, PUT read, PUT archive, GET folders
       __init__.py                 # + email.router
   core/
-    config.py                     # + EmailConfig + OmniaConfig.email
+    config.py                     # + EmailConfig + AliceConfig.email
     protocols.py                  # + EmailServiceProtocol
     context.py                    # + email_service: EmailServiceProtocol | None
-    event_bus.py                  # + EMAIL_RECEIVED, EMAIL_SENT in OmniaEvent
+    event_bus.py                  # + EMAIL_RECEIVED, EMAIL_SENT in AliceEvent
     app.py                        # + startup init + event forwarding + shutdown close
   tests/
     test_email_service.py         # Unit test EmailService (IMAP/SMTP mocked)
@@ -2344,11 +2344,11 @@ async def test_archive_service_unavailable(client) -> None:
 #### 15.13 — Ordine di Implementazione
 
 1. `backend/pyproject.toml` — dipendenze `aioimaplib`, `aiosmtplib` in `dependencies` + extra `email` per `keyring`; installare con `uv pip install -e ".[dev,email]"`
-2. `backend/core/config.py` — `EmailConfig` + `OmniaConfig.email`
+2. `backend/core/config.py` — `EmailConfig` + `AliceConfig.email`
 3. `config/default.yaml` — sezione `email:` (disabled di default)
 4. `backend/core/protocols.py` — `EmailServiceProtocol`
 5. `backend/core/context.py` — campo `email_service`
-6. `backend/core/event_bus.py` — `EMAIL_RECEIVED`, `EMAIL_SENT` in `OmniaEvent`
+6. `backend/core/event_bus.py` — `EMAIL_RECEIVED`, `EMAIL_SENT` in `AliceEvent`
 7. `backend/services/email_service.py` — `_LRUCache` + `EmailService` completo
 8. `backend/core/app.py` — startup init + event forwarding + shutdown close
 9. `backend/plugins/email_assistant/plugin.py` — `EmailPlugin`
@@ -2375,9 +2375,9 @@ async def test_archive_service_unavailable(client) -> None:
 | `email.enabled=True` + credenziali IMAP valide → avvio backend | `"Email service started (user@example.com)"` nei log, plugin `email_assistant` caricato |
 | `email.enabled=False` | Service non inizializzato, plugin non caricato, `GET /api/email/inbox` → 503, zero impatto su altri test |
 | `use_keyring=True`, password in Windows Credential Manager | `EmailService._resolve_password()` recupera la password da keyring senza esposizione nel log |
-| `use_keyring=True`, keyring vuoto + `keyring` installato | Log warning "Password non trovata nel keyring", servizio NON si avvia, OMNIA resta funzionante |
-| `use_keyring=False`, `OMNIA_EMAIL__PASSWORD=mypassword` | Password letta da env var tramite `SecretStr`, mai stampata nei log |
-| `read_emails(limit=20)` → IMAP valido | Lista JSON di EmailHeader (uid, subject, from, to, date, is_read) |fallback a config password (se vuota → IMAP auth error → service non si avvia, OMNIA resta funzionante)
+| `use_keyring=True`, keyring vuoto + `keyring` installato | Log warning "Password non trovata nel keyring", servizio NON si avvia, AL\CE resta funzionante |
+| `use_keyring=False`, `ALICE_EMAIL__PASSWORD=mypassword` | Password letta da env var tramite `SecretStr`, mai stampata nei log |
+| `read_emails(limit=20)` → IMAP valido | Lista JSON di EmailHeader (uid, subject, from, to, date, is_read) |fallback a config password (se vuota → IMAP auth error → service non si avvia, AL\CE resta funzionante)
 | `get_email(uid)` → email con body HTML | Corpo convertito in plain-text via bs4, HTML strip, max 8000 char |
 | `search_emails(query="SUBJECT fattura")` | IMAP SEARCH eseguita, risultati ordinati per data |
 | Input injection in query `" OR 1=1 LOGOUT "` | Caratteri non IMAP-safe rimossi da `re.sub` prima della chiamata IMAP |
@@ -2386,7 +2386,7 @@ async def test_archive_service_unavailable(client) -> None:
 | Superato `rate_limit_send_per_hour` | `ToolResult(success=False, content="Limite invii orari raggiunto…")` |
 | `allowed_recipients=["ok@example.com"]`, invio a `evil@bad.com` | `ToolResult(success=False, content="Destinatari non nella whitelist…")` |
 | `archive_email(uid)` → approvazione | Email spostata nella cartella `archive_folder`, rimossa da INBOX, cache invalidata |
-| IMAP IDLE → nuova email arriva | `OmniaEvent.EMAIL_RECEIVED` emesso, `ws_connection_manager` broadcasta `{"type": "email.received", "folder": "INBOX"}`, frontend `EmailPageView` refresh automatico |
+| IMAP IDLE → nuova email arriva | `AliceEvent.EMAIL_RECEIVED` emesso, `ws_connection_manager` broadcasta `{"type": "email.received", "folder": "INBOX"}`, frontend `EmailPageView` refresh automatico |
 | IMAP connection drop durante IDLE | Background task riprova dopo 60s di sleep, ricrea connessione IMAP |
 | Backend riavviato (hot-reload) | `EmailService.close()` chiamato nello shutdown, IDLE task cancellato senza errori |
 | `GET /api/email/inbox` con service disabilitato | HTTP 503 con `{"detail": "Email service non disponibile."}` |

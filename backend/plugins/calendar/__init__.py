@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Calendar plugin package.
+"""AL\CE — Calendar plugin package.
 
 Importing this module registers :class:`CalendarPlugin` in the
 static ``PLUGIN_REGISTRY`` so the plugin manager can discover it.

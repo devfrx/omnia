@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — PC Automation security framework.
+"""AL\CE — PC Automation security framework.
 
 Validates tool inputs against whitelists and manages the post-screenshot
 lockout to prevent data exfiltration via tool chaining.

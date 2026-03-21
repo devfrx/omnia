@@ -1,4 +1,4 @@
-"""Temporary debug script for file_search test failure."""
+﻿"""Temporary debug script for file_search test failure."""
 import asyncio
 import traceback
 from pathlib import Path
@@ -7,12 +7,12 @@ from unittest.mock import MagicMock, patch
 
 async def test():
     from backend.plugins.file_search.plugin import FileSearchPlugin
-    from backend.core.config import OmniaConfig
+    from backend.core.config import AliceConfig
     from backend.core.plugin_models import ExecutionContext
 
     plugin = FileSearchPlugin()
 
-    config = OmniaConfig()
+    config = AliceConfig()
 
     class MockCtx:
         pass

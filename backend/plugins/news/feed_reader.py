@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — RSS/Atom feed reader with caching.
+"""AL\CE — RSS/Atom feed reader with caching.
 
 Fetches and normalises RSS/Atom feeds using ``feedparser``, with
 SSRF validation on every outbound request and an in-memory TTL cache.
@@ -42,7 +42,7 @@ class FeedReader:
         self._client = httpx.AsyncClient(
             follow_redirects=True,
             event_hooks=create_ssrf_safe_event_hooks(),
-            headers={"User-Agent": "OMNIA-NewsReader/1.0"},
+            headers={"User-Agent": "ALICE-NewsReader/1.0"},
         )
         self._cache_ttl_s = cache_ttl_minutes * 60
         self._cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}

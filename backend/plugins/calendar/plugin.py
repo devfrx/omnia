@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Calendar plugin.
+"""AL\CE — Calendar plugin.
 
 Local calendar with events, reminders, and RRULE recurrence support.
 Provides five tools: create_event, list_events, update_event,
@@ -20,7 +20,7 @@ from loguru import logger
 from sqlmodel import Field, SQLModel, select
 from zoneinfo import ZoneInfo
 
-from backend.core.event_bus import OmniaEvent
+from backend.core.event_bus import AliceEvent
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import (
     ConnectionStatus,
@@ -771,7 +771,7 @@ class CalendarPlugin(BasePlugin):
     async def _reminder_loop(self) -> None:
         """Periodically check for upcoming events with reminders.
 
-        Emits an ``OmniaEvent`` via the EventBus when an event with
+        Emits an ``AliceEvent`` via the EventBus when an event with
         ``reminder_minutes`` set is about to start.
         """
         while True:
@@ -841,7 +841,7 @@ class CalendarPlugin(BasePlugin):
                     local_start.isoformat(),
                 )
                 await self.ctx.event_bus.emit(
-                    OmniaEvent.CALENDAR_REMINDER,
+                    AliceEvent.CALENDAR_REMINDER,
                     event_id=str(ev.id),
                     title=ev.title,
                     start_time=local_start.isoformat(),

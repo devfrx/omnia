@@ -1,4 +1,4 @@
-/** Audit-related types for the OMNIA backend audit API. */
+﻿/** Audit-related types for the AL\CE backend audit API. */
 
 /** A single tool confirmation audit entry. */
 export interface AuditConfirmationEntry {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Pinia store for voice state management (STT + TTS).
  *
  * Tracks recording, transcription, and playback states.
@@ -61,7 +61,7 @@ export const useVoiceStore = defineStore('voice', () => {
   const activationMode = ref<'push_to_talk' | 'wake_word' | 'always_on'>('push_to_talk')
 
   /** Wake word for wake_word activation mode. */
-  const wakeWord = ref('omnia')
+  const wakeWord = ref('alice')
 
   /** Whether LLM responses should be read aloud automatically. */
   const autoTtsResponse = ref(true)
@@ -80,7 +80,7 @@ export const useVoiceStore = defineStore('voice', () => {
 
   function loadConfirmTranscript(): boolean {
     try {
-      return localStorage.getItem('omnia_voice_confirm_transcript') === 'true'
+      return localStorage.getItem('alice_voice_confirm_transcript') === 'true'
     } catch {
       return false
     }
@@ -88,7 +88,7 @@ export const useVoiceStore = defineStore('voice', () => {
 
   function loadSttIncludeAttachments(): boolean {
     try {
-      const stored = localStorage.getItem('omnia_stt_include_attachments')
+      const stored = localStorage.getItem('alice_stt_include_attachments')
       return stored === null ? true : stored === 'true'
     } catch {
       return true
@@ -96,11 +96,11 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   watch(confirmTranscript, (val) => {
-    localStorage.setItem('omnia_voice_confirm_transcript', String(val))
+    localStorage.setItem('alice_voice_confirm_transcript', String(val))
   })
 
   watch(sttIncludeAttachments, (val) => {
-    localStorage.setItem('omnia_stt_include_attachments', String(val))
+    localStorage.setItem('alice_stt_include_attachments', String(val))
   })
 
   // ---------------------------------------------------------------------------

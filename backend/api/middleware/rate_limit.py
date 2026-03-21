@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Rate-limiting middleware (slowapi-based)."""
+"""AL\CE — Rate-limiting middleware (slowapi-based)."""
 
 from __future__ import annotations
 

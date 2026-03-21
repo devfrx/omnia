@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — System Info plugin package.
+"""AL\CE — System Info plugin package.
 
 Importing this module registers :class:`SystemInfoPlugin` in the
 static ``PLUGIN_REGISTRY`` so the plugin manager can discover it.

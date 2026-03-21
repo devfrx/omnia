@@ -1,4 +1,4 @@
-### Fase 8 — Polish e Server-readiness
+﻿### Fase 8 — Polish e Server-readiness
 
 #### 8.1 — System Prompt & Settings
 - [ ] System prompt personalizzabile da UI Settings
@@ -7,14 +7,14 @@
 - [ ] **Settings persistence**: salvare su file `config/user.yaml` (overlay su `default.yaml`)
 - [ ] REST: `GET/PUT /api/config` per leggere/scrivere settings
 - [ ] **Plugin settings**: auto-generate form dalla `get_config_schema()` di ogni plugin
-- [ ] Global hotkey: `Ctrl+Shift+O` → attivazione finestra OMNIA (Electron `globalShortcut`)
+- [ ] Global hotkey: `Ctrl+Shift+O` → attivazione finestra AL\CE (Electron `globalShortcut`)
 
 #### 8.2 — Auth JWT per Deployment Remoto
 - [ ] `AuthConfig`: `enabled: bool = False` (local: off), `jwt_secret: SecretStr`, `jwt_algorithm: str = "HS256"`, `token_expiry: int = 3600`
 - [ ] Middleware FastAPI: validazione JWT su tutte le route REST quando `auth.enabled = True`
 - [ ] **WebSocket auth**: dopo `accept()`, primo messaggio dev'essere `{"type": "auth", "token": "..."}` — timeout 5s, altrimenti `close(403)`
 - [ ] Login endpoint: `POST /api/auth/login` → JWT token
-- [ ] **Secret management per produzione**: JWT secret da env var `OMNIA_JWT_SECRET`, MAI in config file
+- [ ] **Secret management per produzione**: JWT secret da env var `ALICE_JWT_SECRET`, MAI in config file
 
 #### 8.3 — Multi-User Isolation
 - [ ] `Conversation.user_id: str | None` — nullable per backward compat (local = tutti None)
@@ -39,7 +39,7 @@
 - [ ] **Frontend**: electron-builder per Windows (`nsis`), macOS (`dmg`), Linux (`appimage`)
   - Auto-update: `electron-updater` con GitHub Releases
   - **Backend spawn**: Electron spawna processo Python bundled come child process
-  - Shared data directory: `%APPDATA%\OMNIA` (Win), `~/Library/Application Support/OMNIA` (macOS), `~/.config/omnia` (Linux)
+  - Shared data directory: `%APPDATA%\AL\CE` (Win), `~/Library/Application Support/AL\CE` (macOS), `~/.config/alice` (Linux)
 - [ ] **Crash handling**: unhandled exception → salva log + notifica utente; restart automatico backend
 - [ ] **Versioning coordinato**: backend version + frontend version in sync (semver, tag Git)
 

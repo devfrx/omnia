@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Tool registry (aggregation, validation, dispatch).
+"""AL\CE — Tool registry (aggregation, validation, dispatch).
 
 Collects tool definitions from all active plugins, validates and
 namespaces them, and provides O(1) lookup plus timeout-enforced
@@ -21,7 +21,7 @@ except ImportError:
     _jsonschema = None  # type: ignore[assignment]
     logger.warning("jsonschema not installed — tool argument validation disabled")
 
-from backend.core.event_bus import EventBus, OmniaEvent
+from backend.core.event_bus import EventBus, AliceEvent
 from backend.core.plugin_manager import PluginManager
 from backend.core.plugin_models import (
     MAX_TOOL_DESCRIPTION_LENGTH,
@@ -474,7 +474,7 @@ class ToolRegistry:
 
         # --- emit start event ---
         await self._event_bus.emit(
-            OmniaEvent.TOOL_EXECUTION_START,
+            AliceEvent.TOOL_EXECUTION_START,
             tool_name=tool_name,
             execution_id=execution_id,
         )
@@ -492,7 +492,7 @@ class ToolRegistry:
                     tool_name, ve.message,
                 )
                 await self._event_bus.emit(
-                    OmniaEvent.TOOL_EXECUTION_FAILED,
+                    AliceEvent.TOOL_EXECUTION_FAILED,
                     tool_name=tool_name,
                     execution_id=execution_id,
                     error=f"Invalid arguments: {ve.message}",
@@ -525,7 +525,7 @@ class ToolRegistry:
                 execution_time_ms=elapsed_ms,
             )
             await self._event_bus.emit(
-                OmniaEvent.TOOL_EXECUTION_FAILED,
+                AliceEvent.TOOL_EXECUTION_FAILED,
                 tool_name=tool_name,
                 execution_id=execution_id,
                 error=result.error_message,
@@ -541,7 +541,7 @@ class ToolRegistry:
                 "Tool '{}' execution error: {}", tool_name, exc,
             )
             await self._event_bus.emit(
-                OmniaEvent.TOOL_EXECUTION_FAILED,
+                AliceEvent.TOOL_EXECUTION_FAILED,
                 tool_name=tool_name,
                 execution_id=execution_id,
                 error=str(exc),
@@ -575,14 +575,14 @@ class ToolRegistry:
         # --- emit success / failure ---
         if result.success:
             await self._event_bus.emit(
-                OmniaEvent.TOOL_EXECUTION_SUCCEEDED,
+                AliceEvent.TOOL_EXECUTION_SUCCEEDED,
                 tool_name=tool_name,
                 execution_id=execution_id,
                 execution_time_ms=elapsed_ms,
             )
         else:
             await self._event_bus.emit(
-                OmniaEvent.TOOL_EXECUTION_FAILED,
+                AliceEvent.TOOL_EXECUTION_FAILED,
                 tool_name=tool_name,
                 execution_id=execution_id,
                 error=result.error_message,

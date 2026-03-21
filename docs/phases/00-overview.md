@@ -1,4 +1,4 @@
-# O.M.N.I.A. — Orchestrated Modular Network for Intelligent Automation
+# AL\CE — Adaptive Learning Interface for Computing & Execution
 
 > Assistente AI personale, 100% locale, modulare e estensibile.
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-OMNIA è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per funzionare interamente in locale senza dipendenze da servizi cloud a pagamento. L'architettura è modulare (plugin-based) e progettata per essere spostabile su un server dedicato in futuro.
+AL\CE è un assistente AI personale ispirato a Jarvis (Iron Man), costruito per funzionare interamente in locale senza dipendenze da servizi cloud a pagamento. L'architettura è modulare (plugin-based) e progettata per essere spostabile su un server dedicato in futuro.
 
 ## Hardware Target
 

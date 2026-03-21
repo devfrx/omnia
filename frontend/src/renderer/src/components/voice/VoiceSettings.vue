@@ -34,7 +34,7 @@ const kokoroLanguage = ref('it')
 // Voice
 const activationMode = ref('push_to_talk')
 const autoTtsResponse = ref(true)
-const wakeWord = ref('omnia')
+const wakeWord = ref('alice')
 
 const sttModels = [
   { value: 'tiny', label: 'Tiny (veloce, meno preciso)' },
@@ -179,7 +179,7 @@ onMounted(async () => {
     if (voice) {
       activationMode.value = (voice.activation_mode as string) ?? 'push_to_talk'
       autoTtsResponse.value = (voice.auto_tts_response as boolean) ?? true
-      wakeWord.value = (voice.wake_word as string) ?? 'omnia'
+      wakeWord.value = (voice.wake_word as string) ?? 'alice'
     }
   } catch (err) {
     console.warn('[VoiceSettings] Failed to load config:', err)
@@ -385,7 +385,7 @@ async function save(): Promise<void> {
         <div v-if="activationMode === 'wake_word'" class="vs__wake-word-row">
           <label class="settings-field">
             <span class="settings-field__label">Parola di attivazione</span>
-            <input v-model="wakeWord" type="text" class="settings-field__input" placeholder="omnia"
+            <input v-model="wakeWord" type="text" class="settings-field__input" placeholder="alice"
               aria-label="Parola di attivazione" @change="save" />
           </label>
         </div>

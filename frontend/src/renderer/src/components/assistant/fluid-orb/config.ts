@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Per-state visual configurations for the fluid aurora orb.
  *
  * Each state defines a unique color palette, motion profile, and energy level.
  * Colors are chosen to work beautifully with screen-blending against the
- * dark #161616 background while matching OMNIA's warm design language.
+ * dark #161616 background while matching AL\CE's warm design language.
  */
 import type { OrbState, StateConfig, TransitionConfig } from './types'
 

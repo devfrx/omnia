@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * HybridView.vue — Chat + living AI visualization combined.
  *
@@ -6,7 +6,7 @@
  * Best of both worlds: conversational + ambient presence.
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import OmniaOrb from '../components/assistant/OmniaOrb.vue'
+import AliceOrb from '../components/assistant/AliceOrb.vue'
 import AmbientBackground from '../components/assistant/AmbientBackground.vue'
 import ChatInput from '../components/chat/ChatInput.vue'
 import MessageBubble from '../components/chat/MessageBubble.vue'
@@ -195,7 +195,7 @@ onUnmounted(() => {
 
         <!-- Floating orb (compact, top area) -->
         <div class="hybrid-view__orb-area">
-            <OmniaOrb :state="orbState" :audio-level="voiceStore.audioLevel" :compact="true" />
+            <AliceOrb :state="orbState" :audio-level="voiceStore.audioLevel" :compact="true" />
         </div>
 
         <!-- Chat area -->

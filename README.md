@@ -1,4 +1,4 @@
-# O.M.N.I.A.
+# AL\CE
 
 > **O**rchestrated **M**odular **N**etwork for **I**ntelligent **A**utomation — Assistente AI personale, 100% locale.
 
@@ -97,7 +97,7 @@ docs/             # Guide e documentazione tecnica
 
 ## TRELLIS — Generazione 3D Neurale (Opzionale)
 
-OMNIA integra [TRELLIS](https://github.com/microsoft/TRELLIS) (Microsoft Research)
+AL\CE integra [TRELLIS](https://github.com/microsoft/TRELLIS) (Microsoft Research)
 per generare modelli 3D `.glb` da descrizioni in linguaggio naturale, visualizzabili
 inline nella chat con un viewer Three.js interattivo.
 

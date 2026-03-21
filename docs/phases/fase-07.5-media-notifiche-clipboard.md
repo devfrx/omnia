@@ -1,4 +1,4 @@
-### Fase 7.5 — Plugin: Media Control + Notifiche + Clipboard
+﻿### Fase 7.5 — Plugin: Media Control + Notifiche + Clipboard
 
 > **Ordine di implementazione consigliato**: clipboard (più semplice, zero nuove dep) → notifications (timer stateful) → media_control (COM/Windows = più complesso). Tutti e tre sono standalone senza dipendenze da altri plugin.
 
@@ -28,7 +28,7 @@
   - Lazy import: `try: from winotify import Notification, audio as WinAudio`
 - [x] `NotificationsConfig(BaseSettings)` in `config.py`:
   - `enabled: bool = False`
-  - `app_id: str = "OMNIA"` (nome app nelle notifiche Windows)
+  - `app_id: str = "AL\\CE"` (nome app nelle notifiche Windows)
   - `sound_enabled: bool = True`
   - `default_timeout_s: int = 5`
   - `max_active_timers: int = 20` (anti DoS per richieste timer dal LLM)
@@ -100,13 +100,13 @@
   - `pycaw >= 20230407` (media_control, Windows only)
   - `comtypes >= 1.4` (media_control, transitiva di pycaw)
 - [x] `config/default.yaml`: sezioni `clipboard:`, `notifications:`, `media_control:` con tutti i defaults
-- [x] `backend/core/config.py`: `ClipboardConfig`, `NotificationsConfig`, `MediaControlConfig` + aggiunta a `OmniaConfig`
+- [x] `backend/core/config.py`: `ClipboardConfig`, `NotificationsConfig`, `MediaControlConfig` + aggiunta a `AliceConfig`
 
 #### 7.5.5 — Test Suite Fase 7.5
 - [x] Test clipboard: get/set successo, clipboard binaria → errore, testo > max → truncated, pyperclip assente → errore graceful
 - [x] Test notifications (winotify): mock `Notification.show()`, timer create→fire→callback, timer cancel, list_active, max_active_timers exceeded, persistence al restart, `fires_at` nel passato al reload
 - [x] Test media_control: mock pycaw `IAudioEndpointVolume`, mock win32api `keybd_event`, non-Windows → errori graceful, volume bounds (0–100), COM device rimosso → reinit
-- [x] Test config: env var override (`OMNIA_MEDIA_CONTROL__ENABLED=true`), defaults
+- [x] Test config: env var override (`ALICE_MEDIA_CONTROL__ENABLED=true`), defaults
 
 ---
 

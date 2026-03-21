@@ -1,5 +1,5 @@
-/**
- * Pinia store for OMNIA note system (Obsidian-like).
+﻿/**
+ * Pinia store for AL\CE note system (Obsidian-like).
  *
  * Provides CRUD operations, search, folder/tag filtering
  * over the backend notes service at `/api/notes`.

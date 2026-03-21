@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useVoice — composable for voice interaction (STT + TTS).
  *
  * Manages microphone capture, binary PCM streaming to the backend,
@@ -93,7 +93,7 @@ export interface UseVoiceReturn {
 // Composable
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'omnia_selected_mic_id'
+const STORAGE_KEY = 'alice_selected_mic_id'
 
 export function useVoice(): UseVoiceReturn {
   const store = useVoiceStore()
@@ -150,12 +150,12 @@ export function useVoice(): UseVoiceReturn {
   // -----------------------------------------------------------------------
 
   const onConnected = (): void => {
-    console.log('[OMNIA Voice] WS connected')
+    console.log('[ALICE Voice] WS connected')
     isConnected.value = true
     store.connected = true
   }
   const onDisconnected = (): void => {
-    console.log('[OMNIA Voice] WS disconnected')
+    console.log('[ALICE Voice] WS disconnected')
     isConnected.value = false
     store.connected = false
     if (store.isListening) stopListening()
@@ -165,7 +165,7 @@ export function useVoice(): UseVoiceReturn {
 
   const onVoiceReady = (data: unknown): void => {
     const d = data as VoiceReadyMessage
-    console.log('[OMNIA Voice] voice_ready:', d)
+    console.log('[ALICE Voice] voice_ready:', d)
     voiceAvailable.value = d.stt_available || d.tts_available
     store.sttAvailable = d.stt_available
     store.ttsAvailable = d.tts_available
@@ -190,11 +190,11 @@ export function useVoice(): UseVoiceReturn {
     // If STT is not yet available but we're in continuous mode, retry connection
     // after a delay (STT may still be loading after a config save).
     if (!d.stt_available && (store.activationMode === 'always_on' || store.activationMode === 'wake_word')) {
-      console.log('[OMNIA Voice] STT not available yet, will retry connection in 5s')
+      console.log('[ALICE Voice] STT not available yet, will retry connection in 5s')
       sttRetryTimer = setTimeout(() => {
         sttRetryTimer = null
         if (!store.sttAvailable && voiceWs.isConnected) {
-          console.log('[OMNIA Voice] Reconnecting voice WS to pick up STT service...')
+          console.log('[ALICE Voice] Reconnecting voice WS to pick up STT service...')
           voiceWs.disconnect()
           setTimeout(() => voiceWs.connect(), 500)
         }
@@ -203,7 +203,7 @@ export function useVoice(): UseVoiceReturn {
   }
   const onTranscript = (data: unknown): void => {
     const d = data as { text: string }
-    console.log('[OMNIA Voice] Transcript received:', d.text, '| mode:', store.activationMode)
+    console.log('[ALICE Voice] Transcript received:', d.text, '| mode:', store.activationMode)
     clearSttTimeout()
 
     let text = d.text
@@ -215,7 +215,7 @@ export function useVoice(): UseVoiceReturn {
       // Strip leading punctuation/symbols that STT may prepend (e.g. "..." or "-")
       const cleaned = lower.replace(/^[^a-zA-Z\u00C0-\u024F]+/, '')
       if (!cleaned.startsWith(ww)) {
-        console.log(`[OMNIA Voice] Wake word "${ww}" not found in "${cleaned}", discarding`)
+        console.log(`[ALICE Voice] Wake word "${ww}" not found in "${cleaned}", discarding`)
         store.isProcessing = false
         scheduleAutoRestart()
         return
@@ -223,13 +223,13 @@ export function useVoice(): UseVoiceReturn {
       // Strip the wake word prefix from the cleaned text, then recover rest
       const afterWw = cleaned.slice(ww.length).replace(/^[,.:;!?\s]+/, '').trim()
       if (!afterWw) {
-        console.log('[OMNIA Voice] Only wake word spoken, no command')
+        console.log('[ALICE Voice] Only wake word spoken, no command')
         store.isProcessing = false
         scheduleAutoRestart()
         return
       }
       text = afterWw
-      console.log(`[OMNIA Voice] Wake word matched, command: "${text}"`)
+      console.log(`[ALICE Voice] Wake word matched, command: "${text}"`)
     }
 
     store.transcript = text
@@ -240,7 +240,7 @@ export function useVoice(): UseVoiceReturn {
     scheduleAutoRestart()
   }
   const onSttProcessing = (): void => {
-    console.log('[OMNIA Voice] STT processing...')
+    console.log('[ALICE Voice] STT processing...')
     store.isProcessing = true
     startSttTimeout()
   }
@@ -270,12 +270,12 @@ export function useVoice(): UseVoiceReturn {
       audioQueue.push(buf)
       if (!isPlayingQueue) playNextChunk()
     }).catch((err) => {
-      console.error('[OMNIA Voice] Audio convert error:', err)
+      console.error('[ALICE Voice] Audio convert error:', err)
     })
   }
   const onVoiceError = (data: unknown): void => {
     const d = data as { message: string }
-    console.error('[OMNIA Voice] Error:', d.message)
+    console.error('[ALICE Voice] Error:', d.message)
     clearSttTimeout()
     cleanupRecordingResources()
     store.isListening = false
@@ -326,7 +326,7 @@ export function useVoice(): UseVoiceReturn {
   function startSttTimeout(): void {
     clearSttTimeout()
     sttTimeoutTimer = setTimeout(() => {
-      console.warn(`[OMNIA Voice] STT processing timed out after ${STT_TIMEOUT_MS / 1000}s`)
+      console.warn(`[ALICE Voice] STT processing timed out after ${STT_TIMEOUT_MS / 1000}s`)
       cleanupAudioResources()
       store.isListening = false
       store.isProcessing = false
@@ -379,7 +379,7 @@ export function useVoice(): UseVoiceReturn {
       try {
         await startListening()
       } catch (err) {
-        console.warn('[OMNIA Voice] Auto-restart failed:', err)
+        console.warn('[ALICE Voice] Auto-restart failed:', err)
         // Retry even on failure (e.g. mic permission popup)
         autoRestartTimer = setTimeout(attempt, AUTO_RESTART_INTERVAL_MS)
       }
@@ -424,7 +424,7 @@ export function useVoice(): UseVoiceReturn {
   // -----------------------------------------------------------------------
 
   function cancelProcessing(): void {
-    console.log('[OMNIA Voice] Cancelling stuck processing state')
+    console.log('[ALICE Voice] Cancelling stuck processing state')
     clearSttTimeout()
     cleanupAudioResources()
     store.isListening = false
@@ -440,11 +440,11 @@ export function useVoice(): UseVoiceReturn {
   async function startListening(): Promise<void> {
     if (store.isListening) return
     if (!voiceWs.isConnected) {
-      console.warn('[OMNIA Voice] Voice WS not connected, cannot start listening')
+      console.warn('[ALICE Voice] Voice WS not connected, cannot start listening')
       return
     }
 
-    console.log('[OMNIA Voice] Starting mic capture...')
+    console.log('[ALICE Voice] Starting mic capture...')
 
     // Refresh devices to validate saved device (fallback handled inside refreshDevices)
     await refreshDevices()
@@ -465,7 +465,7 @@ export function useVoice(): UseVoiceReturn {
       micPermission.value = 'granted'
       store.micPermission = 'granted'
     } catch (err) {
-      console.error('[OMNIA Voice] Mic permission denied or error:', err)
+      console.error('[ALICE Voice] Mic permission denied or error:', err)
       micPermission.value = 'denied'
       store.micPermission = 'denied'
       return
@@ -474,14 +474,14 @@ export function useVoice(): UseVoiceReturn {
     // Log which device is actually being used
     const track = mediaStream.getAudioTracks()[0]
     const settings = track.getSettings()
-    console.log('[OMNIA Voice] Using mic:', track.label, '| deviceId:', settings.deviceId)
+    console.log('[ALICE Voice] Using mic:', track.label, '| deviceId:', settings.deviceId)
 
     // Refresh device list now that we have permission (labels become available)
     await refreshDevices()
 
     audioContext = new AudioContext({ sampleRate: 16000 })
     const actualSampleRate = audioContext.sampleRate
-    console.log(`[OMNIA Voice] AudioContext sampleRate: requested=16000, actual=${actualSampleRate}`)
+    console.log(`[ALICE Voice] AudioContext sampleRate: requested=16000, actual=${actualSampleRate}`)
     const source = audioContext.createMediaStreamSource(mediaStream)
 
     // Level analyser
@@ -509,7 +509,7 @@ export function useVoice(): UseVoiceReturn {
         if (silenceSince === null) {
           silenceSince = Date.now()
         } else if (Date.now() - silenceSince >= SILENCE_TIMEOUT_MS) {
-          console.log('[OMNIA Voice] Silence detected, auto-stopping recording')
+          console.log('[ALICE Voice] Silence detected, auto-stopping recording')
           stopListening()
         }
       }
@@ -520,7 +520,7 @@ export function useVoice(): UseVoiceReturn {
       if (!workletBlobUrl) workletBlobUrl = createWorkletUrl()
       await audioContext.audioWorklet.addModule(workletBlobUrl)
     } catch (err) {
-      console.error('[OMNIA Voice] AudioWorklet addModule failed:', err)
+      console.error('[ALICE Voice] AudioWorklet addModule failed:', err)
       // Cleanup on failure
       if (levelTimer) { clearInterval(levelTimer); levelTimer = null }
       analyserNode?.disconnect(); analyserNode = null
@@ -540,7 +540,7 @@ export function useVoice(): UseVoiceReturn {
     voiceWs.send({ type: 'voice_start', sample_rate: actualSampleRate })
     store.isListening = true
     store.startRecordingTimer()
-    console.log('[OMNIA Voice] Recording started, streaming PCM to backend')
+    console.log('[ALICE Voice] Recording started, streaming PCM to backend')
   }
 
   function stopListening(): void {
@@ -548,7 +548,7 @@ export function useVoice(): UseVoiceReturn {
     store.isListening = false
     store.stopRecordingTimer()
     store.audioLevel = 0
-    console.log('[OMNIA Voice] Stopping recording, sending voice_stop')
+    console.log('[ALICE Voice] Stopping recording, sending voice_stop')
 
     // Tell backend to stop recording and process STT
     voiceWs.send({ type: 'voice_stop' })
@@ -567,13 +567,13 @@ export function useVoice(): UseVoiceReturn {
       audioDevices.value = devices
         .filter((d) => d.kind === 'audioinput')
         .map((d) => ({ deviceId: d.deviceId, label: d.label || `Microfono (${d.deviceId.slice(0, 8)})` }))
-      console.log('[OMNIA Voice] Available audio devices:', audioDevices.value)
+      console.log('[ALICE Voice] Available audio devices:', audioDevices.value)
       if (selectedDeviceId.value && !audioDevices.value.some(d => d.deviceId === selectedDeviceId.value)) {
-        console.warn('[OMNIA Voice] Selected mic device disappeared from device list, resetting to default')
+        console.warn('[ALICE Voice] Selected mic device disappeared from device list, resetting to default')
         selectedDeviceId.value = ''
       }
     } catch (err) {
-      console.error('[OMNIA Voice] Failed to enumerate devices:', err)
+      console.error('[ALICE Voice] Failed to enumerate devices:', err)
     }
   }
 
@@ -623,7 +623,7 @@ export function useVoice(): UseVoiceReturn {
       src.onended = () => playNextChunk()
       src.start()
     } catch (err) {
-      console.warn('[OMNIA Voice] Failed to decode audio chunk:', err)
+      console.warn('[ALICE Voice] Failed to decode audio chunk:', err)
       setTimeout(() => playNextChunk(), 0)
     }
   }

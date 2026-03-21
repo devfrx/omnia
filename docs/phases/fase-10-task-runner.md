@@ -1,8 +1,8 @@
-### Fase 10 — Autonomous Task Runner (Agente Proattivo)
+﻿### Fase 10 — Autonomous Task Runner (Agente Proattivo)
 
-> **Obiettivo**: trasformare OMNIA da assistente reattivo a agente proattivo capace di eseguire
+> **Obiettivo**: trasformare AL\CE da assistente reattivo a agente proattivo capace di eseguire
 > task in background — schedulati o event-driven — senza input utente in tempo reale.
-> Con Fase 9 (memoria) + Fase 10 (autonomia) OMNIA diventa un agente vero.
+> Con Fase 9 (memoria) + Fase 10 (autonomia) AL\CE diventa un agente vero.
 
 - [x] AgentTask DB model — §10.1
 - [x] TaskSchedulerConfig in config.py + default.yaml — §10.2
@@ -12,7 +12,7 @@
 - [x] WSConnectionManager service — §10.6
 - [x] Endpoint /api/ws/events — §10.7
 - [x] REST API /api/tasks — §10.8
-- [x] OmniaEvent TASK_* events — §10.9
+- [x] AliceEvent TASK_* events — §10.9
 - [x] System prompt updates — §10.11
 - [x] Frontend types/tasks.ts + stores/tasks.ts + useEventsWebSocket.ts + TaskManager.vue — §10.12
 - [x] Wiring in app.py (WSConnectionManager + TaskScheduler + EventBus bridge) — §10.3/10.6
@@ -134,7 +134,7 @@ class AgentTask(SQLModel, table=True):
 class TaskSchedulerConfig(BaseSettings):
     """Background task scheduler configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_TASK_SCHEDULER__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_TASK_SCHEDULER__")
 
     enabled: bool = False
     """Abilita il TaskScheduler. False di default (opt-in)."""
@@ -158,7 +158,7 @@ class TaskSchedulerConfig(BaseSettings):
     """Giorni di retention per task completati/falliti prima della pulizia."""
 ```
 
-Aggiunta a `OmniaConfig`:
+Aggiunta a `AliceConfig`:
 ```python
 task_scheduler: TaskSchedulerConfig = Field(default_factory=TaskSchedulerConfig)
 ```
@@ -294,7 +294,7 @@ async def _execute_task(self, task: AgentTask) -> None:
             self._queued_ids.discard(task.id)  # libera il guard
             # Emit EventBus event → WSConnectionManager broadcasts to /ws/events clients
             await self._ctx.event_bus.emit(
-                OmniaEvent.TASK_COMPLETED,
+                AliceEvent.TASK_COMPLETED,
                 task_id=str(task.id),
                 status=_final_status,
             )
@@ -581,7 +581,7 @@ async def _on_task_completed(**kwargs):
             "task_id": kwargs["task_id"],
             "status": kwargs["status"],
         })
-ctx.event_bus.subscribe(OmniaEvent.TASK_COMPLETED, _on_task_completed)
+ctx.event_bus.subscribe(AliceEvent.TASK_COMPLETED, _on_task_completed)
 ```
 
 ---
@@ -667,9 +667,9 @@ class TaskCreateRequest(BaseModel):
 
 ---
 
-#### 10.9 — OmniaEvent Updates (`backend/core/event_bus.py`)
+#### 10.9 — AliceEvent Updates (`backend/core/event_bus.py`)
 
-Aggiunta dei nuovi event al `OmniaEvent` StrEnum (senza modificare quelli esistenti):
+Aggiunta dei nuovi event al `AliceEvent` StrEnum (senza modificare quelli esistenti):
 
 ```python
 # Task events (Phase 10)
@@ -817,10 +817,10 @@ backend/
 │       ├── events.py              ← /api/ws/events WebSocket endpoint
 │       └── tasks.py               ← REST /api/tasks/*
 ├── core/
-│   ├── config.py                  ← + TaskSchedulerConfig + OmniaConfig.task_scheduler
+│   ├── config.py                  ← + TaskSchedulerConfig + AliceConfig.task_scheduler
 │   ├── protocols.py               ← + TaskSchedulerProtocol + WSConnectionManagerProtocol
 │   ├── context.py                 ← + task_scheduler + ws_connection_manager fields
-│   ├── event_bus.py               ← + TASK_* events in OmniaEvent
+│   ├── event_bus.py               ← + TASK_* events in AliceEvent
 │   └── app.py                     ← + wiring TaskScheduler + WSConnectionManager
 ├── db/
 │   └── models.py                  ← + AgentTask SQLModel
@@ -890,7 +890,7 @@ frontend/src/renderer/src/
 
 1. **`AgentTask` DB model** — aggiunta pura a `models.py`
 2. **`TaskSchedulerConfig`** — aggiunta a `config.py` + `default.yaml`
-3. **`OmniaEvent` task events** — aggiunta a `event_bus.py`
+3. **`AliceEvent` task events** — aggiunta a `event_bus.py`
 4. **`WSConnectionManager`** — nuovo file, zero dipendenze
 5. **`WSConnectionManagerProtocol`** + campo `AppContext` + wiring in `app.py`
 6. **`/api/ws/events` endpoint** — `events.py` route

@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — CAD Generator plugin (TRELLIS 3D).
+"""AL\CE — CAD Generator plugin (TRELLIS 3D).
 
 Orchestrates text-to-3D generation via the local TRELLIS microservice,
 including automatic VRAM swapping (unload LLM → generate → reload LLM)

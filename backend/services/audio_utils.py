@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Audio utility functions for voice services.
+"""AL\CE — Audio utility functions for voice services.
 
 Provides audio buffer validation, format detection, temporary file management
 with auto-deletion, and PCM/WAV conversion helpers.  No audio data is ever
@@ -213,7 +213,7 @@ async def save_temp_audio(data: bytes, suffix: str = ".wav") -> Path:
         :class:`Path` to the newly created temp file.
     """
     tmp = tempfile.NamedTemporaryFile(
-        delete=False, suffix=suffix, prefix="omnia_audio_"
+        delete=False, suffix=suffix, prefix="alice_audio_"
     )
     tmp_path = Path(tmp.name)
     try:

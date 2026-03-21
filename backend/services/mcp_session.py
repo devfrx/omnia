@@ -1,4 +1,4 @@
-"""O.M.N.I.A. — Single MCP server session manager."""
+"""AL\CE — Single MCP server session manager."""
 
 from __future__ import annotations
 

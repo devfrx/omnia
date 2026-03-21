@@ -1,4 +1,4 @@
-### Fase 7.6 — Plugin: Ricerca File + Notizie/Briefing
+﻿### Fase 7.6 — Plugin: Ricerca File + Notizie/Briefing
 
 > **Ordine di implementazione consigliato**: file_search (zero nuove dep obbligatorie) → news (richiede feedparser + soft dep su weather/calendar). `file_search` non dipende da nessun altro plugin. `news.get_daily_briefing()` ha soft dependency su weather e calendar (via `ctx.plugin_manager`, non hard dep).
 
@@ -98,7 +98,7 @@
   - `pdfplumber >= 0.11` (file_search, optional — lazy import)
   - `python-docx >= 1.1` (file_search, optional — lazy import)
   - Nessuna nuova dep per file_search base (stdlib)
-- [x] `backend/core/config.py`: `FileSearchConfig`, `NewsConfig` + aggiunta a `OmniaConfig`
+- [x] `backend/core/config.py`: `FileSearchConfig`, `NewsConfig` + aggiunta a `AliceConfig`
 - [x] `config/default.yaml`: sezioni `file_search:`, `news:` con defaults
 
 #### 7.6.4 — Test Suite Fase 7.6

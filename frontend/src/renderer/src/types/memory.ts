@@ -1,5 +1,5 @@
-/**
- * Memory-related types aligned with the OMNIA backend API.
+﻿/**
+ * Memory-related types aligned with the AL\CE backend API.
  *
  * Every interface here mirrors the JSON shapes returned by
  * `backend/api/routes/memory.py` so the frontend can consume

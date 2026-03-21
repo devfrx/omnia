@@ -1,6 +1,6 @@
 ### Fase 12 — Generazione 3D Neurale (TRELLIS) + Documentazione MCP
 
-> **Obiettivo**: permettere a OMNIA di generare modelli 3D da linguaggio naturale
+> **Obiettivo**: permettere a AL\CE di generare modelli 3D da linguaggio naturale
 > tramite [TRELLIS-for-windows](https://github.com/sdbds/TRELLIS-for-windows)
 > (Microsoft TRELLIS, rete neurale image-to-3D) come microservizio separato,
 > visualizzare i modelli interattivamente con Three.js (GLTFLoader), e fornire
@@ -58,17 +58,17 @@ Windows completo con installer PowerShell, gestione dipendenze via `uv`, support
 12.4, e wheel precompilate per le dipendenze problematiche (flash-attn, kaolin, etc.).
 Requisiti: Python 3.10-3.12, CUDA 12.4+, VS Studio 2022 C++ build tools.
 
-**Perché un microservizio separato e non integrato nel backend OMNIA:**
+**Perché un microservizio separato e non integrato nel backend AL\CE:**
 
 | Vincolo | Motivo |
 |---|---|
-| **Python 3.14 vs 3.10-3.12** | OMNIA usa Python 3.14; TRELLIS richiede 3.10-3.12 (dipendenze: flash-attn, kaolin, spconv non compilano su 3.14). Impossibile coesistere nello stesso venv. |
-| **Dipendenze pesanti** | TRELLIS porta ~8GB di dipendenze (PyTorch, kaolin, flash-attn, xformers, spconv, etc.). Mescolarle nel venv OMNIA creerebbe conflitti e fragilità. |
-| **Isolamento fault** | Se TRELLIS crasha (OOM, CUDA error), il backend OMNIA resta stabile. Il microservizio può essere riavviato indipendentemente. |
+| **Python 3.14 vs 3.10-3.12** | AL\CE usa Python 3.14; TRELLIS richiede 3.10-3.12 (dipendenze: flash-attn, kaolin, spconv non compilano su 3.14). Impossibile coesistere nello stesso venv. |
+| **Dipendenze pesanti** | TRELLIS porta ~8GB di dipendenze (PyTorch, kaolin, flash-attn, xformers, spconv, etc.). Mescolarle nel venv AL\CE creerebbe conflitti e fragilità. |
+| **Isolamento fault** | Se TRELLIS crasha (OOM, CUDA error), il backend AL\CE resta stabile. Il microservizio può essere riavviato indipendentemente. |
 | **VRAM esclusiva** | TRELLIS-image-large ha bisogno di ≥16GB VRAM esclusivi; TRELLIS-text-large ~10-12GB. LLM ha bisogno di ~10GB. Non possono coesistere. Il microservizio si avvia on-demand e rilascia VRAM quando finisce. |
 
 Il microservizio TRELLIS è un processo Python 3.10-3.12 separato con un proprio venv, che
-espone una mini API HTTP (FastAPI, porta 8090). Il plugin OMNIA `cad_generator` lo chiama
+espone una mini API HTTP (FastAPI, porta 8090). Il plugin AL\CE `cad_generator` lo chiama
 via `httpx` — identico al pattern cad-agent Docker della spec precedente, ma senza Docker.
 
 **Perché VRAM swap (unload LLM → TRELLIS → reload LLM):**
@@ -180,7 +180,7 @@ New-Item -ItemType Directory -Path "C:\Users\zagor\Desktop\omnia\models\docs" -F
 ```
 
 **Dipendenze:** `ebook-mcp` richiede `uvx` (già disponibile) — zero nuove dipendenze nel
-`pyproject.toml` di OMNIA. L'installazione avviene nell'ambiente isolato di `uvx`.
+`pyproject.toml` di AL\CE. L'installazione avviene nell'ambiente isolato di `uvx`.
 
 ---
 
@@ -192,7 +192,7 @@ Nuova classe aggiunta in `config.py`, dopo `McpConfig`:
 class TrellisServiceConfig(BaseSettings):
     """TRELLIS 3D generation microservice configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="OMNIA_TRELLIS__")
+    model_config = SettingsConfigDict(env_prefix="ALICE_TRELLIS__")
 
     enabled: bool = False
     """Abilita il plugin cad_generator. Richiede il microservizio TRELLIS installato."""
@@ -230,7 +230,7 @@ class TrellisServiceConfig(BaseSettings):
     """Seed per la generazione. -1 = random. Impostare un valore fisso per riproducibilità."""
 ```
 
-Aggiunta a `OmniaConfig` (dopo `mcp`):
+Aggiunta a `AliceConfig` (dopo `mcp`):
 
 ```python
 trellis: TrellisServiceConfig = Field(default_factory=TrellisServiceConfig)
@@ -276,7 +276,7 @@ identica al pattern adottato da `WeatherPlugin`, `NewsPlugin` e `WebSearchPlugin
 #### 12.3 — TRELLIS Microservizio (`trellis_server/`)
 
 **Ruolo**: processo Python 3.10-3.12 separato che wrappa TRELLIS-for-windows ed espone una
-mini API HTTP per la generazione 3D. Completamente isolato dal backend OMNIA.
+mini API HTTP per la generazione 3D. Completamente isolato dal backend AL\CE.
 
 **Directory structure**:
 
@@ -294,7 +294,7 @@ trellis_server/                          ← root del microservizio (gitignored,
 ```python
 """TRELLIS microservice — minimal FastAPI wrapper for 3D generation.
 
-Runs as a separate Python 3.10-3.12 process, isolated from the OMNIA backend.
+Runs as a separate Python 3.10-3.12 process, isolated from the AL\CE backend.
 Exposes /generate, /unload, /health, and /models/{name} on port 8090.
 
 Usage:
@@ -502,7 +502,7 @@ if __name__ == "__main__":
 #      Set-ExecutionPolicy Unrestricted
 #    Rispondere A (Yes to All) → chiudere la finestra.
 
-# 1. Clona il fork Windows dalla root del progetto OMNIA.
+# 1. Clona il fork Windows dalla root del progetto AL\CE.
 #    OBBLIGATORIO: --recurse-submodules (il repo include submoduli CUDA)
 git clone --recurse-submodules https://github.com/sdbds/TRELLIS-for-windows.git trellis_server
 
@@ -527,7 +527,7 @@ curl http://localhost:8090/health
 
 | Requisito | Dettaglio |
 |---|---|
-| Python | 3.10-3.12 (gestito dal venv del fork; non condiviso con OMNIA Python 3.14) |
+| Python | 3.10-3.12 (gestito dal venv del fork; non condiviso con AL\CE Python 3.14) |
 | CUDA | 12.4 (versione usata dal fork; installare CUDA Toolkit 12.4 a sistema) |
 | VS Studio | 2022 con workload "Desktop development with C++" (richiesto per compilare submoduli CUDA) |
 | VRAM | **≥ 16GB** per TRELLIS-image-large (1.2B, requisito verificato su A100/A6000); su sistemi con 16GB usare TRELLIS-text-large (1.1B) o TRELLIS-text-base (342M) che richiedono ~8-10GB |
@@ -547,13 +547,13 @@ data/3d_models/
 #### 12.4 — TrellisClient (`backend/plugins/cad_generator/client.py`)
 
 **Ruolo**: client HTTP asincrono verso il microservizio TRELLIS.
-Non conosce il plugin, il context OMNIA né il ToolRegistry — solo I/O HTTP.
+Non conosce il plugin, il context AL\CE né il ToolRegistry — solo I/O HTTP.
 
 ```python
 """TRELLIS microservice HTTP client.
 
 Wraps the TRELLIS server.py API with typed async methods.
-Isolated from OMNIA internals — only does HTTP I/O.
+Isolated from AL\CE internals — only does HTTP I/O.
 """
 from __future__ import annotations
 
@@ -831,7 +831,7 @@ async def _vram_swap_generate(
 
 #### 12.6 — CadGeneratorPlugin (`backend/plugins/cad_generator/plugin.py`)
 
-**Ruolo**: plugin OMNIA che espone il tool LLM `cad_generate` per generare modelli 3D.
+**Ruolo**: plugin AL\CE che espone il tool LLM `cad_generate` per generare modelli 3D.
 Gestisce il ciclo di vita del `TrellisClient`, l'orchestrazione VRAM, e il salvataggio
 locale del file GLB.
 
@@ -845,7 +845,7 @@ backend/plugins/cad_generator/
 **`__init__.py`** — pattern identico a tutti gli altri plugin:
 
 ```python
-"""O.M.N.I.A. — CAD Generator plugin package (TRELLIS neural 3D generation).
+"""AL\CE — CAD Generator plugin package (TRELLIS neural 3D generation).
 
 Importing this module registers CadGeneratorPlugin in the static PLUGIN_REGISTRY.
 Requires the TRELLIS microservice running on trellis.service_url.
@@ -1002,7 +1002,7 @@ async def _execute_cad_generate(self, args: dict, context: ExecutionContext) -> 
     return ToolResult(
         success=True,
         content=json.dumps(payload),
-        content_type="application/vnd.omnia.cad-model+json",
+        content_type="application/vnd.alice.cad-model+json",
     )
 ```
 
@@ -1017,7 +1017,7 @@ controllo leggeri. Pattern identico a quello usato per gli screenshot in Phase 5
 #### 12.7 — REST Proxy `/api/cad/` (`backend/api/routes/cad.py`)
 
 **Ruolo**: serve i file GLB generati dal microservizio TRELLIS al frontend Electron.
-Il proxy è necessario per mantenere il file serving sotto il dominio OMNIA (localhost:8000),
+Il proxy è necessario per mantenere il file serving sotto il dominio AL\CE (localhost:8000),
 evitando problemi CSP nel renderer Electron.
 
 Router con prefix e tag coerenti (pattern `tasks.py`, `memory.py`):
@@ -1092,7 +1092,7 @@ router.include_router(cad.router)  # /api/cad/*
 - `file_path.resolve().is_relative_to()` — protezione aggiuntiva contro symlink
 - I file vengono serviti dal filesystem locale (`data/3d_models/`), non dal microservizio TRELLIS
   in tempo reale — nessun proxy HTTP-to-HTTP con rischi SSRF
-- Nessuna autenticazione per v1 (OMNIA gira in locale — coerente con il resto delle API)
+- Nessuna autenticazione per v1 (AL\CE gira in locale — coerente con il resto delle API)
 
 ---
 
@@ -1382,7 +1382,7 @@ const CADViewer = defineAsyncComponent(
 
 ```typescript
 /**
- * Payload JSON del ToolResult con content_type='application/vnd.omnia.cad-model+json'.
+ * Payload JSON del ToolResult con content_type='application/vnd.alice.cad-model+json'.
  * Generato da CadGeneratorPlugin.cad_generate().
  */
 export interface CadModelPayload {
@@ -1398,7 +1398,7 @@ export interface CadModelPayload {
 }
 ```
 
-**`ToolExecutionIndicator.vue`** — aggiunta del caso `application/vnd.omnia.cad-model+json`
+**`ToolExecutionIndicator.vue`** — aggiunta del caso `application/vnd.alice.cad-model+json`
 nel template. La gestione segue il pattern esistente per `image/*`:
 
 ```typescript
@@ -1427,7 +1427,7 @@ aggiungere il caso CAD model accanto al caso image esistente:
   class="tool-result-image"
 />
 <!-- caso modello 3D (aggiunto in Fase 12) -->
-<template v-else-if="exec.contentType === 'application/vnd.omnia.cad-model+json' && exec.result">
+<template v-else-if="exec.contentType === 'application/vnd.alice.cad-model+json' && exec.result">
   <CADViewer
     :model-url="parseCadPayload(exec.result)?.export_url ?? ''"
     :model-name="parseCadPayload(exec.result)?.model_name"
@@ -1485,7 +1485,7 @@ Se configurato, puoi consultare documenti PDF/EPUB:
 Il plugin `cad_generator` usa solo `httpx` (già presente) e `json` (stdlib).
 TRELLIS e tutte le sue dipendenze pesanti (PyTorch, kaolin, flash-attn, xformers, spconv)
 vivono nel venv isolato del microservizio `trellis_server/` — mai installate nel
-venv OMNIA.
+venv AL\CE.
 
 **Frontend — dipendenze Three.js:**
 
@@ -1507,14 +1507,14 @@ Installazione: `cd frontend && npm install three && npm install --save-dev @type
 | Componente | Dettaglio |
 |---|---|
 | Repository | `sdbds/TRELLIS-for-windows` (MIT license) |
-| Python | 3.10-3.12 (venv isolato, non condiviso con OMNIA) |
+| Python | 3.10-3.12 (venv isolato, non condiviso con AL\CE) |
 | CUDA | 12.4+ (toolkit installato a sistema) |
 | VS Studio | 2022 con "Desktop development with C++" |
 | Installer | `1、install-uv-qinglong.ps1` nella directory clonata |
 | Run command | `.venv\Scripts\python.exe server.py --port 8090` |
 | Verifica | `curl http://localhost:8090/health` |
 
-Il microservizio TRELLIS non è un requisito hard di OMNIA: se non installato/avviato,
+Il microservizio TRELLIS non è un requisito hard di AL\CE: se non installato/avviato,
 il plugin si carica, mostra status `DISCONNECTED` nella UI plugin, e il tool `cad_generate`
 restituisce un messaggio di errore descrittivo con istruzioni di setup. Il resto dell'app
 funziona normalmente.
@@ -1572,7 +1572,7 @@ STT caricato (~1.5GB), potrebbe verificarsi OOM. Opzioni:
 - `test_cad_generate_tool_definition`: `get_tools()` restituisce `ToolDefinition` per
   `cad_generate` con `risk_level="safe"`, `timeout_ms=180000`
 - `test_cad_generate_success`: mock generazione + download → `ToolResult.success=True`,
-  `content_type="application/vnd.omnia.cad-model+json"`, content è JSON valido con
+  `content_type="application/vnd.alice.cad-model+json"`, content è JSON valido con
   `model_name` e `export_url`
 - `test_cad_generate_microservice_offline`: mock health_check False →
   `ToolResult.success=False`, errore con istruzioni setup
@@ -1623,7 +1623,7 @@ backend/
 │       ├── cad.py                           ← REST /api/cad/* (serve GLB locali)
 │       └── __init__.py                      ← + cad.router
 ├── core/
-│   └── config.py                            ← + TrellisServiceConfig + OmniaConfig.trellis
+│   └── config.py                            ← + TrellisServiceConfig + AliceConfig.trellis
 └── tests/
     ├── test_trellis_client.py
     ├── test_cad_generator_plugin.py
@@ -1674,7 +1674,7 @@ data/
 
 | Scenario | Comportamento atteso |
 |---|---|
-| "Crea un vaso decorativo Art Nouveau con rilievi floreali" | LLM scrive description → chiama `cad_generate` → VRAM swap (LLM unload) → TRELLIS genera GLB → VRAM swap (LLM reload) → `ToolResult(content_type="application/vnd.omnia.cad-model+json")` → frontend mostra `CADViewer.vue` con modello 3D interattivo |
+| "Crea un vaso decorativo Art Nouveau con rilievi floreali" | LLM scrive description → chiama `cad_generate` → VRAM swap (LLM unload) → TRELLIS genera GLB → VRAM swap (LLM reload) → `ToolResult(content_type="application/vnd.alice.cad-model+json")` → frontend mostra `CADViewer.vue` con modello 3D interattivo |
 | Utente ruota il modello | OrbitControls Three.js funzionanti — drag/scroll/pinch |
 | Utente clicca "⬇ Scarica GLB" | `GET /api/cad/models/{name}` → download file .glb |
 | TRELLIS microservizio non avviato | `health_check()` → False → `ToolResult(success=False, error_message="TRELLIS non raggiungibile... cd trellis_server && ...")` — nessun crash |
