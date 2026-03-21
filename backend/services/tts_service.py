@@ -100,36 +100,117 @@ _HEADING_RE = re.compile(r"^#{1,6}\s+", re.MULTILINE)
 _BOLD3_RE = re.compile(r"\*{3}(.+?)\*{3}|_{3}(.+?)_{3}")
 _BOLD_RE = re.compile(r"\*{2}(.+?)\*{2}|_{2}(.+?)_{2}")
 _ITALIC_RE = re.compile(r"(?<!\w)\*(.+?)\*(?!\w)|(?<!\w)_(.+?)_(?!\w)")
-_BULLET_RE = re.compile(r"^\s*[-*+]\s+", re.MULTILINE)
-_NUMBERED_LIST_RE = re.compile(r"^\s*\d+\.\s+", re.MULTILINE)
 _HR_RE = re.compile(r"^[ \t]*([\-*_])\1{2,}[ \t]*$", re.MULTILINE)
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _MULTI_NEWLINE_RE = re.compile(r"\n{2,}")
+_SINGLE_NEWLINE_RE = re.compile(r"\n")
 _MULTI_SPACE_RE = re.compile(r"[ \t]{2,}")
+# Matches any bullet (- * +) or numbered (1.) list item line
+_LIST_ITEM_RE = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+(.+)$")
+_PUNCT_DUP_RE = re.compile(r"([.!?])\s*\.\s*")
+_COMMA_PERIOD_RE = re.compile(r",\s*\.")
+_PERIOD_COMMA_RE = re.compile(r"\.\s*,")
+# Table separator rows: |------|------| or | :---: | etc.
+_TABLE_SEP_RE = re.compile(r"^\s*\|[\s:?\-|]+\|\s*$", re.MULTILINE)
+# Any table row: | cell | cell | ... |
+_TABLE_ROW_RE = re.compile(r"^\s*\|(.+)\|\s*$")
 
 
 def _normalize_for_tts(text: str) -> str:
-    """Strip markdown formatting so TTS engines read clean prose.
+    """Strip markdown and convert structure to natural TTS-friendly prose.
 
-    Handles bold/italic, headings, bullet/numbered lists, code blocks,
-    links, images, horizontal rules, and HTML tags.  Multiple newlines
-    are collapsed to a single space for continuous speech output.
+    List bullets and numbered items are converted to capitalized sentences
+    with terminal punctuation so that :func:`_split_sentences` can insert
+    natural pauses between them.  Paragraph breaks become sentence
+    boundaries; inline line-feeds become spaces.
     """
     t = text
-    t = _IMAGE_RE.sub("", t)               # images → remove
+
+    # Remove non-speakable elements
+    t = _IMAGE_RE.sub("", t)        # ![alt](url) → remove
+    t = _FENCED_CODE_RE.sub("", t)  # ```code``` → remove (not speakable)
+    t = _HTML_TAG_RE.sub("", t)     # <tag> → remove
+    t = _HR_RE.sub("\n\n", t)       # horizontal rule → paragraph break
+
+    # Convert markdown tables to natural prose.
+    # Header row cells become labels paired with each data row's values.
+    t = _TABLE_SEP_RE.sub("", t)      # remove separator rows first
+    table_lines: list[str] = []
+    other_lines: list[str] = []
+    headers: list[str] | None = None
+    for line in t.split("\n"):
+        row_m = _TABLE_ROW_RE.match(line)
+        if row_m:
+            cells = [c.strip() for c in row_m.group(1).split("|")]
+            cells = [c for c in cells if c]
+            if headers is None:
+                headers = cells
+            else:
+                # Pair each header with the corresponding data cell
+                parts = []
+                for i, cell in enumerate(cells):
+                    label = headers[i] if i < len(headers) else ""
+                    if label and cell:
+                        parts.append(f"{label} {cell}")
+                    elif cell:
+                        parts.append(cell)
+                if parts:
+                    sentence = ", ".join(parts)
+                    if sentence[-1] not in ".!?":
+                        sentence += "."
+                    table_lines.append(sentence)
+        else:
+            # Flush accumulated table rows when we leave a table
+            if headers is not None:
+                other_lines.extend(table_lines)
+                table_lines = []
+                headers = None
+            other_lines.append(line)
+    # Flush any remaining table at end of text
+    if headers is not None:
+        other_lines.extend(table_lines)
+    t = "\n".join(other_lines)
+
+    # Preserve readable text from markdown decorators
     t = _LINK_RE.sub(r"\1", t)             # [text](url) → text
-    t = _FENCED_CODE_RE.sub("", t)         # fenced code blocks → remove
     t = _INLINE_CODE_RE.sub(r"\1", t)      # `code` → code
-    t = _HR_RE.sub("", t)                  # horizontal rules → remove
-    t = _HEADING_RE.sub("", t)             # ## heading → heading
-    t = _BOLD3_RE.sub(lambda m: m.group(1) or m.group(2), t)  # ***bold italic***
-    t = _BOLD_RE.sub(lambda m: m.group(1) or m.group(2), t)   # **bold**
-    t = _ITALIC_RE.sub(lambda m: m.group(1) or m.group(2), t) # *italic*
-    t = _BULLET_RE.sub("", t)              # - item → item
-    t = _NUMBERED_LIST_RE.sub("", t)       # 1. item → item
-    t = _HTML_TAG_RE.sub("", t)            # <br>, <b>, etc. → remove
-    t = _MULTI_NEWLINE_RE.sub(" ", t)      # multiple newlines → space
-    t = _MULTI_SPACE_RE.sub(" ", t)        # collapse whitespace
+    t = _HEADING_RE.sub("", t)             # ## Heading → Heading (newlines kept)
+    t = _BOLD3_RE.sub(lambda m: m.group(1) or m.group(2), t)
+    t = _BOLD_RE.sub(lambda m: m.group(1) or m.group(2), t)
+    t = _ITALIC_RE.sub(lambda m: m.group(1) or m.group(2), t)
+
+    # Convert list items to prose sentences.
+    # Each item is capitalised and given terminal punctuation so that
+    # _split_sentences() creates a natural pause between every item.
+    lines = t.split("\n")
+    out: list[str] = []
+    for line in lines:
+        m = _LIST_ITEM_RE.match(line)
+        if m:
+            item = m.group(1).strip()
+            if not item:
+                continue
+            # Capitalise first character for sentence-boundary detection
+            item = item[0].upper() + item[1:]
+            # Ensure every item ends with terminal punctuation
+            if item[-1] not in ".!?":
+                item += "."
+            out.append(item)
+        else:
+            out.append(line)
+    t = "\n".join(out)
+
+    # Paragraph breaks → sentence pause so _split_sentences fires correctly
+    t = _MULTI_NEWLINE_RE.sub(". ", t)
+    # Remaining single newlines (line continuations) → space
+    t = _SINGLE_NEWLINE_RE.sub(" ", t)
+
+    # Remove punctuation artifacts introduced by the substitutions above
+    t = _PUNCT_DUP_RE.sub(r"\1 ", t)  # ". ." / ".." → ". "
+    t = _COMMA_PERIOD_RE.sub(".", t)   # ",." → "."
+    t = _PERIOD_COMMA_RE.sub(".", t)   # ".," → "."
+
+    t = _MULTI_SPACE_RE.sub(" ", t)
     return t.strip()
 
 
@@ -428,6 +509,7 @@ class TTSService:
         clean = _normalize_for_tts(text)
         if not clean:
             raise ValueError("Text must not be empty or blank")
+        logger.debug("[TTS] synthesize → {!r}", clean)
         async with self._synth_lock:
             return await asyncio.to_thread(engine.synthesize, clean)
 
@@ -454,7 +536,9 @@ class TTSService:
         sentences = _split_sentences(clean)
         if not sentences:
             return
-        for sentence in sentences:
+        logger.debug("[TTS] stream → {} chunk(s): {!r}", len(sentences), clean)
+        for i, sentence in enumerate(sentences, 1):
+            logger.debug("[TTS]   chunk {}/{}: {!r}", i, len(sentences), sentence)
             async with self._synth_lock:
                 chunk = await asyncio.to_thread(engine.synthesize, sentence)
             yield chunk

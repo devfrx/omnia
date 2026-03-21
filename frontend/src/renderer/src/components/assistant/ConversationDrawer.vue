@@ -147,7 +147,10 @@ function truncateContent(content: string, maxLen = 200): string {
 /* ── Backdrop ── */
 .drawer-backdrop {
     position: fixed;
-    inset: 0;
+    top: var(--titlebar-height, 38px);
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 900;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(2px);
@@ -170,16 +173,18 @@ function truncateContent(content: string, maxLen = 200): string {
 /* ── Drawer panel ── */
 .drawer {
     position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
+    top: calc(var(--titlebar-height, 38px) + 8px);
+    left: 12px;
+    bottom: 8px;
     width: min(420px, 85vw);
     z-index: 901;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     background: var(--surface-1);
-    border-right: 1px solid var(--border);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-floating);
 }
 
 .drawer-slide-enter-active {
@@ -192,7 +197,7 @@ function truncateContent(content: string, maxLen = 200): string {
 
 .drawer-slide-enter-from,
 .drawer-slide-leave-to {
-    transform: translateX(-100%);
+    transform: translateX(calc(-100% - 12px));
 }
 
 /* ── Header ── */

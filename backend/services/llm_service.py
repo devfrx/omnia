@@ -95,7 +95,7 @@ class LLMService:
         self._response_ids_max = 500
         # Cache for "auto" model resolution: (resolved_id, resolved_at_monotonic)
         self._auto_model_cache: tuple[str, float] | None = None
-        self._auto_model_ttl: float = 5.0  # seconds
+        self._auto_model_ttl: float = 300.0  # seconds
 
     # ------------------------------------------------------------------
     # Model resolution helpers
@@ -181,13 +181,13 @@ class LLMService:
                             resolved = item.get("path") or item.get("id") or item.get("name")
                             break
                 if not resolved:
-                    logger.warning(
-                        "All {} model(s) from LM Studio v1 API are embedding "
-                        "models — cannot use for chat",
+                    logger.debug(
+                        "LM Studio v1 API returned {} model(s), all "
+                        "embedding — falling back to OAI-compat",
                         len(items),
                     )
         except Exception as exc:
-            logger.warning("Auto model resolution failed: {}", exc)
+            logger.debug("LM Studio v1 model query failed ({}), trying OAI-compat", exc)
 
         if not resolved:
             # Final fallback: OAI-compat /v1/models
@@ -214,8 +214,10 @@ class LLMService:
                 logger.warning("OAI-compat auto model resolution failed: {}", exc2)
 
         if resolved:
+            prev = self._auto_model_cache
             self._auto_model_cache = (resolved, now)
-            logger.info("Auto-resolved LLM model: {}", resolved)
+            if prev is None or prev[0] != resolved:
+                logger.info("Auto-resolved LLM model: {}", resolved)
             return resolved
 
         # Could not resolve — let the server decide.

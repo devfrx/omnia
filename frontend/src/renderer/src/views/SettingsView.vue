@@ -289,24 +289,33 @@ onUnmounted(() => {
 
 /* ── Layout ───────────────────────────────────────────────── */
 .sv {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  height: 100%;
+  position: relative;
+  display: flex;
+  height: calc(100% - 16px);
+  margin: 8px;
   color: var(--text-primary);
   overflow: hidden;
 }
 
 /* ── Sidebar navigation ──────────────────────────────────── */
 .sv__nav {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  width: 180px;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: var(--space-6) var(--space-3);
-  border-right: 1px solid var(--border);
-  background: var(--bg-primary);
+  padding: var(--space-5) var(--space-3);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-floating);
   overflow-y: auto;
-  position: sticky;
-  top: 0;
+  z-index: 1;
 }
 
 .sv__nav::-webkit-scrollbar {
@@ -378,10 +387,14 @@ onUnmounted(() => {
 
 /* ── Content panel ────────────────────────────────────────── */
 .sv__content {
+  flex: 1;
   overflow-y: auto;
-  padding: var(--space-6) var(--space-8);
+  /* 180px nav + 12px left-offset + 16px gap */
+  padding: var(--space-6) var(--space-8) var(--space-6) calc(180px + 12px + 16px);
   scroll-behavior: smooth;
   background: var(--bg-primary);
+  box-shadow: var(--shadow-floating);
+  box-sizing: border-box;
 }
 
 /* Ultra-thin scrollbar */
@@ -404,7 +417,7 @@ onUnmounted(() => {
 
 /* ── Section ──────────────────────────────────────────────── */
 .sv__section {
-  max-width: 640px;
+  width: 100%;
   margin-bottom: var(--space-8);
 }
 

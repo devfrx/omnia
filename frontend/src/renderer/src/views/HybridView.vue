@@ -173,8 +173,13 @@ watch(
             wasStreamingHere = false
             if (!voiceStore.autoTtsResponse || !voiceStore.ttsAvailable || !voiceStore.connected) return
             const msgs = chatStore.messages
-            const lastMsg = msgs[msgs.length - 1]
-            if (lastMsg?.role === 'assistant' && lastMsg.content?.trim()) speak(lastMsg.content)
+            const lastUserIdx = msgs.findLastIndex(m => m.role === 'user')
+            const allContent = msgs
+                .slice(lastUserIdx + 1)
+                .filter(m => m.role === 'assistant' && m.content?.trim())
+                .map(m => m.content!.trim())
+                .join('\n')
+            if (allContent) speak(allContent)
         }
     }
 )

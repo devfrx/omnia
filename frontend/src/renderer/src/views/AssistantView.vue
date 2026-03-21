@@ -339,8 +339,15 @@ watch(
             wasStreamingHere = false
             if (!voiceStore.autoTtsResponse || !voiceStore.ttsAvailable || !voiceStore.connected) return
             const msgs = chatStore.messages
-            const lastMsg = msgs[msgs.length - 1]
-            if (lastMsg?.role === 'assistant' && lastMsg.content?.trim()) speak(lastMsg.content)
+            // Collect ALL assistant content from the current exchange
+            // (intermediate messages with tool_calls + final answer)
+            const lastUserIdx = msgs.findLastIndex(m => m.role === 'user')
+            const allContent = msgs
+                .slice(lastUserIdx + 1)
+                .filter(m => m.role === 'assistant' && m.content?.trim())
+                .map(m => m.content!.trim())
+                .join('\n')
+            if (allContent) speak(allContent)
         }
     }
 )
@@ -435,7 +442,7 @@ onMounted(() => {
                         <line x1="6" y1="20" x2="6" y2="14" />
                     </svg>
                     <span v-if="chartPayloads.length > 1" class="assistant-view__chart-badge">{{ chartPayloads.length
-                    }}</span>
+                        }}</span>
                 </button>
             </Transition>
 
@@ -480,7 +487,7 @@ onMounted(() => {
                         </svg>
                         <span>Grafici</span>
                         <span v-if="chartPayloads.length > 1" class="side-panel__tab-badge">{{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                     </button>
                     <button class="side-panel__close" aria-label="Chiudi pannello" @click="closeSidePanel">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -519,7 +526,7 @@ onMounted(() => {
                             </svg>
                         </button>
                         <span class="side-panel__chart-counter">{{ chartActiveIndex + 1 }} / {{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                         <button class="side-panel__chart-nav-btn"
                             :disabled="chartActiveIndex >= chartPayloads.length - 1"
                             @click="chartActiveIndex = Math.min(chartPayloads.length - 1, chartActiveIndex + 1)">
