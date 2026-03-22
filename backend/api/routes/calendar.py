@@ -318,7 +318,7 @@ async def create_event(request: Request) -> dict:
         description=body.get("description"),
         start_time=start_utc,
         end_time=end_utc,
-        reminder_minutes=body.get("reminder_minutes"),
+        reminder_minutes=reminder_minutes,
         recurrence_rule=rrule,
         created_by="user",
     )

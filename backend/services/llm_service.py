@@ -272,6 +272,10 @@ class LLMService:
         logger.debug("Loaded system prompt from {}", path)
         return self._system_prompt
 
+    def invalidate_system_prompt_cache(self) -> None:
+        """Clear the cached system prompt so it is reloaded on next access."""
+        self._system_prompt = None
+
     def _get_dynamic_system_prompt(self) -> str:
         """Return system prompt with current date/time appended.
 

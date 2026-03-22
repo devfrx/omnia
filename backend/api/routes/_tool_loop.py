@@ -124,6 +124,10 @@ async def run_tool_loop(
     # Tool execution timeout from config.
     tool_exec_timeout: float = ctx.config.llm.tool_execution_timeout
 
+    # Dedup set persists across all iterations to catch duplicates
+    # even when LLM re-requests the same tool in a later round.
+    seen: set[str] = set()
+
     for iteration in range(max_iterations):
         if not tool_calls_from_llm:
             break
@@ -174,7 +178,6 @@ async def run_tool_loop(
             })
 
         # 2. Build execution tasks — dedup and check confirmation.
-        seen: set[str] = set()
         tasks: list[tuple[str, str, dict[str, Any], ExecutionContext]] = []
 
         for tc in tool_calls_from_llm:
@@ -376,24 +379,31 @@ async def run_tool_loop(
         await session.commit()
 
         # 3. Execute all tools in parallel (with timeout).
-        try:
-            results = await asyncio.wait_for(
-                asyncio.gather(
-                    *[
-                        _exec_one(ctx, tc_id, name, a, c)
-                        for tc_id, name, a, c in tasks
-                    ],
-                    return_exceptions=True,
-                ),
-                timeout=tool_exec_timeout,
+        coros = [
+            asyncio.ensure_future(_exec_one(ctx, tc_id, name, a, c))
+            for tc_id, name, a, c in tasks
+        ]
+        if coros:
+            done, pending = await asyncio.wait(
+                coros, timeout=tool_exec_timeout,
             )
-        except asyncio.TimeoutError:
+        else:
+            done, pending = set(), set()
+
+        if pending:
             logger.error(
-                "Tool execution timed out after {}s — aborting iteration",
-                tool_exec_timeout,
+                "Tool execution timed out after {}s — {} task(s) still pending",
+                tool_exec_timeout, len(pending),
             )
-            # Save timeout error messages for all tasks.
-            for tc_id, tool_name, _, exec_ctx in tasks:
+            # Cancel and report timeout only for pending tasks.
+            for fut in pending:
+                fut.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await fut
+            # Build a lookup from future to task metadata.
+            future_to_task = dict(zip(coros, tasks))
+            for fut in pending:
+                tc_id, tool_name, _, exec_ctx = future_to_task[fut]
                 _timeout_content = (
                     f"Tool '{tool_name}' timed out after "
                     f"{tool_exec_timeout}s."
@@ -419,7 +429,11 @@ async def run_tool_loop(
                     "success": False,
                 })
             await session.commit()
-            results = []
+
+        results = []
+        for fut in done:
+            exc = fut.exception()
+            results.append(exc if exc is not None else fut.result())
 
         # 4. Process results — persist and notify WS.
         # NOTE: Cancel check is AFTER persistence to avoid orphaned tool_calls

@@ -17,6 +17,10 @@ router = APIRouter(prefix="/whiteboards", tags=["whiteboards"])
 def _get_store(request: Request):
     """Recupera il WhiteboardStore dal plugin whiteboard tramite AppContext."""
     ctx = request.app.state.context
+    if ctx.plugin_manager is None:
+        raise HTTPException(
+            status_code=503, detail="Plugin manager not available",
+        )
     plugin = ctx.plugin_manager.get_plugin("whiteboard")
     if plugin is None or not ctx.config.whiteboard.enabled:
         raise HTTPException(

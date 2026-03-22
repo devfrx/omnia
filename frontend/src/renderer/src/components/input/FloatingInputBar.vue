@@ -13,9 +13,11 @@ import ModelSelector from '../settings/ModelSelector.vue'
 import MicrophoneButton from '../voice/MicrophoneButton.vue'
 import { useSettingsStore } from '../../stores/settings'
 import { useVoiceStore } from '../../stores/voice'
+import { useToast } from '../../composables/useToast'
 
 const settingsStore = useSettingsStore()
 const voiceStore = useVoiceStore()
+const toast = useToast()
 
 const supportsVision = computed(() => settingsStore.activeModel?.capabilities.vision ?? false)
 
@@ -137,7 +139,13 @@ function handleFileSelect(event: Event): void {
 
 function addFiles(files: File[]): void {
     const imageFiles = files.filter((f) => f.type.startsWith('image/'))
-    if (!supportsVision.value && imageFiles.length > 0) return
+    if (imageFiles.length < files.length) {
+        toast.warning('Solo file immagine sono supportati')
+    }
+    if (!supportsVision.value && imageFiles.length > 0) {
+        toast.warning('Il modello attivo non supporta immagini')
+        return
+    }
     for (const file of imageFiles) {
         pendingFiles.value.push(file)
         const url = URL.createObjectURL(file)

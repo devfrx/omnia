@@ -222,7 +222,7 @@ export const useNotesStore = defineStore('notes', () => {
         activeFolder.value ?? undefined,
         activeTags.value.length > 0 ? activeTags.value : undefined
       )
-      notes.value = data.results
+      notes.value = data.results.map(({ score, ...note }) => note)
       total.value = data.results.length
       searchQuery.value = query
     } catch (err) {

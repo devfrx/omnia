@@ -53,7 +53,6 @@ function getVoiceWsUrl(): string {
 }
 
 const voiceWs = new WebSocketManager(getVoiceWsUrl())
-let handlersRegistered = false
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -303,21 +302,19 @@ export function useVoice(): UseVoiceReturn {
     scheduleAutoRestart()
   }
 
-  // Register handlers (guarded to prevent duplicate registration on singleton)
-  if (!handlersRegistered) {
-    voiceWs.on('connected', onConnected)
-    voiceWs.on('disconnected', onDisconnected)
-    voiceWs.on('voice_ready', onVoiceReady)
-    voiceWs.on('transcript', onTranscript)
-    voiceWs.on('stt_processing', onSttProcessing)
-    voiceWs.on('tts_start', onTtsStart)
-    voiceWs.on('tts_done', onTtsDone)
-    voiceWs.on('binary', onBinaryAudio)
-    voiceWs.on('voice_error', onVoiceError)
-    voiceWs.on('recording_stopped', onRecordingStopped)
-    voiceWs.on('tts_cancelled', onTtsCancelled)
-    handlersRegistered = true
-  }
+  // Register handlers — each instance manages its own closures.
+  // onScopeDispose below will unregister them when this instance is disposed.
+  voiceWs.on('connected', onConnected)
+  voiceWs.on('disconnected', onDisconnected)
+  voiceWs.on('voice_ready', onVoiceReady)
+  voiceWs.on('transcript', onTranscript)
+  voiceWs.on('stt_processing', onSttProcessing)
+  voiceWs.on('tts_start', onTtsStart)
+  voiceWs.on('tts_done', onTtsDone)
+  voiceWs.on('binary', onBinaryAudio)
+  voiceWs.on('voice_error', onVoiceError)
+  voiceWs.on('recording_stopped', onRecordingStopped)
+  voiceWs.on('tts_cancelled', onTtsCancelled)
 
   // -----------------------------------------------------------------------
   // STT processing timeout
@@ -668,7 +665,6 @@ export function useVoice(): UseVoiceReturn {
     voiceWs.off('voice_error', onVoiceError)
     voiceWs.off('recording_stopped', onRecordingStopped)
     voiceWs.off('tts_cancelled', onTtsCancelled)
-    handlersRegistered = false
   })
 
   return {

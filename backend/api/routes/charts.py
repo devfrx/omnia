@@ -13,6 +13,10 @@ router = APIRouter(prefix="/charts", tags=["charts"])
 def _get_store(request: Request):
     """Recupera il ChartStore dal plugin chart_generator tramite AppContext."""
     ctx = request.app.state.context
+    if ctx.plugin_manager is None:
+        raise HTTPException(
+            status_code=503, detail="Plugin manager not available",
+        )
     plugin = ctx.plugin_manager.get_plugin("chart_generator")
     if plugin is None or not ctx.config.chart.enabled:
         raise HTTPException(status_code=503, detail="Plugin chart_generator non disponibile.")

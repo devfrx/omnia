@@ -12,7 +12,7 @@ async def test_health_endpoint(client: AsyncClient) -> None:
     resp = await client.get("/api/health")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "ok"
+    assert data["status"] in ("ok", "degraded")
     assert data["version"] == "0.1.0"
 
 

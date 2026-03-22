@@ -728,7 +728,7 @@ class AliceConfig(BaseSettings):
             return data
 
         # -- system prompt file --
-        llm_data = data.get("llm", {})
+        llm_data = data.get("llm")
         if isinstance(llm_data, dict):
             raw = llm_data.get(
                 "system_prompt_file", "config/system_prompt.md"
@@ -739,7 +739,7 @@ class AliceConfig(BaseSettings):
                 )
 
         # -- database URL (make relative sqlite path absolute) --
-        db_data = data.get("database", {})
+        db_data = data.get("database")
         if isinstance(db_data, dict):
             db_url = db_data.get(
                 "url", "sqlite+aiosqlite:///data/alice.db"

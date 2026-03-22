@@ -613,6 +613,13 @@ class PluginManager:
                             name,
                             dep,
                         )
+                    else:
+                        self._logger.warning(
+                            "Plugin '{}' depends on '{}' which "
+                            "is registered but not enabled",
+                            name,
+                            dep,
+                        )
                     continue
                 in_degree[name] += 1
                 dependents[dep].append(name)

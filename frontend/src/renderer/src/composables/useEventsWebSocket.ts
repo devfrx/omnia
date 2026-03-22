@@ -14,6 +14,7 @@ const WS_URL = `${BACKEND_HOST.replace(/^http/, 'ws')}/api/events/ws`
 
 export function useEventsWebSocket() {
   const isConnected = ref(false)
+  const isError = ref(false)
   const calendarStore = useCalendarStore()
   const mcpStore = useMcpStore()
 
@@ -22,6 +23,8 @@ export function useEventsWebSocket() {
   let reconnectAttempts = 0
   let intentionalClose = false
   let pingInterval: ReturnType<typeof setInterval> | null = null
+  let megaCycles = 0
+  const MAX_MEGA_CYCLES = 3
 
   function connect(): void {
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
@@ -34,7 +37,9 @@ export function useEventsWebSocket() {
     ws.onopen = (): void => {
       console.log('[ALICE Events WS] Connected')
       isConnected.value = true
+      isError.value = false
       reconnectAttempts = 0
+      megaCycles = 0
 
       // Send ping every 30s to keep connection alive
       pingInterval = setInterval(() => {
@@ -125,7 +130,12 @@ export function useEventsWebSocket() {
 
   function scheduleReconnect(): void {
     if (reconnectAttempts >= 10) {
-      // Reset and retry after a long delay (30s) to recover from extended outages.
+      megaCycles++
+      if (megaCycles >= MAX_MEGA_CYCLES) {
+        console.error('[ALICE Events WS] Permanently failed after', megaCycles, 'cycles')
+        isError.value = true
+        return
+      }
       reconnectAttempts = 0
       reconnectTimer = setTimeout(() => connect(), 30_000)
       return
@@ -141,5 +151,5 @@ export function useEventsWebSocket() {
   connect()
   onScopeDispose(() => disconnect())
 
-  return { isConnected, connect, disconnect }
+  return { isConnected, isError, connect, disconnect }
 }

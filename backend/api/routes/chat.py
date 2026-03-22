@@ -1706,6 +1706,7 @@ async def import_conversation(request: Request) -> dict[str, Any]:
                 )
 
     # Validate messages before touching the DB.
+    _ALLOWED_ROLES = ("user", "assistant", "system", "tool")
     for idx, msg_data in enumerate(body.get("messages", [])):
         for required in ("id", "role"):
             if required not in msg_data:
@@ -1713,6 +1714,11 @@ async def import_conversation(request: Request) -> dict[str, Any]:
                     status_code=400,
                     detail=f"Message {idx}: missing '{required}'",
                 )
+        if msg_data["role"] not in _ALLOWED_ROLES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Message {idx}: invalid role '{msg_data['role']}'",
+            )
         try:
             uuid.UUID(msg_data["id"])
         except (ValueError, TypeError):

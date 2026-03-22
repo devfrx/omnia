@@ -3,7 +3,7 @@
  * ToolConfirmationDialog.vue — Modal for tool approval/rejection.
  *
  * Shows a centered dialog with tool name, arguments, and approve/reject buttons.
- * Keyboard shortcuts: Enter = approve, Escape = reject.
+ * Keyboard shortcuts: Escape = reject. Enter triggers the focused button natively.
  */
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
@@ -48,10 +48,7 @@ function reject(): void {
 }
 
 function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Enter') {
-        e.preventDefault()
-        approve()
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
         e.preventDefault()
         reject()
     }
@@ -140,7 +137,7 @@ onUnmounted(() => {
                     </button>
                 </div>
 
-                <p class="confirm-card__hint">Enter = Approva · Esc = Rifiuta</p>
+                <p class="confirm-card__hint">Esc = Rifiuta</p>
             </div>
         </div>
     </Teleport>

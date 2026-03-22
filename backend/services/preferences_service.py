@@ -116,15 +116,21 @@ class PreferencesService:
             if section == "llm":
                 for key, value in values.items():
                     if key in PERSISTABLE_LLM_KEYS and hasattr(cfg_section, key):
-                        object.__setattr__(cfg_section, key, value)
+                        try:
+                            setattr(cfg_section, key, value)
+                        except (ValueError, TypeError) as exc:
+                            logger.warning(
+                                "Skipping invalid preference {}.{}: {}",
+                                section, key, exc,
+                            )
             elif section in PERSISTABLE_SECTIONS:
                 for key, value in values.items():
                     if hasattr(cfg_section, key):
                         try:
-                            object.__setattr__(cfg_section, key, value)
-                        except Exception as exc:
+                            setattr(cfg_section, key, value)
+                        except (ValueError, TypeError) as exc:
                             logger.warning(
-                                "Failed to apply preference {}.{}: {}",
+                                "Skipping invalid preference {}.{}: {}",
                                 section, key, exc,
                             )
 

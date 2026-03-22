@@ -95,8 +95,7 @@ async def set_system_prompt(
     )
     # Invalidate cached system prompt so change takes effect immediately
     if ctx.llm_service is not None:
-        if hasattr(ctx.llm_service, "_system_prompt"):
-            ctx.llm_service._system_prompt = None
+        ctx.llm_service.invalidate_system_prompt_cache()
     if ctx.preferences_service is not None:
         try:
             await ctx.preferences_service.save_preference(

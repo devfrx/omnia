@@ -91,11 +91,11 @@ export function resolveBackendUrl(path: string): string {
  */
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const { headers: customHeaders, ...fetchOptions } = options ?? {}
-  const hasBody = !!fetchOptions.body
+  const isJsonBody = !!fetchOptions.body && typeof fetchOptions.body === 'string'
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...fetchOptions,
     headers: {
-      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(isJsonBody ? { 'Content-Type': 'application/json' } : {}),
       ...(customHeaders as Record<string, string>)
     }
   })

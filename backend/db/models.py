@@ -27,6 +27,9 @@ class Conversation(SQLModel, table=True):
     """A single conversation thread."""
 
     __tablename__ = "conversations"
+    __table_args__ = (
+        sa.Index("ix_conversation_updated_at", "updated_at"),
+    )
 
     id: uuid.UUID = Field(
         default_factory=_new_uuid,
@@ -62,6 +65,7 @@ class Message(SQLModel, table=True):
             "role IN ('user', 'assistant', 'system', 'tool')",
             name="ck_message_role",
         ),
+        sa.Index("ix_message_conversation_id", "conversation_id"),
     )
 
     id: uuid.UUID = Field(
