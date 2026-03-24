@@ -8,18 +8,34 @@
  * Wraps text input, file attachments, model selector, and voice controls.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import type { AudioDevice } from '../../composables/useVoice'
 import ModelSelector from '../settings/ModelSelector.vue'
 import MicrophoneButton from '../voice/MicrophoneButton.vue'
+import ContextBar from '../chat/ContextBar.vue'
+import { useChatStore } from '../../stores/chat'
 import { useSettingsStore } from '../../stores/settings'
+import { useUIStore } from '../../stores/ui'
 import { useVoiceStore } from '../../stores/voice'
 import { useToast } from '../../composables/useToast'
 
+const router = useRouter()
+const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
+const uiStore = useUIStore()
 const voiceStore = useVoiceStore()
 const toast = useToast()
 
 const supportsVision = computed(() => settingsStore.activeModel?.capabilities.vision ?? false)
+const supportsToolUse = computed(() => settingsStore.activeModel?.capabilities.trained_for_tool_use ?? false)
+const supportsThinking = computed(() => settingsStore.activeModel?.capabilities.thinking ?? false)
+
+/** Toggle between assistant and hybrid mode. */
+function toggleMode(): void {
+    const next = uiStore.mode === 'assistant' ? 'hybrid' : 'assistant'
+    uiStore.setMode(next)
+    router.push({ name: next })
+}
 
 type OrbState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'processing'
 
@@ -322,11 +338,68 @@ defineExpose({
                     </div>
                 </div>
 
-                <!-- Toolbar (visible when expanded) -->
-                <div v-if="isExpanded" class="fib__toolbar">
-                    <div class="fib__dot" :class="isConnected ? 'dot--ok' : 'dot--err'" />
+                <!-- Toolbar (always visible in idle state) -->
+                <div class="fib__toolbar">
+                    <!-- Status cluster: dot + badges -->
+                    <div class="fib__status">
+                        <div class="fib__dot" :class="isConnected ? 'dot--ok' : 'dot--err'" />
+                        <div v-if="settingsStore.activeModel" class="fib__badges">
+                            <span class="fib__badge" :class="{ 'fib__badge--on': supportsVision }" title="Vision">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </span>
+                            <span class="fib__badge" :class="{ 'fib__badge--on': supportsThinking }" title="Thinking">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2h7c.1-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
+                                    <line x1="10" y1="20" x2="14" y2="20" />
+                                    <line x1="10" y1="22" x2="14" y2="22" />
+                                </svg>
+                            </span>
+                            <span class="fib__badge" :class="{ 'fib__badge--on': supportsToolUse }" title="Tool Use">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Context bar -->
+                    <ContextBar :context-info="chatStore.contextInfo"
+                        :is-compressing="chatStore.isCompressingContext" />
+
                     <div class="fib__gap" />
-                    <div class="fib__selectors">
+
+                    <!-- Mode toggle chip -->
+                    <button class="fib__mode-toggle" @click="toggleMode">
+                        <template v-if="uiStore.mode === 'assistant'">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                            <span>Ibrida</span>
+                        </template>
+                        <template v-else>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="4" />
+                            </svg>
+                            <span>Assistente</span>
+                        </template>
+                    </button>
+
+                    <!-- Divider -->
+                    <div v-if="isExpanded" class="fib__divider" />
+
+                    <!-- Model selectors (only when expanded) -->
+                    <div v-if="isExpanded" class="fib__selectors">
                         <ModelSelector model-type="embedding" />
                         <ModelSelector model-type="llm" />
                     </div>
@@ -397,7 +470,7 @@ defineExpose({
     left: calc(50% - var(--panel-offset, 0px) / 2);
     transform: translateX(-50%);
     z-index: var(--z-dropdown);
-    min-width: 360px;
+    min-width: 320px;
     max-width: 600px;
     width: auto;
 
@@ -406,7 +479,6 @@ defineExpose({
     -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
     border: 1px solid var(--glass-border);
     border-radius: 20px;
-    min-width: 320px;
     padding: var(--space-2) var(--space-3);
 
     box-shadow:
@@ -435,6 +507,7 @@ defineExpose({
 /* Expanded input */
 .fib--expanded {
     min-width: 420px;
+    max-width: min(900px, calc(100vw - 48px));
     background: var(--glass-bg);
     box-shadow:
         var(--shadow-floating),
@@ -755,6 +828,26 @@ defineExpose({
     align-items: center;
     gap: var(--space-2);
     height: 32px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* ── Toolbar ── */
+.fib__toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 32px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* Status cluster (dot + badges) */
+.fib__status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    flex-shrink: 0;
 }
 
 .fib__dot {
@@ -762,24 +855,132 @@ defineExpose({
     height: 7px;
     border-radius: var(--radius-full);
     flex-shrink: 0;
+    transition: background 200ms var(--ease-smooth);
 }
 
 .dot--ok {
     background: var(--success);
+    box-shadow: 0 0 6px var(--success-glow);
+    animation: dot-pulse 3s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 6px var(--success-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 12px var(--success-glow), 0 0 4px var(--success);
+    }
 }
 
 .dot--err {
     background: var(--danger);
+    box-shadow: 0 0 6px var(--danger-glow);
+    animation: dot-blink 2s ease-in-out infinite;
+}
+
+@keyframes dot-blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.35;
+    }
+}
+
+/* Capability badges */
+.fib__badges {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.fib__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    opacity: 0.35;
+    transition:
+        color var(--duration-fast) ease,
+        border-color var(--duration-fast) ease,
+        background var(--duration-fast) ease,
+        opacity var(--duration-fast) ease;
+}
+
+.fib__badge svg {
+    width: 11px;
+    height: 11px;
+}
+
+.fib__badge--on {
+    color: var(--text-secondary);
+    border-color: var(--border);
+    background: var(--surface-2);
+    opacity: 1;
+}
+
+/* Mode toggle — labeled chip */
+.fib__mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: var(--weight-medium);
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition:
+        color 150ms ease,
+        border-color 150ms ease,
+        background 150ms ease,
+        box-shadow 150ms ease;
+}
+
+.fib__mode-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    background: var(--surface-3);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* Divider */
+.fib__divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border);
+    flex-shrink: 0;
+    opacity: 0.6;
 }
 
 .fib__gap {
     flex: 1;
+    min-width: 0;
 }
 
 .fib__selectors {
     display: flex;
     align-items: center;
     gap: var(--space-1-5);
+    flex-shrink: 0;
 }
 
 /* Body row */

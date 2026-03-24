@@ -43,6 +43,14 @@ class Conversation(SQLModel, table=True):
         sa_column=sa.Column(sa.JSON, nullable=True),
         description="Map of version_group_id → active version_index.",
     )
+    context_snapshot: Optional[Any] = Field(
+        default=None,
+        sa_column=sa.Column(sa.JSON, nullable=True),
+        description=(
+            "Last real token counts from LLM API: "
+            "{prompt_tokens, completion_tokens, context_window}."
+        ),
+    )
 
     # -- relationships ------------------------------------------------------
     messages: list["Message"] = Relationship(
@@ -100,6 +108,18 @@ class Message(SQLModel, table=True):
     version_index: int = Field(
         default=0,
         description="Version index within a version group (0 = original).",
+    )
+    token_count: Optional[int] = Field(
+        default=None,
+        description="Real token count from LLM API (stored after response).",
+    )
+    is_context_summary: bool = Field(
+        default=False,
+        description="True if this is an LLM-generated context summary.",
+    )
+    context_excluded: bool = Field(
+        default=False,
+        description="True if archived from LLM context (still visible in UI).",
     )
     created_at: datetime = Field(default_factory=_utcnow)
 

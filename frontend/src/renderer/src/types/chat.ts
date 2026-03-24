@@ -49,6 +49,10 @@ export interface ChatMessage {
   version_group_id?: string | null
   /** Version index within a version group (0 = original). */
   version_index?: number
+  /** True if this message is an LLM-generated context summary. */
+  is_context_summary?: boolean
+  /** True if this message has been archived from LLM context. */
+  context_excluded?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +83,17 @@ export interface ConversationDetail {
   messages: ChatMessage[]
   /** Map of version_group_id → active version_index. */
   active_versions?: Record<string, number>
+  /** Estimated context window usage (snake_case from backend). */
+  context_info?: {
+    used: number
+    available: number
+    context_window: number
+    percentage: number
+    was_compressed: boolean
+    messages_summarized: number
+    is_estimated: boolean
+    breakdown?: ContextBreakdown
+  } | null
 }
 
 // ---------------------------------------------------------------------------
@@ -202,6 +217,46 @@ export interface WsWarningMessage {
   content: string
 }
 
+/** Per-category token usage breakdown sent with context_info events. */
+export interface ContextBreakdown {
+  system: number
+  tools: number
+  messages: number
+  files: number
+  tool_results: number
+  other: number
+}
+
+/** Server sends context window usage information. */
+export interface WsContextInfoMessage {
+  type: 'context_info'
+  used: number
+  available: number
+  context_window: number
+  percentage: number
+  was_compressed: boolean
+  messages_summarized: number
+  is_estimated: boolean
+  breakdown?: ContextBreakdown
+}
+
+/** Server signals context compression has started. */
+export interface WsContextCompressionStartMessage {
+  type: 'context_compression_start'
+}
+
+/** Server signals context compression completed. */
+export interface WsContextCompressionDoneMessage {
+  type: 'context_compression_done'
+  messages_summarized: number
+  summary_message_id?: string
+}
+
+/** Server signals context compression failed. */
+export interface WsContextCompressionFailedMessage {
+  type: 'context_compression_failed'
+}
+
 /** Server signals the LLM wants to invoke a tool (forwarded from LLM stream). */
 export interface WsToolCallMessage {
   type: 'tool_call'
@@ -292,6 +347,22 @@ export interface ConfirmationRequest {
   reasoning?: string
 }
 
+/** Snapshot of context window utilization (camelCase, from WS snake_case). */
+export interface ContextInfo {
+  used: number
+  available: number
+  contextWindow: number
+  /**
+   * Fraction of the context window in use.
+   * Always in the range [0, 1] — multiply by 100 for a percentage value.
+   */
+  percentage: number
+  wasCompressed: boolean
+  messagesSummarized: number
+  isEstimated: boolean
+  breakdown?: ContextBreakdown
+}
+
 /** Discriminated union of all server→client WebSocket frames. */
 export type WsMessage =
   | WsTokenMessage
@@ -304,6 +375,10 @@ export type WsMessage =
   | WsToolConfirmationRequiredMessage
   | WsLlmRequeryMessage
   | WsWarningMessage
+  | WsContextInfoMessage
+  | WsContextCompressionStartMessage
+  | WsContextCompressionDoneMessage
+  | WsContextCompressionFailedMessage
 
 // ---------------------------------------------------------------------------
 // Export / Import

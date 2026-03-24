@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 // AL\CE — Root App Component
-import { onMounted, provide, computed, ref, watchEffect } from 'vue'
+import { onErrorCaptured, onMounted, provide, computed, ref, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
 
 import TitleBar from './components/TitleBar.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
@@ -22,6 +23,17 @@ useEventsWebSocket()
 const settingsStore = useSettingsStore()
 const uiStore = useUIStore()
 const pluginsStore = usePluginsStore()
+const router = useRouter()
+
+// Catch setup/render errors in child views (e.g. corrupted injection after HMR)
+// and redirect to home instead of crashing the whole app.
+onErrorCaptured((err) => {
+  if (err instanceof Error && err.message.includes('not provided')) {
+    console.warn('[App] Child view setup error caught, redirecting to home:', err.message)
+    router.replace({ name: 'home' })
+    return false
+  }
+})
 
 // ── Startup loader ────────────────────────────────────────────────
 const startupLoading = ref(true)

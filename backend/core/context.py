@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from backend.core.config import AliceConfig
 from backend.core.event_bus import EventBus
 from backend.core.protocols import (
+    ContextManagerProtocol,
     ConversationFileManagerProtocol,
     EmailServiceProtocol,
     LLMServiceProtocol,
@@ -67,6 +68,9 @@ class AppContext:
 
     ws_connection_manager: WSConnectionManagerProtocol | None = None
     """Persistent event WebSocket connection manager."""
+
+    context_manager: ContextManagerProtocol | None = None
+    """Context window management and compression service."""
 
     plugin_state_repo: Any = None
     """Persistent plugin toggle-state repository."""

@@ -91,6 +91,10 @@ const isPlainToolResult = computed(() =>
   props.message.role === 'tool' && !cadPayload.value && !chartPayload.value && !whiteboardPayload.value
 )
 
+/** Whether this message is a context summary (compressed context archive). */
+const isContextSummary = computed(() => props.message.is_context_summary === true)
+const summaryCollapsed = ref(true)
+
 /** Tool result collapsed state (collapsed by default). */
 const toolResultCollapsed = ref(true)
 
@@ -215,6 +219,22 @@ onUnmounted(() => {
       <!-- Thinking section (assistant only) -->
       <ThinkingSection v-if="message.thinking_content" :thinking-html="thinkingHtml" :initial-collapsed="true" />
 
+      <!-- Context summary (compressed context archive) -->
+      <div v-if="isContextSummary" class="context-summary">
+        <button class="context-summary__toggle" @click="summaryCollapsed = !summaryCollapsed">
+          <span class="context-summary__icon">📦</span>
+          <span class="context-summary__title">Contesto compresso</span>
+          <svg class="context-summary__chevron" :class="{ 'context-summary__chevron--open': !summaryCollapsed }"
+            width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M3 5L6 8L9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+        <div class="context-summary__body" :class="{ 'context-summary__body--collapsed': summaryCollapsed }">
+          <!-- eslint-disable-next-line vue/no-v-html — content is sanitised by markdown-it -->
+          <div class="context-summary__content" v-html="htmlContent" />
+        </div>
+      </div>
+
       <!-- Tool calls section (assistant only) -->
       <ToolCallSection v-if="message.tool_calls?.length" :tool-calls="message.tool_calls ?? []" />
 
@@ -226,8 +246,8 @@ onUnmounted(() => {
 
       <!-- Whiteboard card (tool message with whiteboard payload) -->
       <div v-if="whiteboardPayload" class="whiteboard-card">
-        <svg class="whiteboard-card__icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="whiteboard-card__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <path d="M3 9h18" />
           <path d="M9 3v18" />
@@ -261,8 +281,8 @@ onUnmounted(() => {
 
       <!-- Message content (non-tool or assistant/user) -->
       <!-- eslint-disable-next-line vue/no-v-html — content is sanitised by markdown-it -->
-      <div v-if="!cadPayload && !chartPayload && !whiteboardPayload && !isPlainToolResult" class="bubble__content"
-        v-html="htmlContent" @click="handleCodeBlockClick" />
+      <div v-if="!cadPayload && !chartPayload && !whiteboardPayload && !isPlainToolResult && !isContextSummary"
+        class="bubble__content" v-html="htmlContent" @click="handleCodeBlockClick" />
 
       <!-- Timestamp for assistant/tool messages (inside bubble) -->
       <span v-if="message.role !== 'user'" class="bubble__time">{{ formattedTime }}</span>
@@ -775,6 +795,75 @@ onUnmounted(() => {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* Context summary (compressed archive bubble) */
+.context-summary {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.context-summary__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  text-align: left;
+}
+
+.context-summary__toggle:hover {
+  color: var(--text-secondary);
+}
+
+.context-summary__icon {
+  flex-shrink: 0;
+}
+
+.context-summary__title {
+  flex: 1;
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.context-summary__chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.context-summary__chevron--open {
+  transform: rotate(180deg);
+}
+
+.context-summary__body {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows var(--duration-normal) ease,
+    opacity var(--duration-normal) ease;
+}
+
+.context-summary__body--collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.context-summary__content {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 var(--space-3) var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
 }
 
 @media (prefers-reduced-motion: reduce) {

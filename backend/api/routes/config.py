@@ -112,6 +112,9 @@ async def get_config(request: Request) -> dict[str, Any]:
             "supports_thinking": cfg.llm.supports_thinking,
             "supports_vision": cfg.llm.supports_vision,
             "max_tool_iterations": cfg.llm.max_tool_iterations,
+            "context_compression_enabled": cfg.llm.context_compression_enabled,
+            "context_compression_threshold": cfg.llm.context_compression_threshold,
+            "context_compression_reserve": cfg.llm.context_compression_reserve,
         },
         "stt": {
             "engine": cfg.stt.engine,
@@ -229,6 +232,39 @@ async def update_config(request: Request) -> dict[str, Any]:
             if not isinstance(llm_updates["supports_vision"], bool):
                 raise HTTPException(400, "supports_vision must be a boolean")
             object.__setattr__(cfg.llm, "supports_vision", llm_updates["supports_vision"])
+        if "context_compression_enabled" in llm_updates:
+            if not isinstance(llm_updates["context_compression_enabled"], bool):
+                raise HTTPException(400, "context_compression_enabled must be a boolean")
+            object.__setattr__(
+                cfg.llm, "context_compression_enabled",
+                llm_updates["context_compression_enabled"],
+            )
+        if "context_compression_threshold" in llm_updates:
+            try:
+                thr = float(llm_updates["context_compression_threshold"])
+            except (TypeError, ValueError):
+                raise HTTPException(
+                    400, "context_compression_threshold must be a number",
+                )
+            if not (0.50 <= thr <= 0.95):
+                raise HTTPException(
+                    400,
+                    "context_compression_threshold must be between 0.50 and 0.95",
+                )
+            object.__setattr__(cfg.llm, "context_compression_threshold", thr)
+        if "context_compression_reserve" in llm_updates:
+            try:
+                res = int(llm_updates["context_compression_reserve"])
+            except (TypeError, ValueError):
+                raise HTTPException(
+                    400, "context_compression_reserve must be an integer",
+                )
+            if not (512 <= res <= 8192):
+                raise HTTPException(
+                    400,
+                    "context_compression_reserve must be between 512 and 8192",
+                )
+            object.__setattr__(cfg.llm, "context_compression_reserve", res)
 
     if "ui" in body:
         ui_updates = body["ui"]

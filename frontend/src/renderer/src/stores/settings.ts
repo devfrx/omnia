@@ -9,6 +9,9 @@ export interface AliceSettings {
     temperature: number
     maxTokens: number
     maxToolIterations: number
+    contextCompressionEnabled: boolean
+    contextCompressionThreshold: number
+    contextCompressionReserve: number
   }
   stt: {
     language: string
@@ -30,7 +33,10 @@ export const useSettingsStore = defineStore('settings', () => {
       model: 'auto',
       temperature: 0.7,
       maxTokens: 30311,
-      maxToolIterations: 25
+      maxToolIterations: 25,
+      contextCompressionEnabled: true,
+      contextCompressionThreshold: 0.75,
+      contextCompressionReserve: 4096
     },
     stt: {
       language: '',
@@ -106,6 +112,12 @@ export const useSettingsStore = defineStore('settings', () => {
         settings.value.llm.temperature = (llm.temperature as number) ?? settings.value.llm.temperature
         settings.value.llm.maxTokens = (llm.max_tokens as number) ?? settings.value.llm.maxTokens
         settings.value.llm.maxToolIterations = (llm.max_tool_iterations as number) ?? settings.value.llm.maxToolIterations
+        settings.value.llm.contextCompressionEnabled =
+          (llm.context_compression_enabled as boolean) ?? settings.value.llm.contextCompressionEnabled
+        settings.value.llm.contextCompressionThreshold =
+          (llm.context_compression_threshold as number) ?? settings.value.llm.contextCompressionThreshold
+        settings.value.llm.contextCompressionReserve =
+          (llm.context_compression_reserve as number) ?? settings.value.llm.contextCompressionReserve
       }
       if (config.stt) {
         const stt = config.stt as Record<string, unknown>
@@ -136,7 +148,10 @@ export const useSettingsStore = defineStore('settings', () => {
         llm: {
           temperature: settings.value.llm.temperature,
           max_tokens: settings.value.llm.maxTokens,
-          max_tool_iterations: settings.value.llm.maxToolIterations
+          max_tool_iterations: settings.value.llm.maxToolIterations,
+          context_compression_enabled: settings.value.llm.contextCompressionEnabled,
+          context_compression_threshold: settings.value.llm.contextCompressionThreshold,
+          context_compression_reserve: settings.value.llm.contextCompressionReserve
         },
         stt: {
           ...(settings.value.stt.language ? { language: settings.value.stt.language } : {}),

@@ -76,13 +76,60 @@ class LLMServiceProtocol(Protocol):
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
         system_prompt: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream a chat completion, yielding event dicts."""
+        ...
+
+    async def complete_nonstreaming(
+        self, messages: list[dict[str, Any]], max_tokens: int = 512,
+    ) -> str:
+        """Complete a chat request without streaming."""
+        ...
+
+    async def get_active_context_window(
+        self, lmstudio_manager: Any = None,
+    ) -> int:
+        """Return the active model's context window size in tokens."""
         ...
 
     async def close(self) -> None:
         """Release the underlying HTTP client."""
         ...
+
+
+# ---------------------------------------------------------------------------
+# Context Manager
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class ContextManagerProtocol(Protocol):
+    """Protocol for the context window management service."""
+
+    def estimate_tokens(self, text: str) -> int: ...
+
+    def estimate_message_tokens(self, msg: dict[str, Any]) -> int: ...
+
+    def count_messages_tokens(
+        self, messages: list[dict[str, Any]],
+    ) -> int: ...
+
+    def get_usage_estimated(
+        self, messages: list[dict[str, Any]], context_window: int,
+    ) -> Any: ...
+
+    def get_usage_real(
+        self, input_tokens: int, context_window: int,
+    ) -> Any: ...
+
+    def should_compress(self, usage: Any) -> bool: ...
+
+    async def compress(
+        self, messages: list[dict[str, Any]], llm: Any,
+        context_window: int, reserve: int,
+        tool_tokens: int = 0,
+    ) -> Any: ...
 
 
 # ---------------------------------------------------------------------------

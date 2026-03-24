@@ -15,6 +15,7 @@ import { api, resolveBackendUrl } from '../services/api'
 import type {
   ChatMessage,
   ConfirmationRequest,
+  ContextInfo,
   ConversationDetail,
   ConversationExport,
   ConversationSummary,
@@ -59,6 +60,12 @@ export const useChatStore = defineStore('chat', () => {
 
   /** Tool confirmations awaiting user approval. */
   const pendingConfirmations = ref<Record<string, ConfirmationRequest>>({})
+
+  /** Latest context window usage information from the server. */
+  const contextInfo = ref<ContextInfo | null>(null)
+
+  /** Whether context compression is currently in progress. */
+  const isCompressingContext = ref(false)
 
   // -----------------------------------------------------------------------
   // Computed
@@ -144,6 +151,15 @@ export const useChatStore = defineStore('chat', () => {
 
   /** Load a full conversation (with messages) and set it as active. */
   async function loadConversation(id: string): Promise<void> {
+    // Reset context info only when switching to a DIFFERENT conversation.
+    // When reloading the same conversation (e.g. after finalizeStream),
+    // keep the existing contextInfo to avoid flicker and data loss.
+    const isSameConversation = currentConversation.value?.id === id
+    if (!isSameConversation && (!isStreaming.value || streamingConversationId.value !== id)) {
+      contextInfo.value = null
+      isCompressingContext.value = false
+    }
+
     // NOTE: Do NOT cancel any in-progress stream for a different conversation.
     // The stream continues accumulating in the background; when it completes,
     // finalizeStream() will handle cleanup without touching the UI.
@@ -173,6 +189,25 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
       currentConversation.value = detail
+
+      // Populate context info from the API response if available.
+      // Skip if we already hold real (non-estimated) data from streaming —
+      // the GET endpoint only returns estimates.
+      const hasRealData = contextInfo.value && !contextInfo.value.isEstimated
+      const isStreamingThisConversation =
+        isStreaming.value && streamingConversationId.value === id
+      if (detail.context_info && !isStreamingThisConversation && !hasRealData) {
+        contextInfo.value = {
+          used: detail.context_info.used,
+          available: detail.context_info.available,
+          contextWindow: detail.context_info.context_window,
+          percentage: detail.context_info.percentage,
+          wasCompressed: detail.context_info.was_compressed,
+          messagesSummarized: detail.context_info.messages_summarized ?? 0,
+          isEstimated: detail.context_info.is_estimated ?? true,
+          breakdown: detail.context_info.breakdown,
+        }
+      }
     } catch (err) {
       // Fallback: if the backend returns 404 (conversation not persisted yet),
       // build a local ConversationDetail so the UI doesn't break.
@@ -388,6 +423,8 @@ export const useChatStore = defineStore('chat', () => {
     streamingConversationId.value = currentConversation.value.id
     currentStreamContent.value = ''
     currentThinkingContent.value = ''
+    contextInfo.value = null
+    isCompressingContext.value = false
 
     // Bump the sidebar message count so it reflects the new user message.
     const sidebar = conversations.value.find((c) => c.id === currentConversation.value!.id)
@@ -422,7 +459,7 @@ export const useChatStore = defineStore('chat', () => {
     messageId: string,
     versionGroupId?: string | null,
     versionIndex?: number,
-    userMessageId?: string,
+    _userMessageId?: string,
   ): void {
     // Prevent double-finalization.
     if (!isStreaming.value) return
@@ -435,6 +472,7 @@ export const useChatStore = defineStore('chat', () => {
       isStreaming.value = false
       isWaitingForResponse.value = false
       isCancelling.value = false
+      isCompressingContext.value = false
       streamingConversationId.value = null
       activeToolExecutions.value = []
       pendingConfirmations.value = {}
@@ -460,6 +498,7 @@ export const useChatStore = defineStore('chat', () => {
     isStreaming.value = false
     isWaitingForResponse.value = false
     isCancelling.value = false
+    isCompressingContext.value = false
     streamingConversationId.value = null
     activeToolExecutions.value = []
     pendingConfirmations.value = {}
@@ -520,6 +559,28 @@ export const useChatStore = defineStore('chat', () => {
     delete pendingConfirmations.value[executionId]
   }
 
+  /** Update the context window usage info from a server event. */
+  function updateContextInfo(info: ContextInfo): void {
+    contextInfo.value = info
+  }
+
+  /** Set whether context compression is in progress. */
+  function setCompressingContext(value: boolean): void {
+    isCompressingContext.value = value
+  }
+
+  /** Handle context compression completion. */
+  function setCompressionDone(messagesSummarized: number): void {
+    isCompressingContext.value = false
+    if (contextInfo.value) {
+      contextInfo.value.wasCompressed = true
+      contextInfo.value.messagesSummarized = messagesSummarized
+      // Mark as estimated so loadConversation's GET response can refresh
+      // with accurate post-compression token counts.
+      contextInfo.value.isEstimated = true
+    }
+  }
+
   /** Clear streaming state (e.g. on error or cancel). Preserves partial content as a message. */
   function cancelStream(): void {
     // If there's accumulated content, save as partial assistant message
@@ -546,6 +607,7 @@ export const useChatStore = defineStore('chat', () => {
     isStreaming.value = false
     isWaitingForResponse.value = false
     isCancelling.value = false
+    isCompressingContext.value = false
     streamingConversationId.value = null
     activeToolExecutions.value = []
     pendingConfirmations.value = {}
@@ -646,6 +708,8 @@ export const useChatStore = defineStore('chat', () => {
     isCancelling,
     activeToolExecutions,
     pendingConfirmations,
+    contextInfo,
+    isCompressingContext,
 
     // computed
     messages,
@@ -678,6 +742,9 @@ export const useChatStore = defineStore('chat', () => {
     addToolExecution,
     completeToolExecution,
     addPendingConfirmation,
-    removePendingConfirmation
+    removePendingConfirmation,
+    updateContextInfo,
+    setCompressingContext,
+    setCompressionDone
   }
 })

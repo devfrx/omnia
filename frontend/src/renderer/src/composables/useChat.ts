@@ -27,6 +27,8 @@ import { useSettingsStore } from '../stores/settings'
 import type {
   FileAttachment,
   WsCancelPayload,
+  WsContextCompressionDoneMessage,
+  WsContextInfoMessage,
   WsDoneMessage,
   WsErrorMessage,
   WsLlmRequeryMessage,
@@ -203,6 +205,41 @@ export function useChat(): UseChatReturn {
     console.warn('[useChat] Server warning:', msg.content)
   }
 
+  const onContextInfo = (data: unknown): void => {
+    if (store.streamGeneration !== activeGeneration) return
+    if (store.streamingConversationId !== store.currentConversation?.id) return
+    const msg = data as WsContextInfoMessage
+    store.updateContextInfo({
+      used: msg.used,
+      available: msg.available,
+      contextWindow: msg.context_window,
+      percentage: msg.percentage,
+      wasCompressed: msg.was_compressed,
+      messagesSummarized: msg.messages_summarized ?? 0,
+      isEstimated: msg.is_estimated ?? true,
+      breakdown: msg.breakdown,
+    })
+  }
+
+  const onContextCompressionStart = (): void => {
+    if (store.streamGeneration !== activeGeneration) return
+    if (store.streamingConversationId !== store.currentConversation?.id) return
+    store.setCompressingContext(true)
+  }
+
+  const onContextCompressionDone = (data: unknown): void => {
+    if (store.streamGeneration !== activeGeneration) return
+    if (store.streamingConversationId !== store.currentConversation?.id) return
+    const msg = data as WsContextCompressionDoneMessage
+    store.setCompressionDone(msg.messages_summarized)
+  }
+
+  const onContextCompressionFailed = (): void => {
+    if (store.streamGeneration !== activeGeneration) return
+    if (store.streamingConversationId !== store.currentConversation?.id) return
+    store.setCompressingContext(false)
+  }
+
   const onWsError = (data: unknown): void => {
     // Only handle server-side error frames (JSON objects with content),
     // skip native WebSocket error Events.
@@ -232,6 +269,10 @@ export function useChat(): UseChatReturn {
   wsManager.on('llm_requery', onLlmRequery)
   wsManager.on('warning', onWarning)
   wsManager.on('error', onWsError) // also catches server-side error frames
+  wsManager.on('context_info', onContextInfo)
+  wsManager.on('context_compression_start', onContextCompressionStart)
+  wsManager.on('context_compression_done', onContextCompressionDone)
+  wsManager.on('context_compression_failed', onContextCompressionFailed)
 
   connectionStatus.value = 'connecting'
   wsManager.connect()
@@ -261,6 +302,10 @@ export function useChat(): UseChatReturn {
     wsManager.off('llm_requery', onLlmRequery)
     wsManager.off('warning', onWarning)
     wsManager.off('error', onWsError)
+    wsManager.off('context_info', onContextInfo)
+    wsManager.off('context_compression_start', onContextCompressionStart)
+    wsManager.off('context_compression_done', onContextCompressionDone)
+    wsManager.off('context_compression_failed', onContextCompressionFailed)
     wsManager.disconnect()
   })
 

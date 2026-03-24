@@ -27,7 +27,7 @@ const emit = defineEmits<{
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let engine: FluidEngine | null = null
 
-const containerSize = computed(() => (props.compact ? '160px' : '420px'))
+const containerSize = computed(() => (props.compact ? '160px' : 'clamp(160px, 38vmin, 420px)'))
 
 onMounted(() => {
     if (!canvasRef.value) return

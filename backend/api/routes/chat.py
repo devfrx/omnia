@@ -33,6 +33,12 @@ from backend.core.config import PROJECT_ROOT
 from backend.core.context import AppContext
 from backend.db.models import Attachment, Conversation, Message
 from backend.services.conversation_file_manager import ConversationFileManager
+from backend.services.context_manager import (
+    CompressionError,
+    CompressionResult,
+    ContextManager,
+    ContextUsage,
+)
 from backend.services.llm_service import LLMService
 from backend.api.routes._tool_loop import run_tool_loop
 
@@ -171,6 +177,8 @@ async def _build_conversation_data(
                 if m.version_group_id
                 else None,
                 "version_index": m.version_index,
+                "is_context_summary": getattr(m, "is_context_summary", False),
+                "context_excluded": getattr(m, "context_excluded", False),
             }
             for m in messages
         ],
@@ -219,6 +227,142 @@ def _filter_messages_by_active_versions(
         if m.get("version_index", 0) == active_idx:
             result.append(m)
     return result
+
+
+def _filter_history_for_llm(
+    raw_history: list[dict[str, Any]],
+    active_versions: dict[str, int],
+) -> list[dict[str, Any]]:
+    """Filter message history for LLM consumption.
+
+    Applies active-version filtering, then removes context-excluded
+    messages (except context summaries which must remain).
+    Internal metadata fields are stripped before returning.
+
+    Args:
+        raw_history: Message dicts with version and context metadata.
+        active_versions: Map of version_group_id to active version_index.
+
+    Returns:
+        Clean message dicts ready for LLM message building.
+    """
+    # Step 1: apply version filtering (reuse existing logic).
+    filtered = _filter_messages_by_active_versions(raw_history, active_versions)
+
+    # Step 2: remove context-excluded messages (keep summaries).
+    result: list[dict[str, Any]] = []
+    for m in filtered:
+        if m.get("context_excluded") and not m.get("is_context_summary"):
+            continue
+        result.append(m)
+
+    # Step 3: truncate oversized tool results.
+    # Tool/function messages from web scrapes or searches can be
+    # thousands of tokens.  Keep full content only for the last
+    # few tool results; truncate older ones to save context.
+    _TOOL_TRUNC_CHARS = 1500
+    _TOOL_RECENT_KEEP = 4  # keep last N tool messages untruncated
+    tool_indices = [
+        i for i, m in enumerate(result)
+        if m.get("role") == "tool"
+    ]
+    old_tool_indices = set(tool_indices[:-_TOOL_RECENT_KEEP]) if (
+        len(tool_indices) > _TOOL_RECENT_KEEP
+    ) else set()
+    for idx in old_tool_indices:
+        content = result[idx].get("content") or ""
+        if len(content) > _TOOL_TRUNC_CHARS:
+            result[idx] = {
+                **result[idx],
+                "content": (
+                    content[:_TOOL_TRUNC_CHARS]
+                    + "\n... [truncated for context]"
+                ),
+            }
+
+    # Step 4: neutralize truncated/degraded assistant responses.
+    # When the model produces very short or cut-off output, those
+    # messages stay in history and cause the model to mimic the
+    # pattern.  Replace them with a neutral marker so the LLM does
+    # not learn to reproduce truncated answers.
+    _TRUNC_MAX_CHARS = 80
+    _SENTENCE_ENDERS = frozenset(".!?。…»\"')`")
+    cleaned: list[dict[str, Any]] = []
+    for m in result:
+        if (
+            m.get("role") == "assistant"
+            and not m.get("tool_calls")
+            and not m.get("is_context_summary")
+        ):
+            content = (m.get("content") or "").strip()
+            if not content:
+                continue  # drop empty assistant messages
+            if (
+                len(content) < _TRUNC_MAX_CHARS
+                and content[-1] not in _SENTENCE_ENDERS
+            ):
+                cleaned.append({**m, "content": "[Incomplete response]"})
+                continue
+        cleaned.append(m)
+    result = cleaned
+
+    # Step 5: strip internal metadata fields.
+    clean: list[dict[str, Any]] = []
+    for m in result:
+        entry = {
+            k: v for k, v in m.items()
+            if k not in ("_db_pos", "context_excluded", "is_context_summary",
+                         "version_group_id", "version_index")
+        }
+        clean.append(entry)
+    return clean
+
+
+async def _archive_messages_in_db(
+    session: Any,
+    all_messages: list[Any],
+    raw_history: list[dict[str, Any]],
+    split_index: int,
+    active_versions: dict[str, int] | None = None,
+) -> None:
+    """Mark the first *split_index* non-system messages as context-excluded.
+
+    Uses ``_db_pos`` from raw_history to map back to ORM objects.
+
+    Args:
+        session: Active async DB session.
+        all_messages: ORM Message objects fetched from DB.
+        raw_history: Message dicts with ``_db_pos`` metadata.
+        split_index: Number of conversation messages to archive.
+        active_versions: Map of version_group_id to active index.
+            Non-active version messages are skipped so they don't
+            count against *split_index*.
+    """
+    archived = 0
+    for entry in raw_history:
+        if archived >= split_index:
+            break
+        if entry.get("role") == "system":
+            continue
+        if entry.get("context_excluded"):
+            continue
+        # Skip non-active version messages so they don't consume
+        # split_index slots meant for active-branch messages.
+        if active_versions is not None:
+            vg = entry.get("version_group_id")
+            if vg is not None:
+                active_idx = active_versions.get(vg, 0)
+                if entry.get("version_index", 0) != active_idx:
+                    continue
+        db_pos = entry.get("_db_pos")
+        if db_pos is not None and db_pos < len(all_messages):
+            msg_obj = all_messages[db_pos]
+            if hasattr(msg_obj, "context_excluded"):
+                msg_obj.context_excluded = True
+                session.add(msg_obj)
+            archived += 1
+    if archived > 0:
+        await session.flush()
 
 
 def _build_mcp_context(ctx: AppContext) -> str | None:
@@ -327,6 +471,88 @@ async def _build_whiteboard_context(
         )
     lines.append("[/LAVAGNE ASSOCIATE]")
     return "\n".join(lines)
+
+
+def _compute_context_breakdown(
+    messages: list[dict[str, Any]],
+    tool_tokens: int,
+    ctx_manager: ContextManager,
+) -> dict[str, int]:
+    """Estimate per-category token breakdown from an assembled message list.
+
+    Categories:
+    - system: system-prompt messages (``role == "system"``)
+    - tools: tool-definition JSON (pre-computed as *tool_tokens*)
+    - messages: user/assistant conversation turns
+    - files: vision image parts (estimated at ~256 tokens each)
+    - tool_results: tool-result messages (``role == "tool"``)
+    - other: anything not matched above
+
+    Args:
+        messages: The fully-assembled list of message dicts sent to the LLM.
+        tool_tokens: Pre-computed token count for tool-definition JSON.
+        ctx_manager: Used for ``estimate_tokens()``.
+
+    Returns:
+        Dict with keys ``system``, ``tools``, ``messages``, ``files``,
+        ``tool_results``, ``other``.
+    """
+    system = 0
+    messages_tok = 0
+    files = 0
+    tool_results = 0
+    other = 0
+    _OVERHEAD = 4  # role/metadata overhead per message
+
+    for msg in messages:
+        role = msg.get("role", "")
+        content = msg.get("content")
+
+        if role == "system":
+            text = content if isinstance(content, str) else ""
+            system += _OVERHEAD + ctx_manager.estimate_tokens(text)
+
+        elif role == "tool":
+            text = content if isinstance(content, str) else ""
+            tool_results += _OVERHEAD + ctx_manager.estimate_tokens(text)
+
+        elif role in ("user", "assistant"):
+            tok = _OVERHEAD
+            if isinstance(content, list):
+                for part in content:
+                    if part.get("type") == "text":
+                        tok += ctx_manager.estimate_tokens(part.get("text", ""))
+                    elif part.get("type") == "image_url":
+                        # Vision tokens cannot be estimated with char÷4;
+                        # use a conservative flat estimate per image tile.
+                        files += 256
+            elif isinstance(content, str):
+                tok += ctx_manager.estimate_tokens(content)
+            tool_calls = msg.get("tool_calls")
+            if tool_calls:
+                try:
+                    tc_str = (
+                        json.dumps(tool_calls)
+                        if not isinstance(tool_calls, str)
+                        else tool_calls
+                    )
+                    tok += ctx_manager.estimate_tokens(tc_str)
+                except (TypeError, ValueError):
+                    pass
+            messages_tok += tok
+
+        else:
+            text = content if isinstance(content, str) else ""
+            other += _OVERHEAD + ctx_manager.estimate_tokens(text)
+
+    return {
+        "system": system,
+        "tools": tool_tokens,
+        "messages": messages_tok,
+        "files": files,
+        "tool_results": tool_results,
+        "other": other,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -634,10 +860,13 @@ async def ws_chat(websocket: WebSocket) -> None:
                         if m.version_group_id
                         else None,
                         "version_index": m.version_index,
+                        "context_excluded": getattr(m, "context_excluded", False),
+                        "is_context_summary": getattr(m, "is_context_summary", False),
+                        "_db_pos": i,
                     }
-                    for m in all_messages
+                    for i, m in enumerate(all_messages)
                 ]
-                history = _filter_messages_by_active_versions(
+                history = _filter_history_for_llm(
                     raw_history, av_map,
                 )
 
@@ -715,6 +944,158 @@ async def ws_chat(websocket: WebSocket) -> None:
                     system_prompt=cached_sys_prompt,
                 )
 
+                # -- Context management ---------------------------------------
+                comp: CompressionResult | None = None
+                context_window = 0
+                last_input_tokens = 0
+                last_output_tokens = 0
+
+                if ctx.context_manager is not None:
+                    context_window = await llm.get_active_context_window(
+                        ctx.lmstudio_manager,
+                    )
+
+                if context_window > 0 and ctx.context_manager is not None:
+                    # Compute tool tokens for compression regardless
+                    # of estimation path — compress() needs them.
+                    _tool_tokens = 0
+                    if tools:
+                        _tool_tokens = (
+                            ctx.context_manager.estimate_tokens(
+                                json.dumps(tools, ensure_ascii=False),
+                            )
+                        )
+
+                    # Prefer anchor+delta over full estimation.
+                    snap = getattr(conv, "context_snapshot", None)
+                    if (
+                        snap
+                        and isinstance(snap, dict)
+                        and snap.get("prompt_tokens", 0) > 0
+                    ):
+                        # Real tokens from last exchange — already
+                        # include system prompt + tools + all messages.
+                        anchor = (
+                            snap["prompt_tokens"]
+                            + snap.get("completion_tokens", 0)
+                        )
+                        # Estimate only the new user message.
+                        delta = ctx.context_manager.estimate_tokens(
+                            user_content or "",
+                        )
+                        used = anchor + delta
+                        available = max(0, context_window - used)
+                        pct = (
+                            round(used / context_window, 4)
+                            if context_window > 0 else 0.0
+                        )
+                        usage_est = ContextUsage(
+                            used_tokens=used,
+                            available_tokens=available,
+                            context_window=context_window,
+                            percentage=pct,
+                            was_compressed=False,
+                            messages_summarized=0,
+                            is_estimated=False,
+                        )
+                    else:
+                        # Fallback: full char/4 estimation.
+                        usage_est = (
+                            ctx.context_manager.get_usage_estimated(
+                                messages, context_window,
+                            )
+                        )
+                        # Add tool tokens (not in the messages array).
+                        if _tool_tokens > 0:
+                            usage_est.used_tokens += _tool_tokens
+                            usage_est.available_tokens = max(
+                                0,
+                                context_window - usage_est.used_tokens,
+                            )
+                            usage_est.percentage = (
+                                round(
+                                    usage_est.used_tokens
+                                    / context_window,
+                                    4,
+                                )
+                                if context_window > 0 else 0.0
+                            )
+
+                    # Pre-generation compression check.
+                    if (
+                        ctx.config.llm.context_compression_enabled
+                        and ctx.context_manager.should_compress(usage_est)
+                    ):
+                        await websocket.send_json(
+                            {"type": "context_compression_start"},
+                        )
+                        try:
+                            comp = await ctx.context_manager.compress(
+                                messages,
+                                llm,
+                                context_window,
+                                ctx.config.llm.context_compression_reserve,
+                                tool_tokens=_tool_tokens
+                                if tools else 0,
+                            )
+                            messages = comp.messages
+
+                            # Archive messages in DB.
+                            await _archive_messages_in_db(
+                                session, all_messages, raw_history,
+                                comp.split_index,
+                                active_versions=av_map,
+                            )
+                            # Save summary message.
+                            summary_content = (
+                                f"[Context summary of "
+                                f"{comp.split_index} earlier "
+                                f"messages]:\n{comp.summary_text}"
+                            )
+                            summary_msg = Message(
+                                conversation_id=conv_id,
+                                role="assistant",
+                                content=summary_content,
+                                is_context_summary=True,
+                            )
+                            session.add(summary_msg)
+                            await session.flush()
+
+                            await websocket.send_json({
+                                "type": "context_compression_done",
+                                "messages_summarized": (
+                                    comp.usage.messages_summarized
+                                ),
+                                "summary_message_id": str(summary_msg.id),
+                            })
+                            # Re-estimate after compression.
+                            usage_est = comp.usage
+                        except Exception as exc:
+                            logger.warning(
+                                "Context compression failed: {}", exc,
+                            )
+                            await websocket.send_json(
+                                {"type": "context_compression_failed"},
+                            )
+                            comp = None
+
+                    # Send initial context_info.
+                    await websocket.send_json({
+                        "type": "context_info",
+                        "used": usage_est.used_tokens,
+                        "available": usage_est.available_tokens,
+                        "context_window": context_window,
+                        "percentage": usage_est.percentage,
+                        "was_compressed": comp is not None,
+                        "messages_summarized": (
+                            comp.usage.messages_summarized if comp else 0
+                        ),
+                        "is_estimated": usage_est.is_estimated,
+                        "breakdown": _compute_context_breakdown(
+                            messages, _tool_tokens, ctx.context_manager,
+                        ),
+                    })
+
                 full_content = ""
                 thinking_content = ""
                 tool_calls_collected: list[dict[str, Any]] = []
@@ -724,14 +1105,38 @@ async def ws_chat(websocket: WebSocket) -> None:
                 async def _stream_and_collect() -> None:
                     """Consume LLM stream, accumulate content and relay to WS."""
                     nonlocal full_content, thinking_content, finish_reason
+                    nonlocal last_input_tokens, last_output_tokens
+                    # When compression happened, force OAI-compat
+                    # path — the native API uses response_id chaining
+                    # which bypasses our compressed messages list.
+                    effective_user_content = (
+                        None if comp is not None else user_content
+                    )
+
+                    # When max_tokens is unset (-1), calculate the
+                    # available output budget from context info so
+                    # LM Studio doesn't silently cap at a small default.
+                    resolved_max: int | None = None
+                    if (
+                        ctx.config.llm.max_tokens <= 0
+                        and context_window > 0
+                        and ctx.context_manager is not None
+                    ):
+                        resolved_max = max(
+                            1024,
+                            usage_est.available_tokens
+                            - ctx.config.llm.context_compression_reserve,
+                        )
+
                     async for event in llm.chat(
                         messages,
                         tools=tools,
                         cancel_event=cancel_event,
-                        user_content=user_content,
+                        user_content=effective_user_content,
                         conversation_id=str(conv_id),
                         attachments=attachment_info or None,
                         system_prompt=cached_sys_prompt,
+                        max_output_tokens=resolved_max,
                     ):
                         etype = event["type"]
                         if etype == "token":
@@ -743,6 +1148,13 @@ async def ws_chat(websocket: WebSocket) -> None:
                         elif etype == "tool_call":
                             tool_calls_collected.append(event)
                             await websocket.send_json(event)
+                        elif etype == "usage":
+                            last_input_tokens = event.get(
+                                "input_tokens", 0,
+                            )
+                            last_output_tokens = event.get(
+                                "output_tokens", 0,
+                            )
                         elif etype == "error":
                             logger.error(
                                 "LLM error during initial stream: {}",
@@ -870,7 +1282,13 @@ async def ws_chat(websocket: WebSocket) -> None:
                 # --- tool calling loop (if LLM requested tools) -----------
                 if tool_calls_collected and finish_reason not in ("cancelled", "error"):
                     try:
-                        full_content, thinking_content = await run_tool_loop(
+                        (
+                            full_content,
+                            thinking_content,
+                            loop_in_tokens,
+                            loop_out_tokens,
+                            loop_finish,
+                        ) = await run_tool_loop(
                             websocket=websocket,
                             ctx=ctx,
                             session=session,
@@ -886,15 +1304,31 @@ async def ws_chat(websocket: WebSocket) -> None:
                             cancel_event=cancel_event,
                             memory_context=memory_context,
                             tools=tools,
-                            initial_history=history,
+                            # When pre-gen compression ran, the in-memory
+                            # history passed to the tool loop must reflect
+                            # the compressed state, not the pre-compression
+                            # history — otherwise the loop would re-trigger
+                            # compression on every iteration.
+                            initial_history=(
+                                [
+                                    m for m in comp.messages
+                                    if m.get("role") != "system"
+                                ]
+                                if comp is not None
+                                else history
+                            ),
                             system_prompt=cached_sys_prompt,
                             version_group_id=user_msg.version_group_id,
                             version_index=user_msg.version_index,
+                            context_window=context_window,
                         )
-                        # Update finish_reason to reflect the tool loop
-                        # outcome (the initial value is stale — it came
-                        # from the first LLM response, often "tool_calls").
-                        finish_reason = "stop"
+                        # Use token data from the final tool-loop
+                        # re-query when available (the initial
+                        # stream values are stale after tool calls).
+                        if loop_in_tokens > 0:
+                            last_input_tokens = loop_in_tokens
+                            last_output_tokens = loop_out_tokens
+                        finish_reason = loop_finish
                     except WebSocketDisconnect:
                         # Save any pending assistant content before propagating.
                         logger.debug("WS disconnected during tool loop")
@@ -962,6 +1396,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                 # --- save assistant message --------------------------------
                 try:
                     asst_msg_id = ""
+                    asst_msg = None
 
                     # Only save a final assistant message if there is actual
                     # content.  When tool_calls were executed, intermediate
@@ -978,10 +1413,50 @@ async def ws_chat(websocket: WebSocket) -> None:
                         session.add(asst_msg)
                         asst_msg_id = str(asst_msg.id)
 
+                    # Update context_info with real tokens (if available).
+                    if (
+                        last_input_tokens > 0
+                        and ctx.context_manager
+                        and context_window > 0
+                    ):
+                        real_usage = ctx.context_manager.get_usage_real(
+                            last_input_tokens, context_window,
+                        )
+                        await websocket.send_json({
+                            "type": "context_info",
+                            "used": real_usage.used_tokens,
+                            "available": real_usage.available_tokens,
+                            "context_window": context_window,
+                            "percentage": real_usage.percentage,
+                            "was_compressed": comp is not None,
+                            "messages_summarized": (
+                                comp.usage.messages_summarized
+                                if comp else 0
+                            ),
+                            "is_estimated": False,
+                            "breakdown": _compute_context_breakdown(
+                                messages, _tool_tokens, ctx.context_manager,
+                            ),
+                        })
+                        # Persist token count on assistant message.
+                        if asst_msg is not None:
+                            asst_msg.token_count = last_input_tokens
+                            session.add(asst_msg)
+                            await session.flush()
+
                     # --- update conversation timestamp -------------------------
                     conv.updated_at = _utcnow()
                     if conv.title is None and user_content:
                         conv.title = user_content[:100]
+
+                    # Persist real token snapshot for accurate GET
+                    # estimates.  Only overwrite when we have real data.
+                    if last_input_tokens > 0 and context_window > 0:
+                        conv.context_snapshot = {
+                            "prompt_tokens": last_input_tokens,
+                            "completion_tokens": last_output_tokens,
+                            "context_window": context_window,
+                        }
 
                     await session.commit()
 
@@ -991,6 +1466,207 @@ async def ws_chat(websocket: WebSocket) -> None:
                             session, conv_id,
                             ctx.conversation_file_manager,
                         )
+
+                    # --- Post-stream compression on truncated output ------
+                    # When the LLM hit max_tokens / context limit, the
+                    # response was truncated.  Compress now so the NEXT
+                    # turn has enough room.
+                    # Determine whether post-stream compression
+                    # is needed.  Two triggers:
+                    # 1) finish_reason=="length" (OAI-compat path)
+                    # 2) Real token usage above threshold (covers
+                    #    native LM Studio path which always returns
+                    #    finish_reason="stop" even when truncated).
+                    post_compress = finish_reason == "length"
+                    if (
+                        not post_compress
+                        and last_input_tokens > 0
+                        and last_output_tokens > 0
+                        and context_window > 0
+                    ):
+                        total_tokens = (
+                            last_input_tokens + last_output_tokens
+                        )
+                        real_pct = total_tokens / context_window
+                        if real_pct >= (
+                            ctx.config.llm
+                            .context_compression_threshold
+                        ):
+                            post_compress = True
+                            logger.info(
+                                "Token usage {:.1f}% >= threshold "
+                                "{}%, triggering post-stream "
+                                "compression",
+                                real_pct * 100,
+                                ctx.config.llm
+                                .context_compression_threshold
+                                * 100,
+                            )
+                    if (
+                        post_compress
+                        and ctx.config.llm.context_compression_enabled
+                        and ctx.context_manager is not None
+                        and context_window > 0
+                    ):
+                        try:
+                            logger.info(
+                                "Triggering post-stream compression"
+                                " (finish_reason={}, tokens={}/{})",
+                                finish_reason,
+                                last_input_tokens + last_output_tokens,
+                                context_window,
+                            )
+                            await websocket.send_json(
+                                {"type": "context_compression_start"},
+                            )
+                            # Re-query messages including the
+                            # just-saved assistant response.
+                            post_stmt = (
+                                select(Message)
+                                .where(
+                                    Message.conversation_id == conv_id,
+                                )
+                                .order_by(
+                                    Message.created_at, Message.id,
+                                )
+                            )
+                            post_results = await session.exec(
+                                post_stmt,
+                            )
+                            post_all_msgs = post_results.all()
+                            post_raw = [
+                                {
+                                    "role": m.role,
+                                    "content": m.content,
+                                    "tool_calls": m.tool_calls,
+                                    "tool_call_id": m.tool_call_id,
+                                    "version_group_id": (
+                                        str(m.version_group_id)
+                                        if m.version_group_id
+                                        else None
+                                    ),
+                                    "version_index": m.version_index,
+                                    "context_excluded": getattr(
+                                        m, "context_excluded", False,
+                                    ),
+                                    "is_context_summary": getattr(
+                                        m, "is_context_summary", False,
+                                    ),
+                                    "_db_pos": i,
+                                }
+                                for i, m in enumerate(post_all_msgs)
+                            ]
+                            post_hist = _filter_history_for_llm(
+                                post_raw, av_map,
+                            )
+                            post_msgs = (
+                                llm.build_continuation_messages(
+                                    post_hist,
+                                    system_prompt=cached_sys_prompt,
+                                )
+                            )
+                            post_comp = (
+                                await ctx.context_manager.compress(
+                                    post_msgs,
+                                    llm,
+                                    context_window,
+                                    ctx.config.llm
+                                    .context_compression_reserve,
+                                    tool_tokens=_tool_tokens
+                                    if tools else 0,
+                                )
+                            )
+                            await _archive_messages_in_db(
+                                session,
+                                post_all_msgs,
+                                post_raw,
+                                post_comp.split_index,
+                                active_versions=av_map,
+                            )
+                            post_summary = (
+                                f"[Context summary of "
+                                f"{post_comp.split_index} earlier "
+                                f"messages]:\n"
+                                f"{post_comp.summary_text}"
+                            )
+                            post_sum_msg = Message(
+                                conversation_id=conv_id,
+                                role="assistant",
+                                content=post_summary,
+                                is_context_summary=True,
+                            )
+                            session.add(post_sum_msg)
+                            await session.commit()
+
+                            if ctx.conversation_file_manager:
+                                await _sync_conversation_to_file(
+                                    session, conv_id,
+                                    ctx.conversation_file_manager,
+                                )
+
+                            await websocket.send_json({
+                                "type": "context_compression_done",
+                                "messages_summarized": (
+                                    post_comp.usage
+                                    .messages_summarized
+                                ),
+                                "summary_message_id": str(
+                                    post_sum_msg.id,
+                                ),
+                            })
+                            # Send updated context_info after
+                            # compression so ContextBar refreshes.
+                            await websocket.send_json({
+                                "type": "context_info",
+                                "used": (
+                                    post_comp.usage.used_tokens
+                                ),
+                                "available": (
+                                    post_comp.usage.available_tokens
+                                ),
+                                "context_window": context_window,
+                                "percentage": (
+                                    post_comp.usage.percentage
+                                ),
+                                "was_compressed": True,
+                                "messages_summarized": (
+                                    post_comp.usage
+                                    .messages_summarized
+                                ),
+                                "is_estimated": True,
+                                "breakdown": _compute_context_breakdown(
+                                    post_comp.messages,
+                                    _tool_tokens,
+                                    ctx.context_manager,
+                                ),
+                            })
+                            logger.info(
+                                "Post-stream compression done: "
+                                "{} messages archived",
+                                post_comp.split_index,
+                            )
+                            # Update snapshot with compressed data.
+                            conv.context_snapshot = {
+                                "prompt_tokens": (
+                                    post_comp.usage.used_tokens
+                                ),
+                                "completion_tokens": 0,
+                                "context_window": context_window,
+                            }
+                            await session.commit()
+                        except Exception as exc:
+                            logger.warning(
+                                "Post-stream compression failed: "
+                                "{}",
+                                exc,
+                            )
+                            await websocket.send_json(
+                                {
+                                    "type":
+                                    "context_compression_failed",
+                                },
+                            )
+
                 except Exception:
                     logger.exception("DB commit error after streaming")
                     await session.rollback()
@@ -1112,12 +1788,193 @@ async def get_conversation(
                     }
                 )
 
+        # Compute context usage for the ContextBar.
+        # Prefer persisted real token data (from last stream) over
+        # pure char/4 estimation.
+        context_info: dict[str, Any] | None = None
+        av_map: dict[str, int] = dict(conv.active_versions or {})
+        if ctx.context_manager is not None and messages:
+            # --- current context window ---
+            cw = 0
+            if ctx.llm_service and ctx.lmstudio_manager:
+                try:
+                    cw = await ctx.llm_service.get_active_context_window(
+                        ctx.lmstudio_manager,
+                    )
+                except Exception:
+                    pass
+            if cw <= 0:
+                cw = 32768
+
+            has_summaries = any(
+                getattr(m, "is_context_summary", False)
+                for m in messages
+            )
+
+            snap = getattr(conv, "context_snapshot", None)
+            if snap and isinstance(snap, dict) and snap.get("prompt_tokens"):
+                # Use persisted real token counts as anchor.
+                # prompt_tokens already includes system prompt + tools
+                # + all messages that were in context during streaming.
+                used = (
+                    snap["prompt_tokens"]
+                    + snap.get("completion_tokens", 0)
+                )
+                # Recalculate percentage against *current* context
+                # window (may have changed if user swapped models).
+                available = max(0, cw - used)
+                pct = round(used / cw, 4) if cw > 0 else 0.0
+                context_info = {
+                    "used": used,
+                    "available": available,
+                    "context_window": cw,
+                    "percentage": pct,
+                    "was_compressed": has_summaries,
+                    "messages_summarized": 0,
+                    "is_estimated": False,
+                }
+            else:
+                # Fallback: pure estimation (first message in new conv
+                # or conversations created before snapshot feature).
+                raw_hist = [
+                    {
+                        "role": m.role,
+                        "content": m.content,
+                        "tool_calls": m.tool_calls,
+                        "tool_call_id": m.tool_call_id,
+                        "version_group_id": (
+                            str(m.version_group_id)
+                            if m.version_group_id else None
+                        ),
+                        "version_index": m.version_index,
+                        "context_excluded": getattr(
+                            m, "context_excluded", False,
+                        ),
+                        "is_context_summary": getattr(
+                            m, "is_context_summary", False,
+                        ),
+                    }
+                    for m in messages
+                ]
+                filtered = _filter_history_for_llm(raw_hist, av_map)
+                sys_prompt_tokens = 0
+                if ctx.llm_service is not None:
+                    try:
+                        aux_ctx: str | None = None
+                        mcp_ctx = _build_mcp_context(ctx)
+                        wb_ctx = await _build_whiteboard_context(
+                            ctx, str(conv.id),
+                        )
+                        for blk in (mcp_ctx, wb_ctx):
+                            if blk:
+                                aux_ctx = (
+                                    f"{aux_ctx}\n\n{blk}"
+                                    if aux_ctx else blk
+                                )
+                        sp = ctx.llm_service.get_system_prompt(
+                            memory_context=aux_ctx,
+                        )
+                        if sp:
+                            sys_prompt_tokens = (
+                                ctx.context_manager.estimate_tokens(sp)
+                            )
+                    except Exception:
+                        pass
+                usage = ctx.context_manager.get_usage_estimated(
+                    filtered, cw,
+                )
+                tool_tokens = 0
+                if ctx.tool_registry and ctx.config.llm.tools_enabled:
+                    try:
+                        avail_tools = (
+                            await ctx.tool_registry
+                            .get_available_tools()
+                        )
+                        if avail_tools:
+                            if ctx.config.llm.max_tools > 0:
+                                avail_tools = (
+                                    ctx.tool_registry.limit_tools(
+                                        avail_tools,
+                                        max_tools=(
+                                            ctx.config.llm.max_tools
+                                        ),
+                                        priority_plugins=(
+                                            ctx.config.llm
+                                            .priority_plugins
+                                        ),
+                                    )
+                                )
+                            tool_tokens = (
+                                ctx.context_manager.estimate_tokens(
+                                    json.dumps(
+                                        avail_tools,
+                                        ensure_ascii=False,
+                                    )
+                                )
+                            )
+                    except Exception:
+                        pass
+                extra_tokens = sys_prompt_tokens + tool_tokens
+                if extra_tokens > 0:
+                    usage.used_tokens += extra_tokens
+                    usage.available_tokens = max(
+                        0, cw - usage.used_tokens,
+                    )
+                    usage.percentage = round(
+                        usage.used_tokens / cw, 4,
+                    ) if cw > 0 else 0.0
+
+                # Per-category breakdown for ContextBar tooltip.
+                _rest_bd: dict[str, int] = {
+                    "system": sys_prompt_tokens,
+                    "tools": tool_tokens,
+                    "messages": 0,
+                    "files": 0,
+                    "tool_results": 0,
+                    "other": 0,
+                }
+                for _msg in filtered:
+                    _role = _msg.get("role", "")
+                    _content = _msg.get("content") or ""
+                    _tok = 4  # role/metadata overhead
+                    if isinstance(_content, str):
+                        _tok += ctx.context_manager.estimate_tokens(_content)
+                    _tc = _msg.get("tool_calls")
+                    if _tc:
+                        try:
+                            _tc_s = (
+                                json.dumps(_tc)
+                                if not isinstance(_tc, str)
+                                else _tc
+                            )
+                            _tok += ctx.context_manager.estimate_tokens(_tc_s)
+                        except (TypeError, ValueError):
+                            pass
+                    if _role == "tool":
+                        _rest_bd["tool_results"] += _tok
+                    elif _role in ("user", "assistant"):
+                        _rest_bd["messages"] += _tok
+                    else:
+                        _rest_bd["other"] += _tok
+
+                context_info = {
+                    "used": usage.used_tokens,
+                    "available": usage.available_tokens,
+                    "context_window": usage.context_window,
+                    "percentage": usage.percentage,
+                    "was_compressed": has_summaries,
+                    "messages_summarized": 0,
+                    "is_estimated": True,
+                    "breakdown": _rest_bd,
+                }
+
         return {
             "id": str(conv.id),
             "title": conv.title,
             "created_at": conv.created_at.isoformat(),
             "updated_at": conv.updated_at.isoformat(),
             "active_versions": conv.active_versions or {},
+            "context_info": context_info,
             "messages": [
                 {
                     "id": str(m.id),
@@ -1132,6 +1989,12 @@ async def get_conversation(
                     if m.version_group_id
                     else None,
                     "version_index": m.version_index,
+                    "is_context_summary": getattr(
+                        m, "is_context_summary", False,
+                    ),
+                    "context_excluded": getattr(
+                        m, "context_excluded", False,
+                    ),
                 }
                 for m in messages
             ],

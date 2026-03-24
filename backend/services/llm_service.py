@@ -21,6 +21,41 @@ from backend.core.config import LLMConfig
 from backend.services.thinking_parser import ThinkTagParser
 
 
+def _sanitize_tool_calls(
+    tool_calls: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Ensure every tool_call has valid JSON in ``function.arguments``.
+
+    LLMs may truncate output mid-generation (e.g. hitting max_tokens),
+    producing a syntactically broken ``arguments`` string.  If this is
+    saved to DB and later replayed in the conversation history, the
+    provider API (LM Studio, Ollama, etc.) will return a 500.
+
+    This helper validates each ``arguments`` value and replaces broken
+    JSON with ``"{}"`` so the history remains sendable.
+    """
+    sanitized: list[dict[str, Any]] = []
+    for tc in tool_calls:
+        fn = tc.get("function", {})
+        raw_args = fn.get("arguments", "{}")
+        try:
+            json.loads(raw_args)
+            sanitized.append(tc)
+        except (json.JSONDecodeError, TypeError):
+            logger.warning(
+                "Sanitised malformed tool_call arguments for '{}' "
+                "(len={})",
+                fn.get("name", "?"),
+                len(raw_args) if isinstance(raw_args, str) else 0,
+            )
+            fixed_tc = {
+                **tc,
+                "function": {**fn, "arguments": "{}"},
+            }
+            sanitized.append(fixed_tc)
+    return sanitized
+
+
 def normalize_history(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Convert raw DB message dicts into OpenAI-compatible message format.
 
@@ -53,10 +88,11 @@ def normalize_history(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
         elif role == "assistant":
             tc = msg.get("tool_calls")
             if tc:
+                sanitized_tcs = _sanitize_tool_calls(tc)
                 normalized.append({
                     "role": "assistant",
                     "content": content or "",
-                    "tool_calls": tc,
+                    "tool_calls": sanitized_tcs,
                 })
             else:
                 normalized.append({"role": "assistant", "content": content})
@@ -530,6 +566,7 @@ class LLMService:
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
         system_prompt: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream a chat completion, choosing the best backend.
 
@@ -569,11 +606,13 @@ class LLMService:
                 attachments=attachments,
                 memory_context=memory_context,
                 system_prompt=system_prompt,
+                max_output_tokens=max_output_tokens,
             ):
                 yield event
         else:
             async for event in self._chat_openai_compat(
                 messages, tools=tools, cancel_event=cancel_event,
+                max_output_tokens=max_output_tokens,
             ):
                 yield event
 
@@ -589,6 +628,7 @@ class LLMService:
         attachments: list[dict[str, str]] | None = None,
         memory_context: str | None = None,
         system_prompt: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream via LM Studio native REST API ``/api/v1/chat``.
 
@@ -649,9 +689,13 @@ class LLMService:
             "input": input_field,
             "stream": True,
             "temperature": self._config.temperature,
-            "max_output_tokens": self._config.max_tokens,
             "store": True,
         }
+        effective_max = max_output_tokens or (
+            self._config.max_tokens if self._config.max_tokens > 0 else None
+        )
+        if effective_max is not None and effective_max > 0:
+            payload["max_output_tokens"] = effective_max
         if sys_prompt:
             payload["system_prompt"] = sys_prompt
 
@@ -708,9 +752,13 @@ class LLMService:
         cancelled = (
             cancel_event is not None and cancel_event.is_set()
         )
+        # If not cancelled, the model likely ran out of context
+        # (LM Studio drops the SSE stream without chat.end).
         yield {
             "type": "done",
-            "finish_reason": "cancelled" if cancelled else "stop",
+            "finish_reason": (
+                "cancelled" if cancelled else "length"
+            ),
         }
 
     # ------------------------------------------------------------------
@@ -794,6 +842,15 @@ class LLMService:
                             }
                     result = data.get("result", {})
                     resp_id = result.get("response_id")
+                    stats = result.get("stats", {})
+                    if stats.get("input_tokens"):
+                        yield {
+                            "type": "usage",
+                            "input_tokens": stats["input_tokens"],
+                            "output_tokens": stats.get(
+                                "total_output_tokens", 0,
+                            ),
+                        }
                     if resp_id and conversation_id:
                         self._response_ids[conversation_id] = (
                             resp_id
@@ -860,6 +917,7 @@ class LLMService:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream a chat completion via the OAI-compatible endpoint.
 
@@ -903,9 +961,14 @@ class LLMService:
             "model": active_model,
             "messages": actual_messages,
             "temperature": self._config.temperature,
-            "max_tokens": self._config.max_tokens,
             "stream": True,
+            "stream_options": {"include_usage": True},
         }
+        effective_max = max_output_tokens or (
+            self._config.max_tokens if self._config.max_tokens > 0 else None
+        )
+        if effective_max is not None and effective_max > 0:
+            payload["max_tokens"] = effective_max
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
@@ -920,6 +983,7 @@ class LLMService:
         # Keyed by index (int) -> {"id": str, "name": str, "arguments": str}
         tool_calls_acc: dict[int, dict[str, str]] = {}
         last_finish_reason: str | None = None
+        _last_usage: dict[str, Any] | None = None
 
         # Always parse inline <think> tags — transparent when absent.
         # Covers any model that embeds reasoning in content, regardless
@@ -979,6 +1043,12 @@ class LLMService:
                                 "arguments": tc["arguments"],
                             },
                         }
+                    if _last_usage:
+                        yield {
+                            "type": "usage",
+                            "input_tokens": _last_usage.get("prompt_tokens", 0),
+                            "output_tokens": _last_usage.get("completion_tokens", 0),
+                        }
                     yield {
                         "type": "done",
                         "finish_reason": last_finish_reason or "stop",
@@ -990,6 +1060,10 @@ class LLMService:
                 except json.JSONDecodeError:
                     logger.warning("Skipping malformed SSE chunk: {}", data_str)
                     continue
+
+                # Capture usage data from final chunk (if present).
+                if chunk.get("usage"):
+                    _last_usage = chunk["usage"]
 
                 # Detect error responses from the LLM server (e.g.
                 # Jinja template rendering failures in LM Studio).
@@ -1097,6 +1171,78 @@ class LLMService:
     # ------------------------------------------------------------------
     # Non-streaming chat
     # ------------------------------------------------------------------
+
+    async def complete_nonstreaming(
+        self, messages: list[dict[str, Any]], max_tokens: int = 512,
+    ) -> str:
+        """Complete a chat request without streaming (for summarization).
+
+        Uses the OAI-compatible endpoint with ``stream=False``.
+        Returns the assistant content or empty string on any error.
+
+        Args:
+            messages: Full message list (caller controls content).
+            max_tokens: Maximum tokens for the response.
+
+        Returns:
+            The assistant's response text, or ``""`` on failure.
+        """
+        url = f"{self._config.base_url}/v1/chat/completions"
+        active_model = await self._resolve_model()
+        payload: dict[str, Any] = {
+            "model": active_model,
+            "messages": messages,
+            "temperature": 0.3,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        _compress_timeout = httpx.Timeout(
+            connect=5.0,
+            read=self._config.context_compression_timeout,
+            write=5.0,
+            pool=5.0,
+        )
+        try:
+            resp = await self._client.post(
+                url, json=payload, timeout=_compress_timeout,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"] or ""
+        except Exception as exc:
+            logger.warning("Non-streaming completion failed: {}", exc)
+            return ""
+
+    async def get_active_context_window(
+        self, lmstudio_manager: Any = None,
+    ) -> int:
+        """Return the context window of the currently loaded model.
+
+        Queries the LM Studio v1 API for loaded model metadata.
+        Falls back to 32768 if unavailable.
+
+        Args:
+            lmstudio_manager: Optional LMStudioManager for v1 API calls.
+
+        Returns:
+            Context window size in tokens.
+        """
+        try:
+            if lmstudio_manager is not None:
+                data = await lmstudio_manager.list_models()
+                for model in data.get("models", []):
+                    if model.get("type") == "embedding":
+                        continue
+                    instances = model.get("loaded_instances", [])
+                    if instances:
+                        ctx_len = instances[0].get("config", {}).get(
+                            "context_length", 0,
+                        )
+                        if ctx_len > 0:
+                            return ctx_len
+        except Exception as exc:
+            logger.debug("Failed to query context window: {}", exc)
+        return 32768
 
     # ------------------------------------------------------------------
     # Lifecycle

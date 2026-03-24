@@ -63,7 +63,8 @@ async def run_tool_loop(
     system_prompt: str | None = None,
     version_group_id: uuid.UUID | None = None,
     version_index: int = 0,
-) -> tuple[str, str]:
+    context_window: int = 0,
+) -> tuple[str, str, int, int, str]:
     """Execute the tool-calling loop until the LLM produces a final answer.
 
     Iterates up to *max_iterations* rounds.  In each round the assistant
@@ -99,12 +100,13 @@ async def run_tool_loop(
             so the prompt is not rebuilt on every iteration.
 
     Returns:
-        ``(full_content, thinking_content)`` of the final LLM response
+        ``(full_content, thinking_content, last_input_tokens,
+        last_output_tokens, finish_reason)`` of the final LLM response
         (the one with no further tool calls).
     """
     if ctx.tool_registry is None:
         logger.error("Tool registry not available, cannot execute tool loop")
-        return full_content, thinking_content
+        return full_content, thinking_content, 0, 0, "stop"
 
     llm_error_in_requery = False
 
@@ -127,6 +129,12 @@ async def run_tool_loop(
     # Dedup set persists across all iterations to catch duplicates
     # even when LLM re-requests the same tool in a later round.
     seen: set[str] = set()
+
+    # Track usage and finish_reason from the last LLM re-query so
+    # the caller can use real token data for context management.
+    _loop_last_input_tokens = 0
+    _loop_last_output_tokens = 0
+    _loop_finish_reason = "stop"
 
     for iteration in range(max_iterations):
         if not tool_calls_from_llm:
@@ -544,6 +552,7 @@ async def run_tool_loop(
             stmt = (
                 _select(Message)
                 .where(Message.conversation_id == conv_id)
+                .where(Message.context_excluded == False)  # noqa: E712
                 .order_by(Message.created_at)
             )
             results_db = await session.exec(stmt)
@@ -563,6 +572,125 @@ async def run_tool_loop(
             memory_context=memory_context,
             system_prompt=system_prompt,
         )
+
+        # Per-iteration context compression check.
+        if (
+            context_window > 0
+            and ctx.context_manager is not None
+            and ctx.config.llm.context_compression_enabled
+        ):
+            # Estimate tool tokens so the compression target budget is accurate.
+            _tool_tokens_iter = (
+                ctx.context_manager.estimate_tokens(
+                    json.dumps(tools, ensure_ascii=False),
+                )
+                if tools
+                else 0
+            )
+            iter_usage = ctx.context_manager.get_usage_estimated(
+                messages, context_window,
+            )
+            # Add tool tokens to usage estimate before deciding to compress.
+            if _tool_tokens_iter > 0:
+                iter_usage.used_tokens += _tool_tokens_iter
+                iter_usage.available_tokens = max(
+                    0, context_window - iter_usage.used_tokens,
+                )
+                iter_usage.percentage = (
+                    round(iter_usage.used_tokens / context_window, 4)
+                    if context_window > 0 else 0.0
+                )
+            if ctx.context_manager.should_compress(iter_usage):
+                await websocket.send_json(
+                    {"type": "context_compression_start"},
+                )
+                try:
+                    iter_comp = await ctx.context_manager.compress(
+                        messages, llm, context_window,
+                        ctx.config.llm.context_compression_reserve,
+                        tool_tokens=_tool_tokens_iter,
+                    )
+                    messages = iter_comp.messages
+                    if mem_history is not None:
+                        mem_history = [
+                            m for m in messages if m["role"] != "system"
+                        ]
+
+                    # Persist compression to DB so the excluded messages
+                    # are not reloaded on page refresh and the next
+                    # pre-gen compression check sees up-to-date data.
+                    try:
+                        from sqlmodel import select as _sel
+                        _stmt = (
+                            _sel(Message)
+                            .where(Message.conversation_id == conv_id)
+                            .where(
+                                Message.context_excluded == False,  # noqa: E712
+                            )
+                            .order_by(Message.created_at, Message.id)
+                        )
+                        _res = await session.exec(_stmt)
+                        _loop_msgs = _res.all()
+                        # Archive the first split_index non-system messages.
+                        _archived = 0
+                        for _m in _loop_msgs:
+                            if _archived >= iter_comp.split_index:
+                                break
+                            if _m.role == "system":
+                                continue
+                            if getattr(_m, "is_context_summary", False):
+                                continue
+                            _m.context_excluded = True
+                            session.add(_m)
+                            _archived += 1
+                        # Persist the summary message.
+                        _summary_content = (
+                            f"[Context summary of "
+                            f"{iter_comp.split_index} earlier "
+                            f"messages]:\n{iter_comp.summary_text}"
+                        )
+                        _summary_msg = Message(
+                            conversation_id=conv_id,
+                            role="assistant",
+                            content=_summary_content,
+                            is_context_summary=True,
+                        )
+                        session.add(_summary_msg)
+                        await session.flush()
+                    except Exception as _db_exc:
+                        logger.warning(
+                            "Tool loop: failed to persist compression to DB: {}",
+                            _db_exc,
+                        )
+
+                    # Send updated context_info so the ContextBar reflects
+                    # the post-compression state immediately.
+                    await websocket.send_json({
+                        "type": "context_info",
+                        "used": iter_comp.usage.used_tokens,
+                        "available": iter_comp.usage.available_tokens,
+                        "context_window": context_window,
+                        "percentage": iter_comp.usage.percentage,
+                        "was_compressed": True,
+                        "messages_summarized": (
+                            iter_comp.usage.messages_summarized
+                        ),
+                        "is_estimated": iter_comp.usage.is_estimated,
+                        "breakdown": None,
+                    })
+                    await websocket.send_json({
+                        "type": "context_compression_done",
+                        "messages_summarized": (
+                            iter_comp.usage.messages_summarized
+                        ),
+                    })
+                except Exception as exc:
+                    logger.warning(
+                        "Tool loop context compression failed: {}", exc,
+                    )
+                    await websocket.send_json(
+                        {"type": "context_compression_failed"},
+                    )
 
         # 7. Re-stream LLM (with retry on empty responses).
         # Local LLMs sometimes return completely empty completions
@@ -633,8 +761,17 @@ async def run_tool_loop(
                             event.get("content", "unknown"),
                         )
                         llm_error_in_requery = True
+                    elif event["type"] == "usage":
+                        _loop_last_input_tokens = event.get(
+                            "input_tokens", 0,
+                        )
+                        _loop_last_output_tokens = event.get(
+                            "output_tokens", 0,
+                        )
                     elif event["type"] == "done":
-                        pass
+                        _loop_finish_reason = event.get(
+                            "finish_reason", "stop",
+                        )
             except Exception as exc:
                 logger.error(
                     "LLM exception during tool loop re-query "
@@ -701,7 +838,13 @@ async def run_tool_loop(
         )
         logger.info("Tool loop finished: {}", exit_reason)
 
-    return full_content, thinking_content
+    return (
+        full_content,
+        thinking_content,
+        _loop_last_input_tokens,
+        _loop_last_output_tokens,
+        _loop_finish_reason,
+    )
 
 
 # ---------------------------------------------------------------------------

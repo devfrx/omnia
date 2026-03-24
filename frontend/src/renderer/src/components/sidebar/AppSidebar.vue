@@ -56,7 +56,12 @@ async function onSelect(id: string): Promise<void> {
   }
   const current = router.currentRoute.value.name as string
   if (current !== 'assistant' && current !== 'hybrid') {
-    await router.push({ name: uiStore.mode })
+    try {
+      await router.push({ name: uiStore.mode })
+    } catch (err) {
+      console.error('[AppSidebar] Navigation failed, falling back to home:', err)
+      await router.replace({ name: 'home' }).catch(() => { })
+    }
   }
 }
 

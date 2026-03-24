@@ -25,6 +25,9 @@ PERSISTABLE_LLM_KEYS: frozenset[str] = frozenset({
     "system_prompt_enabled",
     "tools_enabled",
     "max_tool_iterations",
+    "context_compression_enabled",
+    "context_compression_threshold",
+    "context_compression_reserve",
 })
 
 

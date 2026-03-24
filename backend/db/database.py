@@ -108,6 +108,10 @@ async def init_db(engine: AsyncEngine) -> None:
         ("messages", "version_group_id", "TEXT"),
         ("messages", "version_index", "INTEGER DEFAULT 0"),
         ("conversations", "active_versions", "TEXT"),
+        ("messages", "token_count", "INTEGER"),
+        ("messages", "is_context_summary", "INTEGER DEFAULT 0"),
+        ("messages", "context_excluded", "INTEGER DEFAULT 0"),
+        ("conversations", "context_snapshot", "TEXT"),
     ]
 
     async with engine.begin() as conn:

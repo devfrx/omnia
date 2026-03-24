@@ -101,6 +101,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     llm_service = LLMService(config.llm)
     ctx.llm_service = llm_service
 
+    from backend.services.context_manager import ContextManager
+    ctx.context_manager = ContextManager(config.llm)
+
     # Validate system prompt file exists at startup.
     prompt_path = Path(config.llm.system_prompt_file)
     if not prompt_path.exists():

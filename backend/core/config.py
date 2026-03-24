@@ -120,7 +120,7 @@ class LLMConfig(BaseSettings):
     base_url: str = "http://localhost:1234"
     model: str = DEFAULT_MODEL
     temperature: float = 0.7
-    max_tokens: int = 16384
+    max_tokens: int = -1
     api_token: str = ""
     """LM Studio API authentication token (optional)."""
     timeout: float = 120.0
@@ -164,6 +164,31 @@ class LLMConfig(BaseSettings):
     """-1 = offload all layers to GPU. Set to 0 to force CPU."""
     keep_alive: str = "5m"
     """How long Ollama keeps the model loaded in memory after a request."""
+    # -- Context compression options --
+    context_compression_enabled: bool = True
+    """Enable automatic context compression when approaching context window limit."""
+    context_compression_threshold: float = 0.75
+    """Fraction of context window usage that triggers compression (0.50–0.95)."""
+    context_compression_reserve: int = 4096
+    """Tokens always reserved for model output generation (minimum 512)."""
+    context_compression_timeout: float = 120.0
+    """Read timeout in seconds for the non-streaming LLM call used during compression.
+
+    Reasoning models (QwQ-32B, DeepSeek-R1) can generate slowly (~10 tok/s);
+    512 output tokens alone may take ~51 s.  120 s gives a safe margin.
+    """
+
+    @field_validator("context_compression_threshold")
+    @classmethod
+    def _clamp_threshold(cls, v: float) -> float:
+        """Ensure compression threshold stays within [0.50, 0.95]."""
+        return max(0.50, min(0.95, v))
+
+    @field_validator("context_compression_reserve")
+    @classmethod
+    def _positive_reserve(cls, v: int) -> int:
+        """Ensure compression reserve is at least 512 tokens."""
+        return max(512, v)
 
     @model_validator(mode="before")
     @classmethod

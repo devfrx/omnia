@@ -10,6 +10,7 @@
  * from the right with an interactive 3D viewer + prev/next navigation.
  */
 import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AliceOrb from '../components/assistant/AliceOrb.vue'
 import AmbientBackground from '../components/assistant/AmbientBackground.vue'
 import StatusBubbles from '../components/assistant/StatusBubbles.vue'
@@ -40,9 +41,20 @@ const TldrawCanvas = defineAsyncComponent(
 
 const chatStore = useChatStore()
 const voiceStore = useVoiceStore()
-const chatApi = inject(ChatApiKey)
-if (!chatApi) throw new Error('ChatApiKey not provided')
-const { sendMessage: send, stopGeneration, editMessage } = chatApi
+const chatApi = inject(ChatApiKey, null)
+const _router = useRouter()
+if (!chatApi) {
+    console.error('[AssistantView] ChatApiKey injection failed — redirecting to home')
+    _router.replace({ name: 'home' })
+}
+// Safe stubs — if chatApi is null the redirect will unmount this component.
+const _noop = (): void => { }
+const _asyncNoop = async (): Promise<void> => { }
+const send = chatApi?.sendMessage ?? _asyncNoop
+const stopGeneration = chatApi?.stopGeneration ?? _noop
+const editMessage = chatApi?.editMessage ?? _asyncNoop
+const isConnected = chatApi?.isConnected ?? ref(false)
+const respondToConfirmation = chatApi?.respondToConfirmation ?? _noop
 
 const {
     startListening, stopListening, cancelProcessing, connect: connectVoice,
@@ -497,7 +509,7 @@ onMounted(() => {
                         <line x1="6" y1="20" x2="6" y2="14" />
                     </svg>
                     <span v-if="chartPayloads.length > 1" class="assistant-view__chart-badge">{{ chartPayloads.length
-                    }}</span>
+                        }}</span>
                 </button>
             </Transition>
 
@@ -518,7 +530,7 @@ onMounted(() => {
             </Transition>
 
             <FloatingInputBar ref="floatingBarRef" :disabled="chatStore.isStreamingCurrentConversation"
-                :is-connected="chatApi.isConnected.value" :is-streaming="chatStore.isStreamingCurrentConversation"
+                :is-connected="isConnected" :is-streaming="chatStore.isStreamingCurrentConversation"
                 :audio-devices="audioDevices" :selected-device-id="selectedDeviceId" :orb-state="orbState"
                 @send="handleSend" @stop="() => { stopGeneration(); cancelSpeak() }" @voice-start="startListening"
                 @voice-stop="stopListening" @voice-cancel-processing="cancelProcessing"
@@ -560,7 +572,7 @@ onMounted(() => {
                         </svg>
                         <span>Grafici</span>
                         <span v-if="chartPayloads.length > 1" class="side-panel__tab-badge">{{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                     </button>
                     <button v-if="hasWhiteboards" class="side-panel__tab"
                         :class="{ 'side-panel__tab--active': sidePanelTab === 'whiteboard' }"
@@ -612,7 +624,7 @@ onMounted(() => {
                             </svg>
                         </button>
                         <span class="side-panel__chart-counter">{{ chartActiveIndex + 1 }} / {{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                         <button class="side-panel__chart-nav-btn"
                             :disabled="chartActiveIndex >= chartPayloads.length - 1"
                             @click="chartActiveIndex = Math.min(chartPayloads.length - 1, chartActiveIndex + 1)">
@@ -679,7 +691,7 @@ onMounted(() => {
 
         <ToolConfirmationDialog v-if="pendingConfirmationsList.length > 0"
             :key="pendingConfirmationsList[0].executionId" :confirmation="pendingConfirmationsList[0]"
-            @respond="chatApi.respondToConfirmation" />
+            @respond="respondToConfirmation" />
     </div>
 </template>
 

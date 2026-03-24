@@ -3,64 +3,40 @@
     <AmbientBackground state="idle" :audio-level="0" :subtle="true" />
 
     <div class="home-view__content">
-      <!-- Hero Section -->
-      <div class="home-view__hero">
-        <div class="home-view__logo" aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="23" stroke="var(--accent)" stroke-width="1" opacity="0.3" />
-            <circle cx="24" cy="24" r="16" stroke="var(--accent)" stroke-width="0.5" opacity="0.15" />
-            <circle cx="24" cy="24" r="4" fill="var(--accent)" opacity="0.6" />
-            <circle cx="24" cy="24" r="2" fill="var(--accent)" />
-          </svg>
-        </div>
+      <!-- Branding -->
+      <div class="home-view__brand">
         <h1 class="home-view__title">AL\CE</h1>
-        <p class="home-view__subtitle">Adaptive Learning Interface for Computing & Execution</p>
+        <p class="home-view__tagline">Adaptive Learning Interface for Computing & Execution</p>
       </div>
 
-      <!-- Mode Cards -->
-      <div class="home-view__modes">
-        <button class="mode-card" :class="{ 'mode-card--active': uiStore.mode === 'assistant' }"
+      <!-- Mode toggle -->
+      <div class="home-view__mode-toggle">
+        <button class="home-view__mode-btn" :class="{ 'home-view__mode-btn--active': uiStore.mode === 'assistant' }"
           @click="selectMode('assistant')">
-          <div class="mode-card__icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" opacity="0.3" />
-            </svg>
-          </div>
-          <div class="mode-card__text">
-            <h3 class="mode-card__title">Assistente</h3>
-            <p class="mode-card__desc">Interazione vocale con visualizzazione IA</p>
-          </div>
-          <span class="mode-card__indicator" />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="4" />
+          </svg>
+          Assistente
         </button>
-
-        <button class="mode-card" :class="{ 'mode-card--active': uiStore.mode === 'hybrid' }"
+        <button class="home-view__mode-btn" :class="{ 'home-view__mode-btn--active': uiStore.mode === 'hybrid' }"
           @click="selectMode('hybrid')">
-          <div class="mode-card__icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="14" rx="2" />
-              <path d="M7 21h10M12 17v4" opacity="0.4" />
-              <circle cx="12" cy="10" r="2" />
-            </svg>
-          </div>
-          <div class="mode-card__text">
-            <h3 class="mode-card__title">Ibrido</h3>
-            <p class="mode-card__desc">Chat testuale con presenza IA ambientale</p>
-          </div>
-          <span class="mode-card__indicator" />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="14" rx="2" />
+            <circle cx="12" cy="10" r="2" />
+          </svg>
+          Ibrido
         </button>
       </div>
 
-      <!-- Start Button -->
+      <!-- Start CTA -->
       <button class="home-view__start" @click="start">
         Inizia
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </button>
 
-      <!-- Keyboard Shortcut Hint -->
       <p class="home-view__hint">
         Premi <kbd>Invio</kbd> per iniziare
       </p>
@@ -114,138 +90,85 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-8);
+  gap: var(--space-6);
 }
 
-/* ── Hero ──────────────────── */
-.home-view__hero {
+/* ── Brand ──────────────────── */
+.home-view__brand {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-}
-
-.home-view__logo {
-  opacity: 0.7;
+  gap: var(--space-1-5);
 }
 
 .home-view__title {
   font-family: var(--font-display);
-  font-size: 2.2rem;
+  font-size: clamp(2rem, 5vw, 3rem);
   letter-spacing: 0.3em;
   font-weight: 600;
   color: var(--accent);
   line-height: 1;
 }
 
-.home-view__subtitle {
-  font-size: var(--text-sm);
+.home-view__tagline {
+  font-size: var(--text-2xs);
   color: var(--text-muted);
   letter-spacing: var(--tracking-wide);
+  opacity: 0.6;
 }
 
-/* ── Mode Cards ───────────── */
-.home-view__modes {
+/* ── Mode toggle (pill) ────── */
+.home-view__mode-toggle {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 340px;
-}
-
-.mode-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
   background: var(--surface-1);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.home-view__mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 18px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
   cursor: pointer;
-  text-align: left;
-  position: relative;
+  letter-spacing: 0.02em;
   transition:
     background var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
-.mode-card:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-hover);
+.home-view__mode-btn:hover {
+  color: var(--text-secondary);
 }
 
-.mode-card--active {
-  border-color: var(--accent-border);
-  background: var(--surface-selected);
+.home-view__mode-btn--active {
+  background: var(--surface-3);
   color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
-.mode-card--active .mode-card__icon {
+.home-view__mode-btn--active svg {
   color: var(--accent);
 }
 
-.mode-card--active .mode-card__indicator {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.mode-card__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  color: var(--text-muted);
-  transition: color var(--transition-fast), background var(--transition-fast);
-}
-
-.mode-card--active .mode-card__icon {
-  background: var(--accent-dim);
-}
-
-.mode-card__text {
-  flex: 1;
-  min-width: 0;
-}
-
-.mode-card__title {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: inherit;
-  line-height: var(--leading-tight);
-}
-
-.mode-card__desc {
-  font-size: var(--text-2xs);
-  color: var(--text-muted);
-  line-height: var(--leading-snug);
-  margin-top: 2px;
-}
-
-.mode-card__indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
-  opacity: 0;
-  transform: scale(0);
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
-}
-
-/* ── Start Button ─────────── */
+/* ── Start CTA ─────────────── */
 .home-view__start {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2-5) var(--space-6);
+  gap: var(--space-1-5);
+  padding: 7px 28px;
   border: 1px solid var(--accent-border);
   border-radius: var(--radius-pill);
-  background: var(--accent-dim);
+  background: transparent;
   color: var(--accent);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
@@ -257,7 +180,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 }
 
 .home-view__start:hover {
-  background: var(--accent-light);
+  background: var(--accent-dim);
   border-color: var(--accent);
 }
 
@@ -269,7 +192,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .home-view__hint {
   font-size: var(--text-2xs);
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .home-view__hint kbd {

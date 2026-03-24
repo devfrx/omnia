@@ -15,12 +15,15 @@ import { useRouter } from 'vue-router'
 import type { AudioDevice } from '../../composables/useVoice'
 import ModelSelector from '../settings/ModelSelector.vue'
 import MicrophoneButton from '../voice/MicrophoneButton.vue'
+import ContextBar from './ContextBar.vue'
+import { useChatStore } from '../../stores/chat'
 import { useSettingsStore } from '../../stores/settings'
 import { useUIStore } from '../../stores/ui'
 import { useVoiceStore } from '../../stores/voice'
 
 const router = useRouter()
 const settingsStore = useSettingsStore()
+const chatStore = useChatStore()
 const uiStore = useUIStore()
 const voiceStore = useVoiceStore()
 
@@ -274,57 +277,66 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Layer 1: Toolbar row (fixed 36px) -->
+    <!-- Layer 1: Toolbar row -->
     <div class="ci__toolbar">
-      <!-- Connection status dot -->
-      <div class="ci__dot" :class="isConnected ? 'dot--ok' : 'dot--err'" />
-
-      <!-- Model capability badges (only when a model is active) -->
-      <div v-if="settingsStore.activeModel" class="ci__badges">
-        <span class="ci__badge" :class="{ 'ci__badge--on': supportsVision }" title="Vision">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </span>
-        <span class="ci__badge" :class="{ 'ci__badge--on': supportsThinking }" title="Thinking">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2h7c.1-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
-            <line x1="10" y1="20" x2="14" y2="20" />
-            <line x1="10" y1="22" x2="14" y2="22" />
-          </svg>
-        </span>
-        <span class="ci__badge" :class="{ 'ci__badge--on': supportsToolUse }" title="Tool Use">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path
-              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-          </svg>
-        </span>
+      <!-- Status cluster: connection dot + capability badges -->
+      <div class="ci__status">
+        <div class="ci__dot" :class="isConnected ? 'dot--ok' : 'dot--err'" />
+        <div v-if="settingsStore.activeModel" class="ci__badges">
+          <span class="ci__badge" :class="{ 'ci__badge--on': supportsVision }" title="Vision">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </span>
+          <span class="ci__badge" :class="{ 'ci__badge--on': supportsThinking }" title="Thinking">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2h7c.1-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
+              <line x1="10" y1="20" x2="14" y2="20" />
+              <line x1="10" y1="22" x2="14" y2="22" />
+            </svg>
+          </span>
+          <span class="ci__badge" :class="{ 'ci__badge--on': supportsToolUse }" title="Tool Use">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path
+                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+            </svg>
+          </span>
+        </div>
       </div>
 
-      <!-- Mode toggle (assistant ↔ hybrid) -->
-      <button class="ci__mode-toggle"
-        :title="uiStore.mode === 'assistant' ? 'Passa a modalità Ibrida' : 'Passa a modalità Assistente'"
-        @click="toggleMode">
-        <!-- Assistant icon (concentric circles) -->
-        <svg v-if="uiStore.mode === 'assistant'" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="4" />
-        </svg>
-        <!-- Hybrid icon (chat bubble) -->
-        <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </button>
+      <!-- Context usage bar (grows to fill available space) -->
+      <ContextBar :context-info="chatStore.contextInfo" :is-compressing="chatStore.isCompressingContext" />
 
       <div class="ci__gap" />
 
-      <!-- Model selectors pushed to the right -->
+      <!-- Mode toggle chip -->
+      <button class="ci__mode-toggle" @click="toggleMode">
+        <!-- When in assistant → offer hybrid -->
+        <template v-if="uiStore.mode === 'assistant'">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span>Ibrida</span>
+        </template>
+        <!-- When in hybrid → offer assistant -->
+        <template v-else>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="4" />
+          </svg>
+          <span>Assistente</span>
+        </template>
+      </button>
+
+      <!-- Divider -->
+      <div class="ci__divider" />
+
+      <!-- Model selectors -->
       <div class="ci__selectors">
         <ModelSelector model-type="embedding" />
         <ModelSelector model-type="llm" />
@@ -476,13 +488,21 @@ defineExpose({
 }
 
 /* ============================================================
-   Toolbar row (Layer 1 — fixed 36px)
+   Toolbar row
    ============================================================ */
 .ci__toolbar {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  height: 36px;
+  height: 32px;
+}
+
+/* Status cluster (dot + badges) */
+.ci__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
 }
 
 /* Connection status dot */
@@ -530,27 +550,29 @@ defineExpose({
   }
 }
 
-/* Capability badges — Glass-morphism pills */
+/* Capability badges */
 .ci__badges {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 3px;
 }
 
 .ci__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text-muted);
+  opacity: 0.35;
   transition:
     color var(--duration-fast) ease,
     border-color var(--duration-fast) ease,
-    background var(--duration-fast) ease;
+    background var(--duration-fast) ease,
+    opacity var(--duration-fast) ease;
 }
 
 .ci__badge svg {
@@ -559,40 +581,56 @@ defineExpose({
 }
 
 .ci__badge--on {
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  border-color: var(--border);
+  background: var(--surface-2);
+  opacity: 1;
 }
 
-/* Mode toggle button */
+/* Mode toggle — labeled chip */
 .ci__mode-toggle {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.03em;
   cursor: pointer;
-  margin-left: var(--space-1);
+  white-space: nowrap;
+  flex-shrink: 0;
   transition:
-    color var(--duration-fast) ease,
-    border-color var(--duration-fast) ease,
-    background var(--duration-fast) ease;
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .ci__mode-toggle:hover {
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-hover);
+  background: var(--surface-3);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* Divider */
+.ci__divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  flex-shrink: 0;
+  opacity: 0.6;
 }
 
 /* Flex spacer */
 .ci__gap {
   flex: 1;
+  min-width: 0;
 }
 
 /* Selectors wrapper */

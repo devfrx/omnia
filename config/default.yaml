@@ -17,7 +17,7 @@ llm:
   api_token: ""                      # LM Studio API token (optional, leave empty if auth disabled)
   model: "auto"                      # "auto" = use whichever model is already loaded in LM Studio
   temperature: 0.7
-  max_tokens: 25963
+  max_tokens: -1                        # -1 = unlimited (server decides); set e.g. 4096 to cap output length
   system_prompt_file: "config/system_prompt.md"
   supports_thinking: true    # Enable for reasoning models (QwQ, DeepSeek R1)
   supports_vision: true       # Enable for multimodal models
@@ -28,6 +28,9 @@ llm:
   num_ctx: 8192
   num_gpu: -1
   keep_alive: "5m"
+  context_compression_enabled: true
+  context_compression_threshold: 0.75
+  context_compression_reserve: 4096
 
 stt:
   engine: "faster-whisper"

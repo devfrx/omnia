@@ -6,6 +6,7 @@
  * Best of both worlds: conversational + ambient presence.
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AliceOrb from '../components/assistant/AliceOrb.vue'
 import AmbientBackground from '../components/assistant/AmbientBackground.vue'
 import ChatInput from '../components/chat/ChatInput.vue'
@@ -20,10 +21,21 @@ import { useChatStore } from '../stores/chat'
 import { useVoiceStore } from '../stores/voice'
 
 const chatStore = useChatStore()
-const chatApi = inject(ChatApiKey)
-if (!chatApi) throw new Error('ChatApiKey not provided')
+const chatApi = inject(ChatApiKey, null)
+const _router = useRouter()
+if (!chatApi) {
+    console.error('[HybridView] ChatApiKey injection failed — redirecting to home')
+    _router.replace({ name: 'home' })
+}
 const voiceStore = useVoiceStore()
-const { sendMessage: send, isConnected, stopGeneration, editMessage } = chatApi
+// Safe stubs — if chatApi is null the redirect will unmount this component.
+const _noop = (): void => { }
+const _asyncNoop = async (): Promise<void> => { }
+const send = chatApi?.sendMessage ?? _asyncNoop
+const isConnected = chatApi?.isConnected ?? ref(false)
+const stopGeneration = chatApi?.stopGeneration ?? _noop
+const editMessage = chatApi?.editMessage ?? _asyncNoop
+const respondToConfirmation = chatApi?.respondToConfirmation ?? _noop
 const {
     startListening, stopListening, cancelProcessing, connect: connectVoice,
     transcript, audioDevices, selectedDeviceId, refreshDevices, speak, cancelSpeak,
@@ -247,7 +259,7 @@ onUnmounted(() => {
 
         <ToolConfirmationDialog v-if="pendingConfirmationsList.length > 0"
             :key="pendingConfirmationsList[0].executionId" :confirmation="pendingConfirmationsList[0]"
-            @respond="chatApi.respondToConfirmation" />
+            @respond="respondToConfirmation" />
 
         <MessageEditDialog v-if="editingMessageId" :original-content="editingContent" @submit="submitEdit"
             @cancel="cancelEdit" />
