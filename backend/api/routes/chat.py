@@ -620,6 +620,7 @@ async def ws_chat(websocket: WebSocket) -> None:
     ws_lock = _get_ws_lock()
     async with ws_lock:
         if _ws_connections.get(client_ip, 0) >= max_ws:
+            await websocket.accept()
             await websocket.close(
                 code=1008, reason="Too many connections",
             )

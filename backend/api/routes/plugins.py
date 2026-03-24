@@ -165,7 +165,9 @@ class _ExecuteRequest(BaseModel):
 
 
 @router.post("/plugins/execute")
-async def execute_plugin_tool(request: Request) -> dict[str, Any]:
+async def execute_plugin_tool(
+    body: _ExecuteRequest, request: Request,
+) -> dict[str, Any]:
     """Execute a plugin tool directly via REST.
 
     Body: ``{"plugin": str, "tool": str, "args": dict}``
@@ -180,16 +182,6 @@ async def execute_plugin_tool(request: Request) -> dict[str, Any]:
             status_code=503,
             detail="Plugin manager not available",
         )
-
-    try:
-        raw_body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
-
-    try:
-        body = _ExecuteRequest(**raw_body)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid request body")
 
     plugin = pm.get_plugin(body.plugin)
     if plugin is None:

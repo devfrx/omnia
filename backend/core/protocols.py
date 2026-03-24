@@ -126,7 +126,7 @@ class ContextManagerProtocol(Protocol):
     def should_compress(self, usage: Any) -> bool: ...
 
     async def compress(
-        self, messages: list[dict[str, Any]], llm: Any,
+        self, messages: list[dict[str, Any]], llm: LLMServiceProtocol,
         context_window: int, reserve: int,
         tool_tokens: int = 0,
     ) -> Any: ...
@@ -298,9 +298,13 @@ class LMStudioManagerProtocol(Protocol):
 
     async def get_download_status(self, job_id: str) -> dict: ...
 
-    async def check_health(self) -> bool: ...
+    async def check_health(self) -> bool:
+        """Return True if LM Studio is reachable."""
+        ...
 
-    async def close(self) -> None: ...
+    async def close(self) -> None:
+        """Release the underlying HTTP client."""
+        ...
 
 
 # ---------------------------------------------------------------------------

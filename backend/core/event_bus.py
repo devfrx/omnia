@@ -217,6 +217,10 @@ class EventBus:
         )
 
         for handler, result in zip(active, results):
+            if isinstance(result, asyncio.CancelledError):
+                # Cancellation is not a handler fault — re-raise so
+                # callers can react to task cancellation properly.
+                raise result
             if isinstance(result, BaseException):
                 logger.error(
                     "Handler error on '{}': {}",

@@ -367,30 +367,34 @@ class MemoryService:
                 f"got {len(vector)}"
             )
 
-        await self._db.execute(
-            """
-            INSERT INTO memory_entries
-                (id, content, scope, category, source,
-                 created_at, expires_at, conversation_id, embedding_model)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                str(entry_id),
-                content,
-                scope,
-                category,
-                source,
-                now.isoformat(),
-                expires_at.isoformat() if expires_at else None,
-                conversation_id or None,
-                self._config.embedding_model,
-            ),
-        )
-        await self._db.execute(
-            "INSERT INTO memory_vectors (id, embedding) VALUES (?, ?)",
-            (str(entry_id), _serialize_f32(vector)),
-        )
-        await self._db.commit()
+        try:
+            await self._db.execute(
+                """
+                INSERT INTO memory_entries
+                    (id, content, scope, category, source,
+                     created_at, expires_at, conversation_id, embedding_model)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(entry_id),
+                    content,
+                    scope,
+                    category,
+                    source,
+                    now.isoformat(),
+                    expires_at.isoformat() if expires_at else None,
+                    conversation_id or None,
+                    self._config.embedding_model,
+                ),
+            )
+            await self._db.execute(
+                "INSERT INTO memory_vectors (id, embedding) VALUES (?, ?)",
+                (str(entry_id), _serialize_f32(vector)),
+            )
+            await self._db.commit()
+        except Exception:
+            await self._db.rollback()
+            raise
 
         logger.debug("Memory added id={} scope={}", entry_id, scope)
         return MemoryEntry(
@@ -657,8 +661,16 @@ class MemoryService:
     # ------------------------------------------------------------------
 
     async def _cleanup_loop(self) -> None:
-        """Periodically remove expired and stale entries (every 6 h)."""
+        """Remove expired and stale entries: once at start, then every 6 h."""
         interval = 6 * 3600  # seconds
+        # Run cleanup immediately so expired entries don't persist
+        # across restarts for up to 6 hours.
+        try:
+            await self._run_cleanup()
+        except Exception:
+            logger.opt(exception=True).warning(
+                "Initial memory cleanup failed"
+            )
         while True:
             try:
                 await asyncio.sleep(interval)

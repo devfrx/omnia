@@ -390,6 +390,10 @@ class WhiteboardPlugin(BasePlugin):
         self, args: dict[str, Any], context: ExecutionContext
     ) -> ToolResult:
         """Crea una nuova lavagna, opzionalmente pre-popolata."""
+        title = (args.get("title") or "").strip()
+        if not title:
+            return ToolResult.error("Missing required parameter: title")
+
         cfg = self.ctx.config.whiteboard
         count = await self._store.count()
         if count >= cfg.max_boards:
@@ -410,7 +414,7 @@ class WhiteboardPlugin(BasePlugin):
 
         spec = WhiteboardSpec(
             board_id=board_id,
-            title=args["title"],
+            title=title,
             description=args.get("description", ""),
             conversation_id=conversation_id,
             snapshot=snapshot,
@@ -438,7 +442,9 @@ class WhiteboardPlugin(BasePlugin):
         self, args: dict[str, Any], context: ExecutionContext
     ) -> ToolResult:
         """Recupera il contenuto completo di una lavagna in formato leggibile."""
-        board_id = args["board_id"]
+        board_id = (args.get("board_id") or "").strip()
+        if not board_id:
+            return ToolResult.error("Missing required parameter: board_id")
         spec = await self._store.load(board_id)
         if spec is None:
             return ToolResult.error(f"Lavagna non trovata: {board_id}")
@@ -464,12 +470,16 @@ class WhiteboardPlugin(BasePlugin):
         self, args: dict[str, Any], context: ExecutionContext
     ) -> ToolResult:
         """Aggiunge shapes a una lavagna esistente senza rimpiazzare."""
-        board_id = args["board_id"]
+        board_id = (args.get("board_id") or "").strip()
+        if not board_id:
+            return ToolResult.error("Missing required parameter: board_id")
         existing = await self._store.load(board_id)
         if existing is None:
             return ToolResult.error(f"Lavagna non trovata: {board_id}")
 
-        raw_shapes = args["shapes"]
+        raw_shapes = args.get("shapes")
+        if not raw_shapes or not isinstance(raw_shapes, list):
+            return ToolResult.error("Missing required parameter: shapes")
         new_shapes = [SimpleShape(**s) for s in raw_shapes]
 
         existing.snapshot = merge_shapes_into_snapshot(
@@ -498,12 +508,16 @@ class WhiteboardPlugin(BasePlugin):
         self, args: dict[str, Any], context: ExecutionContext
     ) -> ToolResult:
         """Sovrascrive completamente il contenuto di una lavagna."""
-        board_id = args["board_id"]
+        board_id = (args.get("board_id") or "").strip()
+        if not board_id:
+            return ToolResult.error("Missing required parameter: board_id")
         existing = await self._store.load(board_id)
         if existing is None:
             return ToolResult.error(f"Lavagna non trovata: {board_id}")
 
-        raw_shapes = args["shapes"]
+        raw_shapes = args.get("shapes")
+        if not raw_shapes or not isinstance(raw_shapes, list):
+            return ToolResult.error("Missing required parameter: shapes")
         shapes = [SimpleShape(**s) for s in raw_shapes]
         existing.snapshot = build_snapshot(shapes)
         existing.updated_at = datetime.now(timezone.utc)
@@ -538,7 +552,7 @@ class WhiteboardPlugin(BasePlugin):
         items = await self._store.list(
             limit=limit, offset=offset, conversation_id=conversation_id
         )
-        total = len(items) if conversation_id else await self._store.count()
+        total = await self._store.count(conversation_id=conversation_id)
 
         payload = {
             "boards": [item.model_dump(mode="json") for item in items],
@@ -554,7 +568,9 @@ class WhiteboardPlugin(BasePlugin):
         self, args: dict[str, Any], context: ExecutionContext
     ) -> ToolResult:
         """Elimina una lavagna dal disco."""
-        board_id = args["board_id"]
+        board_id = (args.get("board_id") or "").strip()
+        if not board_id:
+            return ToolResult.error("Missing required parameter: board_id")
         deleted = await self._store.delete(board_id)
         if not deleted:
             return ToolResult.error(f"Lavagna non trovata: {board_id}")

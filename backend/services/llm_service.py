@@ -1033,6 +1033,11 @@ class LLMService:
                     # Flush any accumulated tool calls before finishing.
                     for _idx in sorted(tool_calls_acc):
                         tc = tool_calls_acc[_idx]
+                        if not tc["name"]:
+                            logger.warning(
+                                "Discarding incomplete tool call: {}", tc,
+                            )
+                            continue
                         if not tc["id"]:
                             tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
                         yield {
@@ -1249,6 +1254,8 @@ class LLMService:
     # ------------------------------------------------------------------
 
     async def close(self) -> None:
-        """Close the underlying httpx client."""
+        """Close the underlying httpx client and release caches."""
         await self._client.aclose()
+        self._response_ids.clear()
+        self._auto_model_cache = None
         logger.debug("LLMService httpx client closed")

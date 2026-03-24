@@ -263,6 +263,8 @@ async function onOpenFile(id: string): Promise<void> {
   top: calc(var(--titlebar-height, 38px) + 8px);
   left: 12px;
   width: 280px;
+  /* Navigation chrome — text in nav items must not be selectable */
+  user-select: none;
   height: calc(100vh - var(--titlebar-height, 38px) - 16px);
   display: flex;
   flex-direction: column;

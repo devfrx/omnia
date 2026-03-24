@@ -1,4 +1,4 @@
-﻿import { app, shell, BrowserWindow, ipcMain } from 'electron'
+﻿import { app, shell, BrowserWindow, ipcMain, Menu, MenuItem } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -108,6 +108,45 @@ app.whenReady().then(() => {
   ipcMain.on('window-close', () => mainWindow?.close())
   ipcMain.on('show-in-folder', (_event, filePath: string) => {
     shell.showItemInFolder(filePath)
+  })
+
+  // Native context menu for text selection and editable fields.
+  // Without this handler Electron shows no context menu at all on right-click,
+  // making copy/paste inaccessible via mouse.
+  app.on('browser-window-created', (_, win) => {
+    win.webContents.on('context-menu', (_e, params) => {
+      const menu = new Menu()
+
+      // Spelling suggestions (when available)
+      if (params.dictionarySuggestions.length > 0) {
+        for (const suggestion of params.dictionarySuggestions) {
+          menu.append(new MenuItem({
+            label: suggestion,
+            click: () => win.webContents.replaceMisspelling(suggestion),
+          }))
+        }
+        menu.append(new MenuItem({ type: 'separator' }))
+      }
+
+      // Edit actions — shown when text is selected or the target is editable
+      if (params.isEditable) {
+        menu.append(new MenuItem({ role: 'undo', label: 'Annulla' }))
+        menu.append(new MenuItem({ role: 'redo', label: 'Ripeti' }))
+        menu.append(new MenuItem({ type: 'separator' }))
+        menu.append(new MenuItem({ role: 'cut', label: 'Taglia', enabled: params.editFlags.canCut }))
+        menu.append(new MenuItem({ role: 'copy', label: 'Copia', enabled: params.editFlags.canCopy }))
+        menu.append(new MenuItem({ role: 'paste', label: 'Incolla', enabled: params.editFlags.canPaste }))
+        menu.append(new MenuItem({ role: 'selectAll', label: 'Seleziona tutto' }))
+      } else if (params.selectionText.trim().length > 0) {
+        menu.append(new MenuItem({ role: 'copy', label: 'Copia', enabled: params.editFlags.canCopy }))
+        menu.append(new MenuItem({ type: 'separator' }))
+        menu.append(new MenuItem({ role: 'selectAll', label: 'Seleziona tutto' }))
+      }
+
+      if (menu.items.length > 0) {
+        menu.popup({ window: win })
+      }
+    })
   })
 
   createWindow()

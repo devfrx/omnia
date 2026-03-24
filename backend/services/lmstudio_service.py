@@ -282,5 +282,6 @@ class LMStudioManager:
     # -- Lifecycle ----------------------------------------------------------
 
     async def close(self) -> None:
-        """Close the underlying HTTP client."""
+        """Close the underlying HTTP client and clear state."""
         await self._client.aclose()
+        self._current_operation = None

@@ -12,13 +12,13 @@ export interface EmailHeader {
   date: string
   message_id: string
   is_read: boolean
+  has_attachments: boolean
 }
 
 /** Full email with body returned by GET /api/email/{uid}. */
 export interface EmailDetail extends EmailHeader {
   cc: string
   body: string
-  has_attachments: boolean
 }
 
 /** Payload for POST /api/email/search. */

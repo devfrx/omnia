@@ -244,7 +244,15 @@ class PluginManager:
                 )
                 return False
 
-            # Cleanup existing instance
+            # Graceful shutdown before cleanup
+            try:
+                await plugin.on_app_shutdown()
+            except Exception as exc:
+                self._logger.error(
+                    "Plugin '{}' on_app_shutdown during reload: {}",
+                    name,
+                    exc,
+                )
             try:
                 await plugin.cleanup()
             except Exception as exc:
@@ -296,6 +304,16 @@ class PluginManager:
                 new_plugin = plugin_cls()
                 await new_plugin.initialize(self._ctx)
                 self._plugins[name] = new_plugin
+
+                try:
+                    await new_plugin.on_app_startup()
+                except Exception as startup_exc:
+                    self._logger.error(
+                        "Plugin '{}' on_app_startup during reload: {}",
+                        name,
+                        startup_exc,
+                    )
+
                 self._logger.info("Plugin '{}' reloaded", name)
 
                 if self._ctx.tool_registry:
@@ -359,6 +377,15 @@ class PluginManager:
                 if name not in self._load_order:
                     self._load_order.append(name)
                 self._failed_plugins.discard(name)
+
+                try:
+                    await plugin.on_app_startup()
+                except Exception as startup_exc:
+                    self._logger.error(
+                        "Plugin '{}' on_app_startup error: {}",
+                        name,
+                        startup_exc,
+                    )
 
                 await self._ctx.event_bus.emit(
                     AliceEvent.PLUGIN_LOADED,

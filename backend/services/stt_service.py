@@ -349,6 +349,7 @@ class STTService:
             )
             await self._invalidate_model()
             raise
+            raise
 
     def _transcribe_sync(self, audio_path: Path) -> TranscriptResult:
         """Synchronous transcription — runs entirely in one worker thread."""

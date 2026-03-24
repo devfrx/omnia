@@ -212,9 +212,12 @@ async def update_config(request: Request) -> dict[str, Any]:
             try:
                 mt = int(llm_updates["max_tokens"])
             except (TypeError, ValueError):
-                raise HTTPException(400, "max_tokens must be a positive integer")
-            if mt <= 0:
-                raise HTTPException(400, "max_tokens must be a positive integer")
+                raise HTTPException(400, "max_tokens must be an integer")
+            if mt < -1 or mt == 0:
+                raise HTTPException(
+                    400,
+                    "max_tokens must be a positive integer or -1 (unlimited)",
+                )
             object.__setattr__(cfg.llm, "max_tokens", mt)
         if "max_tool_iterations" in llm_updates:
             try:

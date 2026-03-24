@@ -86,14 +86,21 @@ async def _cancel_tts(
 # ---------------------------------------------------------------------------
 
 
-def _build_voice_ready_payload(ctx: AppContext) -> dict:
-    """Build a ``voice_ready`` message from current service state."""
+async def _build_voice_ready_payload(ctx: AppContext) -> dict:
+    """Build a ``voice_ready`` message from current service state.
+
+    Uses ``health_check()`` rather than a bare ``is not None`` test so that
+    a service whose library failed to load (``_started=False``) is correctly
+    reported as unavailable to the frontend.
+    """
     stt = ctx.stt_service
     tts = ctx.tts_service
+    stt_ok = stt is not None and await stt.health_check()
+    tts_ok = tts is not None and await tts.health_check()
     return {
         "type": "voice_ready",
-        "stt_available": stt is not None,
-        "tts_available": tts is not None,
+        "stt_available": stt_ok,
+        "tts_available": tts_ok,
         "stt_model": stt.model_name if stt else None,
         "stt_engine": stt.engine if stt else None,
         "tts_engine": tts.engine if tts else None,
@@ -113,7 +120,7 @@ async def push_voice_ready(ctx: AppContext) -> None:
     """
     if not _active_voice_sockets:
         return
-    payload = _build_voice_ready_payload(ctx)
+    payload = await _build_voice_ready_payload(ctx)
     for ws in list(_active_voice_sockets):
         await _send_json(ws, payload)
     logger.debug("Pushed voice_ready to {} active connections", len(_active_voice_sockets))
@@ -153,6 +160,7 @@ async def ws_voice(websocket: WebSocket) -> None:
     # Connection limit check.
     async with _voice_lock:
         if _voice_connections.get(client_ip, 0) >= _MAX_VOICE_PER_IP:
+            await websocket.accept()
             await websocket.close(code=4029, reason="Too many voice connections")
             return
         await websocket.accept()
@@ -180,7 +188,7 @@ async def ws_voice(websocket: WebSocket) -> None:
             logger.warning("Voice WS {}: STT service not available at connect time", session_id)
         if not tts:
             logger.warning("Voice WS {}: TTS service not available at connect time", session_id)
-        await _send_json(websocket, _build_voice_ready_payload(ctx))
+        await _send_json(websocket, await _build_voice_ready_payload(ctx))
 
         while True:
             message = await websocket.receive()

@@ -5,7 +5,7 @@
  * The chat messages appear below a condensed orb that reacts to state.
  * Best of both worlds: conversational + ambient presence.
  */
-import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AliceOrb from '../components/assistant/AliceOrb.vue'
 import AmbientBackground from '../components/assistant/AmbientBackground.vue'
@@ -201,7 +201,7 @@ onMounted(() => {
     if (!chatStore.currentConversation) chatStore.createConversation().catch(console.error)
     messagesContainer.value?.addEventListener('scroll', handleScroll)
 })
-onUnmounted(() => {
+onBeforeUnmount(() => {
     messagesContainer.value?.removeEventListener('scroll', handleScroll)
 })
 </script>
@@ -251,9 +251,10 @@ onUnmounted(() => {
                 <ChatInput ref="chatInputRef" :disabled="chatStore.isStreamingCurrentConversation"
                     :is-connected="isConnected" :is-streaming="chatStore.isStreamingCurrentConversation"
                     :audio-devices="audioDevices" :selected-device-id="selectedDeviceId" @send="handleSend"
-                    @stop="() => { stopGeneration(); cancelSpeak() }" @voice-start="startListening"
-                    @voice-stop="stopListening" @voice-cancel-processing="cancelProcessing"
-                    @refresh-devices="refreshDevices" @select-device="(id) => { selectedDeviceId = id }" />
+                    @stop="() => { wasStreamingHere = false; stopGeneration(); cancelSpeak() }"
+                    @voice-start="startListening" @voice-stop="stopListening"
+                    @voice-cancel-processing="cancelProcessing" @refresh-devices="refreshDevices"
+                    @select-device="(id) => { selectedDeviceId = id }" />
             </div>
         </div>
 

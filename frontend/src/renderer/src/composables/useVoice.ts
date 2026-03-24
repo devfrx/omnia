@@ -580,6 +580,8 @@ export function useVoice(): UseVoiceReturn {
 
   function speak(text: string): void {
     if (!voiceWs.isConnected) return
+    // Do not attempt TTS if the backend reported the service as unavailable.
+    if (!store.ttsAvailable) return
     // Set isSpeaking immediately to close the timing gap between calling
     // speak() and receiving the backend's tts_start event.  Without this,
     // scheduleAutoRestart can start recording in that window.

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { api } from '../services/api'
 import type { DownloadStatusResponse, LMStudioModel, ModelOperationResponse } from '../types/settings'
 
@@ -94,6 +94,9 @@ export const useSettingsStore = defineStore('settings', () => {
     } catch (err) {
       console.warn('[settings store] loadToggles failed:', err)
     } finally {
+      // Wait for Vue to flush watchers triggered by the ref assignments
+      // before resetting the guard — otherwise watchers fire with guard=false.
+      await nextTick()
       _loadingToggles = false
     }
   }
@@ -137,6 +140,10 @@ export const useSettingsStore = defineStore('settings', () => {
     } catch (err) {
       console.warn('[settings store] loadSettings failed:', err)
     } finally {
+      // Wait for Vue to flush watchers triggered by the assignments above
+      // before resetting the guard — otherwise the deep watcher fires
+      // with _loadingSettings=false and round-trips a saveSettings() call.
+      await nextTick()
       _loadingSettings = false
     }
   }

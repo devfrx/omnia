@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from sqlmodel import select
 
@@ -50,8 +50,8 @@ async def get_whiteboard(board_id: str, request: Request) -> JSONResponse:
 async def list_whiteboards(
     request: Request,
     conversation_id: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
 ) -> dict[str, Any]:
     """Restituisce la lista paginata delle lavagne, con filtro opzionale.
 
@@ -60,7 +60,7 @@ async def list_whiteboards(
     """
     store = _get_store(request)
     items = await store.list(
-        limit=min(limit, 100),
+        limit=limit,
         offset=offset,
         conversation_id=conversation_id,
     )
@@ -125,7 +125,10 @@ async def update_snapshot(
 ) -> dict[str, Any]:
     """Aggiorna lo snapshot tldraw (chiamato dal frontend dopo editing)."""
     store = _get_store(request)
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
     snapshot = body.get("snapshot")
     if not isinstance(snapshot, dict):
         raise HTTPException(

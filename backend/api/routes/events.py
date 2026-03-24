@@ -32,14 +32,16 @@ async def ws_events(websocket: WebSocket) -> None:
     a background task completes, fails, or changes status.
     """
     ctx: AppContext = websocket.app.state.context
+    client_ip = websocket.client.host if websocket.client else "unknown"
+
     if ctx.ws_connection_manager is None:
+        await websocket.accept()
         await websocket.close(code=1011, reason="Events service not available")
         return
 
-    client_ip = websocket.client.host if websocket.client else "unknown"
-
     async with _event_lock:
         if _event_connections.get(client_ip, 0) >= _MAX_EVENT_CONNECTIONS_PER_IP:
+            await websocket.accept()
             await websocket.close(
                 code=1008, reason="Too many event connections",
             )

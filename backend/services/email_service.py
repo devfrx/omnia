@@ -324,6 +324,7 @@ class EmailService:
         msg["From"] = self._config.username
         msg["To"] = ", ".join(to)
         msg["Subject"] = subject
+        msg["Date"] = email.utils.formatdate(localtime=True)
         message_id = (
             f"<alice-{uuid.uuid4()}@{self._config.smtp_host}>"
         )

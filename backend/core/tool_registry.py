@@ -557,6 +557,13 @@ class ToolRegistry:
                 result.content = _sanitise_content(result.content)
             elif isinstance(result.content, dict):
                 result.content = _sanitise_dict(result.content)
+            elif isinstance(result.content, list):
+                result.content = [
+                    _sanitise_content(v) if isinstance(v, str)
+                    else _sanitise_dict(v) if isinstance(v, dict)
+                    else v
+                    for v in result.content
+                ]
 
         # --- truncate (always active, except binary content) ---
         is_binary = (
@@ -569,6 +576,13 @@ class ToolRegistry:
                 result.content = (
                     result.content[:max(0, limit - 30)]
                     + "\n...[output truncated]"
+                )
+                result.truncated = True
+        elif isinstance(result.content, list) and not is_binary:
+            serialized = json.dumps(result.content, ensure_ascii=False)
+            if len(serialized) > limit:
+                result.content = serialized[:max(0, limit - 30)] + (
+                    "\n...[output truncated]"
                 )
                 result.truncated = True
 

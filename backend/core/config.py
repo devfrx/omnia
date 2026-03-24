@@ -813,6 +813,14 @@ class AliceConfig(BaseSettings):
                 if db_path and not Path(db_path).is_absolute():
                     abs_path = PROJECT_ROOT / db_path
                     db_data["url"] = f"{prefix}:///{abs_path}"
+
+        # -- memory / notes db_path (resolve relative to PROJECT_ROOT) --
+        for section_key in ("memory", "notes"):
+            section_data = data.get(section_key)
+            if isinstance(section_data, dict):
+                raw_db = section_data.get("db_path", "")
+                if raw_db and not Path(raw_db).is_absolute():
+                    section_data["db_path"] = str(PROJECT_ROOT / raw_db)
         # -- MCP server commands: expand ~ and env vars in args --
         mcp_data = data.get("mcp", {})
         if isinstance(mcp_data, dict):

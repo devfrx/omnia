@@ -13,6 +13,14 @@
 
 body {
   overflow: hidden;
+  /* user-select is intentionally NOT set here — text content (chat messages,
+   * code blocks, settings labels) must be selectable. UI chrome elements that
+   * should not be selectable (buttons, nav items, title bar) use the
+   * .no-select utility class or declare it in their own scoped styles. */
+}
+
+/* Utility class for non-selectable UI chrome (buttons, icons, nav, etc.) */
+.no-select {
   user-select: none;
 }
 

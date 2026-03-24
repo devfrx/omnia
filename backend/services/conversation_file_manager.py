@@ -94,6 +94,26 @@ class ConversationFileManager:
 
     # -- public API ---------------------------------------------------------
 
+    def _safe_path(self, directory: Path, filename: str) -> Path:
+        """Resolve *filename* under *directory*, rejecting traversal.
+
+        Args:
+            directory: The target directory.
+            filename: A bare filename (e.g. ``"{uuid}.json"``).
+
+        Returns:
+            Resolved :class:`Path` guaranteed to be inside *directory*.
+
+        Raises:
+            ValueError: If the resolved path escapes *directory*.
+        """
+        target = (directory / filename).resolve()
+        if not target.is_relative_to(directory.resolve()):
+            raise ValueError(
+                f"Path traversal blocked: {filename!r} escapes {directory}"
+            )
+        return target
+
     async def save(
         self,
         conversation_data: dict[str, Any],
@@ -108,7 +128,7 @@ class ConversationFileManager:
         conversation_data["schema_version"] = CURRENT_SCHEMA_VERSION
         conv_id = conversation_data["id"]
         directory = self._resolve_dir(user_id)
-        target = directory / f"{conv_id}.json"
+        target = self._safe_path(directory, f"{conv_id}.json")
         tmp = target.with_suffix(".tmp")
 
         payload = json.dumps(conversation_data, ensure_ascii=False, indent=2)
@@ -132,7 +152,7 @@ class ConversationFileManager:
             user_id: Optional user id for per-user subdirectory sharding.
         """
         directory = self._resolve_dir(user_id)
-        target = directory / f"{conversation_id}.json"
+        target = self._safe_path(directory, f"{conversation_id}.json")
 
         def _remove() -> None:
             if target.exists():
@@ -181,7 +201,7 @@ class ConversationFileManager:
             Parsed conversation dict, or ``None`` if the file doesn't exist.
         """
         directory = self._resolve_dir(user_id)
-        target = directory / f"{conversation_id}.json"
+        target = self._safe_path(directory, f"{conversation_id}.json")
 
         def _read() -> str | None:
             if not target.exists():

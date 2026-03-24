@@ -7,6 +7,7 @@ from typing import Any, TYPE_CHECKING
 
 from backend.core.plugin_base import BasePlugin
 from backend.core.plugin_models import (
+    ConnectionStatus,
     ExecutionContext,
     ToolDefinition,
     ToolResult,
@@ -160,7 +161,7 @@ _LIST_FOLDERS_SCHEMA: dict[str, Any] = {
 
 
 class EmailPlugin(BasePlugin):
-    """Plugin email � expose 6 LLM tools for email management.
+    """Plugin email — expose 7 LLM tools for email management.
 
     Delegates all I/O to ``ctx.email_service``.
     """
@@ -180,7 +181,7 @@ class EmailPlugin(BasePlugin):
             ToolDefinition(
                 name="read_emails",
                 description=(
-                    "Elenca le email pi� recenti nella cartella "
+                    "Elenca le email più recenti nella cartella "
                     "specificata. Restituisce una lista di intestazioni: "
                     "uid, subject, from, to, date, is_read. "
                     "Usa uid per leggere il corpo completo con get_email."
@@ -194,7 +195,7 @@ class EmailPlugin(BasePlugin):
                 name="get_email",
                 description=(
                     "Legge il corpo completo di una email dato l'uid. "
-                    "Il corpo HTML � convertito automaticamente in testo "
+                    "Il corpo HTML viene convertito automaticamente in testo "
                     "plain. Usa read_emails o search_emails per ottenere "
                     "gli uid."
                 ),
@@ -221,7 +222,7 @@ class EmailPlugin(BasePlugin):
                 description=(
                     "Invia una email via SMTP. "
                     "Usa reply_to_uid per rispondere a una email "
-                    "esistente. ATTENZIONE: operazione irreversibile � "
+                    "esistente. ATTENZIONE: operazione irreversibile — "
                     "richiede conferma esplicita."
                 ),
                 parameters=_SEND_EMAIL_SCHEMA,
@@ -303,6 +304,24 @@ class EmailPlugin(BasePlugin):
         return await handler(args)
 
     # ------------------------------------------------------------------
+    # Dependency / health
+    # ------------------------------------------------------------------
+
+    def check_dependencies(self) -> list[str]:
+        """Report missing dependencies."""
+        if self._ctx is None or self._ctx.email_service is None:
+            return ["email_service"]
+        return []
+
+    async def get_connection_status(self) -> ConnectionStatus:
+        """Return CONNECTED if email service is available."""
+        if not self.ctx.config.email.enabled:
+            return ConnectionStatus.DISCONNECTED
+        if self._ctx and self._ctx.email_service is not None:
+            return ConnectionStatus.CONNECTED
+        return ConnectionStatus.ERROR
+
+    # ------------------------------------------------------------------
     # Tool implementations
     # ------------------------------------------------------------------
 
@@ -329,10 +348,13 @@ class EmailPlugin(BasePlugin):
     async def _get_email(
         self, args: dict[str, Any],
     ) -> ToolResult:
+        uid = (args.get("uid") or "").strip()
+        if not uid:
+            return ToolResult.error("Missing required parameter: uid")
         svc = self.ctx.email_service
         try:
             mail = await svc.fetch_email(
-                args["uid"], folder=args.get("folder", "INBOX"),
+                uid, folder=args.get("folder", "INBOX"),
             )
         except ValueError as exc:
             return ToolResult.error(str(exc))
@@ -341,7 +363,7 @@ class EmailPlugin(BasePlugin):
             return ToolResult.error(f"Errore IMAP: {exc}")
         if mail is None:
             return ToolResult.error(
-                f"Email non trovata: {args['uid']}",
+                f"Email non trovata: {uid}",
             )
         return ToolResult.ok(
             json.dumps(mail, ensure_ascii=False, default=str),
@@ -350,11 +372,14 @@ class EmailPlugin(BasePlugin):
     async def _search_emails(
         self, args: dict[str, Any],
     ) -> ToolResult:
+        query = (args.get("query") or "").strip()
+        if not query:
+            return ToolResult.error("Missing required parameter: query")
         svc = self.ctx.email_service
         cfg = self.ctx.config.email
         try:
             results = await svc.search(
-                args["query"],
+                query,
                 folder=args.get("folder", "INBOX"),
                 limit=int(args.get("limit", cfg.fetch_last_n)),
             )
@@ -370,12 +395,21 @@ class EmailPlugin(BasePlugin):
     async def _send_email(
         self, args: dict[str, Any],
     ) -> ToolResult:
+        to = args.get("to")
+        if not to or not isinstance(to, list):
+            return ToolResult.error("Missing required parameter: to")
+        subject = args.get("subject", "")
+        if not subject:
+            return ToolResult.error("Missing required parameter: subject")
+        body = args.get("body", "")
+        if not body:
+            return ToolResult.error("Missing required parameter: body")
         svc = self.ctx.email_service
         try:
             result = await svc.send(
-                to=args["to"],
-                subject=args["subject"],
-                body=args["body"],
+                to=to,
+                subject=subject,
+                body=body,
                 reply_to_uid=args.get("reply_to_uid"),
                 folder=args.get("folder", "INBOX"),
             )
@@ -391,10 +425,13 @@ class EmailPlugin(BasePlugin):
     async def _mark_as_read(
         self, args: dict[str, Any],
     ) -> ToolResult:
+        uid = (args.get("uid") or "").strip()
+        if not uid:
+            return ToolResult.error("Missing required parameter: uid")
         svc = self.ctx.email_service
         try:
             ok = await svc.mark_read(
-                args["uid"],
+                uid,
                 folder=args.get("folder", "INBOX"),
                 read=bool(args.get("read", True)),
             )
@@ -406,19 +443,22 @@ class EmailPlugin(BasePlugin):
         status = "letta" if args.get("read", True) else "non letta"
         if ok:
             return ToolResult.ok(
-                f"Email {args['uid']} marcata come {status}.",
+                f"Email {uid} marcata come {status}.",
             )
         return ToolResult.error(
-            f"Impossibile aggiornare email {args['uid']}.",
+            f"Impossibile aggiornare email {uid}.",
         )
 
     async def _archive_email(
         self, args: dict[str, Any],
     ) -> ToolResult:
+        uid = (args.get("uid") or "").strip()
+        if not uid:
+            return ToolResult.error("Missing required parameter: uid")
         svc = self.ctx.email_service
         try:
             ok = await svc.archive(
-                args["uid"],
+                uid,
                 from_folder=args.get("from_folder", "INBOX"),
             )
         except ValueError as exc:
@@ -428,10 +468,10 @@ class EmailPlugin(BasePlugin):
             return ToolResult.error(f"Errore IMAP: {exc}")
         if ok:
             return ToolResult.ok(
-                f"Email {args['uid']} archiviata.",
+                f"Email {uid} archiviata.",
             )
         return ToolResult.error(
-            f"Impossibile archiviare email {args['uid']}.",
+            f"Impossibile archiviare email {uid}.",
         )
 
     async def _list_folders(

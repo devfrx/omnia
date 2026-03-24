@@ -7,7 +7,7 @@ Imported by BasePlugin, PluginManager, and protocol definitions.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -60,7 +60,9 @@ class ToolDefinition:
 
     name: str
     description: str
-    parameters: dict[str, Any] | None = None
+    parameters: dict[str, Any] = field(
+        default_factory=lambda: {"type": "object", "properties": {}},
+    )
     result_type: Literal["string", "json", "binary_base64"] = "string"
     supports_cancellation: bool = False
     timeout_ms: int = 30_000
@@ -70,7 +72,7 @@ class ToolDefinition:
     max_result_chars: int = MAX_TOOL_RESULT_LENGTH
 
     def __post_init__(self) -> None:
-        if self.parameters is None:
+        if not isinstance(self.parameters, dict):
             object.__setattr__(
                 self,
                 "parameters",

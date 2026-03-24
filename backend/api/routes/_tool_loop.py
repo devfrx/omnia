@@ -619,6 +619,7 @@ async def run_tool_loop(
                     # Persist compression to DB so the excluded messages
                     # are not reloaded on page refresh and the next
                     # pre-gen compression check sees up-to-date data.
+                    _summary_msg_id: str | None = None
                     try:
                         from sqlmodel import select as _sel
                         _stmt = (
@@ -657,6 +658,7 @@ async def run_tool_loop(
                         )
                         session.add(_summary_msg)
                         await session.flush()
+                        _summary_msg_id = str(_summary_msg.id)
                     except Exception as _db_exc:
                         logger.warning(
                             "Tool loop: failed to persist compression to DB: {}",
@@ -678,12 +680,17 @@ async def run_tool_loop(
                         "is_estimated": iter_comp.usage.is_estimated,
                         "breakdown": None,
                     })
-                    await websocket.send_json({
+                    _comp_done_payload: dict[str, Any] = {
                         "type": "context_compression_done",
                         "messages_summarized": (
                             iter_comp.usage.messages_summarized
                         ),
-                    })
+                    }
+                    if _summary_msg_id:
+                        _comp_done_payload["summary_message_id"] = (
+                            _summary_msg_id
+                        )
+                    await websocket.send_json(_comp_done_payload)
                 except Exception as exc:
                     logger.warning(
                         "Tool loop context compression failed: {}", exc,

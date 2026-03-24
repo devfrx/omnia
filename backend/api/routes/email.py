@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 _IMAP_ERRORS = (ConnectionError, OSError)
 
@@ -44,7 +44,7 @@ async def list_folders(request: Request) -> list[str]:
 async def get_inbox(
     request: Request,
     folder: str = "INBOX",
-    limit: int | None = None,
+    limit: int | None = Query(None, ge=1),
     unread_only: bool = False,
 ) -> list[dict[str, Any]]:
     """Restituisce le intestazioni delle email più recenti."""
@@ -89,7 +89,7 @@ class SearchRequest(BaseModel):
 
     query: str
     folder: str = "INBOX"
-    limit: int | None = None
+    limit: int | None = Field(None, ge=1)
 
 
 @router.post("/search", summary="Cerca email (IMAP SEARCH)")

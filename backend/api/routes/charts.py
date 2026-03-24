@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/charts", tags=["charts"])
@@ -38,7 +38,9 @@ async def get_chart(chart_id: str, request: Request) -> JSONResponse:
 
 @router.get("", summary="Lista grafici salvati")
 async def list_charts(
-    request: Request, limit: int = 50, offset: int = 0
+    request: Request,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
 ) -> dict[str, Any]:
     """Restituisce la lista paginata dei grafici, ordinata dal più recente."""
     store = _get_store(request)

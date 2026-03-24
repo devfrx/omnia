@@ -66,14 +66,17 @@ class WhiteboardStore:
         conversation_id: str | None = None,
     ) -> list[WhiteboardListItem]:
         """Lista lavagne ordinate dal più recente, con filtro opzionale."""
-        items = await asyncio.to_thread(self._list_sync, limit, offset)
-        if conversation_id is not None:
-            items = [i for i in items if i.conversation_id == conversation_id]
-        return items
+        return await asyncio.to_thread(
+            self._list_sync, limit, offset, conversation_id,
+        )
 
-    async def count(self) -> int:
+    async def count(self, conversation_id: str | None = None) -> int:
         """Conta il numero totale di lavagne persistite."""
-        return await asyncio.to_thread(self._count_sync)
+        if conversation_id is None:
+            return await asyncio.to_thread(self._count_sync)
+        return await asyncio.to_thread(
+            self._count_filtered_sync, conversation_id,
+        )
 
     # -- I/O sincrono (eseguito in thread) ----------------------------------
 
@@ -116,7 +119,12 @@ class WhiteboardStore:
             if isinstance(v, dict) and v.get("typeName") == "shape"
         )
 
-    def _list_sync(self, limit: int, offset: int) -> list[WhiteboardListItem]:
+    def _list_sync(
+        self,
+        limit: int,
+        offset: int,
+        conversation_id: str | None = None,
+    ) -> list[WhiteboardListItem]:
         def _mtime(p: Path) -> float:
             try:
                 return p.stat().st_mtime
@@ -124,13 +132,17 @@ class WhiteboardStore:
                 return 0.0
 
         files = sorted(self._dir.glob("*.json"), key=_mtime, reverse=True)
-        page = files[offset : offset + limit]
         items: list[WhiteboardListItem] = []
-        for f in page:
+        for f in files:
             try:
                 spec = WhiteboardSpec.model_validate_json(
                     f.read_text(encoding="utf-8")
                 )
+                if (
+                    conversation_id is not None
+                    and spec.conversation_id != conversation_id
+                ):
+                    continue
                 items.append(
                     WhiteboardListItem(
                         board_id=spec.board_id,
@@ -144,7 +156,21 @@ class WhiteboardStore:
                 )
             except Exception:
                 logger.warning(f"Whiteboard non leggibile: {f.name} (ignorata)")
-        return items
+        return items[offset : offset + limit]
+
+    def _count_filtered_sync(self, conversation_id: str) -> int:
+        """Count boards matching a specific conversation_id."""
+        count = 0
+        for f in self._dir.glob("*.json"):
+            try:
+                spec = WhiteboardSpec.model_validate_json(
+                    f.read_text(encoding="utf-8")
+                )
+                if spec.conversation_id == conversation_id:
+                    count += 1
+            except Exception:
+                pass
+        return count
 
     def _count_sync(self) -> int:
         return sum(1 for _ in self._dir.glob("*.json"))

@@ -164,12 +164,15 @@ onMounted(async () => {
     const tts = cfg.tts as Record<string, unknown> | undefined
     const voice = cfg.voice as Record<string, unknown> | undefined
     if (stt) {
-      sttEnabled.value = (stt.enabled as boolean) ?? true
+      // Clamp: if the library is not installed the service cannot run — force
+      // the toggle off regardless of what the config file says.
+      sttEnabled.value = sttLibAvailable.value && ((stt.enabled as boolean) ?? true)
       sttModel.value = (stt.model as string) ?? 'small'
       sttLanguage.value = (stt.language as string) ?? 'it'
     }
     if (tts) {
-      ttsEnabled.value = (tts.enabled as boolean) ?? true
+      // Clamp: if no TTS library is installed the service cannot run.
+      ttsEnabled.value = ttsEngines.value.length > 0 && ((tts.enabled as boolean) ?? true)
       ttsEngine.value = (tts.engine as string) ?? 'piper'
       ttsVoice.value = (tts.voice as string) ?? ttsVoice.value
       ttsSpeed.value = (tts.speed as number) ?? 1.0
@@ -226,8 +229,12 @@ async function save(): Promise<void> {
       : ''
     voiceStore.sttEngine = sttEnabled.value ? 'faster-whisper' : ''
     voiceStore.sttModel = sttEnabled.value ? sttModel.value : ''
-    voiceStore.sttAvailable = sttEnabled.value
-    voiceStore.ttsAvailable = ttsEnabled.value
+    // Availability in the store must reflect BOTH the user toggle AND whether
+    // the underlying library is actually installed. A toggle of true without
+    // the library would put the store in an inconsistent state and cause the
+    // UI to attempt TTS/STT when the backend cannot fulfil the request.
+    voiceStore.sttAvailable = sttEnabled.value && sttLibAvailable.value
+    voiceStore.ttsAvailable = ttsEnabled.value && ttsEngines.value.length > 0
   } catch (err) {
     saveError.value = 'Salvataggio fallito'
     console.warn('[VoiceSettings] Failed to save config:', err)

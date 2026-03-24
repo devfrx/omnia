@@ -68,7 +68,14 @@ _UPDATE_SCHEMA: dict[str, Any] = {
         },
         "echarts_option": {
             "type": "object",
-            "description": "Nuova configurazione ECharts completa che sostituisce la precedente.",
+            "description": "Nuova configurazione ECharts completa che sostituisce la precedente. "
+                "STRUTTURA: le chiavi top-level (xAxis, yAxis, series, tooltip, legend, grid, ecc.) "
+                "devono essere chiavi dell'oggetto radice. "
+                "legend NON va messa dentro series — è una chiave top-level separata. "
+                "series contiene SOLO oggetti con type in: 'bar','line','pie','scatter','gauge','radar'. "
+                "Esempio: {\"xAxis\":{\"data\":[...]}, \"yAxis\":{\"type\":\"value\"}, "
+                "\"series\":[{\"type\":\"bar\",\"data\":[...]}], "
+                "\"legend\":{\"data\":[\"serie1\"]}, \"tooltip\":{\"trigger\":\"axis\"}}",
             "additionalProperties": True,
         },
         "title": {
@@ -163,7 +170,10 @@ class ChartGeneratorPlugin(BasePlugin):
                 description=(
                     "Genera un grafico interattivo Apache ECharts e lo persiste su disco. "
                     "L'output viene visualizzato nella chat come viewer interattivo. "
-                    "Raccogli tutti i dati PRIMA di chiamare questo tool. "
+                    "FLUSSO CORRETTO: (1) esegui web_search o recall per raccogliere i dati, "
+                    "(2) costruisci l'echarts_option JSON direttamente in questo tool — "
+                    "NON scrivere codice Python/pseudocodice: non esiste un interprete, "
+                    "tutto il processing avviene dentro echarts_option. "
                     "REGOLE echarts_option: (1) series[].data deve avere la stessa lunghezza di xAxis/yAxis.data; "
                     "(2) non mischiare unità diverse nella stessa serie; "
                     "(3) NON includere 'title' — il titolo è già nell'header del viewer; "
@@ -242,6 +252,16 @@ class ChartGeneratorPlugin(BasePlugin):
         return await handler(args)
 
     async def _generate_chart(self, args: dict[str, Any]) -> ToolResult:
+        title = (args.get("title") or "").strip()
+        if not title:
+            return ToolResult.error("Missing required parameter: title")
+        chart_type = (args.get("chart_type") or "").strip()
+        if not chart_type:
+            return ToolResult.error("Missing required parameter: chart_type")
+        option = args.get("echarts_option")
+        if not isinstance(option, dict):
+            return ToolResult.error("Missing required parameter: echarts_option")
+
         cfg = self.ctx.config.chart
         count = await self._store.count()
         if count >= cfg.max_charts:
@@ -250,7 +270,6 @@ class ChartGeneratorPlugin(BasePlugin):
                 "Usa `delete_chart` per eliminare grafici non più necessari."
             )
 
-        option = args["echarts_option"]
         option_str = json.dumps(option, ensure_ascii=False)
         if len(option_str) > cfg.max_option_chars:
             return ToolResult.error(
@@ -262,8 +281,8 @@ class ChartGeneratorPlugin(BasePlugin):
         now = datetime.now(timezone.utc)
         spec = ChartSpec(
             chart_id=chart_id,
-            title=args["title"],
-            chart_type=args["chart_type"],
+            title=title,
+            chart_type=chart_type,
             description=args.get("description", ""),
             echarts_option=option,
             created_at=now,
@@ -285,19 +304,24 @@ class ChartGeneratorPlugin(BasePlugin):
         )
 
     async def _update_chart(self, args: dict[str, Any]) -> ToolResult:
-        chart_id = args["chart_id"]
+        chart_id = (args.get("chart_id") or "").strip()
+        if not chart_id:
+            return ToolResult.error("Missing required parameter: chart_id")
+        option = args.get("echarts_option")
+        if not isinstance(option, dict):
+            return ToolResult.error("Missing required parameter: echarts_option")
         existing = await self._store.load(chart_id)
         if existing is None:
             return ToolResult.error(f"Grafico non trovato: {chart_id}")
 
         cfg = self.ctx.config.chart
-        option_str = json.dumps(args["echarts_option"], ensure_ascii=False)
+        option_str = json.dumps(option, ensure_ascii=False)
         if len(option_str) > cfg.max_option_chars:
             return ToolResult.error(
                 f"echarts_option supera il limite di {cfg.max_option_chars} caratteri."
             )
 
-        existing.echarts_option = args["echarts_option"]
+        existing.echarts_option = option
         existing.updated_at = datetime.now(timezone.utc)
         if "title" in args:
             existing.title = args["title"]
@@ -318,7 +342,9 @@ class ChartGeneratorPlugin(BasePlugin):
         )
 
     async def _get_chart(self, args: dict[str, Any]) -> ToolResult:
-        chart_id = args["chart_id"]
+        chart_id = (args.get("chart_id") or "").strip()
+        if not chart_id:
+            return ToolResult.error("Missing required parameter: chart_id")
         spec = await self._store.load(chart_id)
         if spec is None:
             return ToolResult.error(f"Grafico non trovato: {chart_id}")
@@ -340,7 +366,9 @@ class ChartGeneratorPlugin(BasePlugin):
         )
 
     async def _delete_chart(self, args: dict[str, Any]) -> ToolResult:
-        chart_id = args["chart_id"]
+        chart_id = (args.get("chart_id") or "").strip()
+        if not chart_id:
+            return ToolResult.error("Missing required parameter: chart_id")
         deleted = await self._store.delete(chart_id)
         if not deleted:
             return ToolResult.error(f"Grafico non trovato: {chart_id}")
