@@ -377,6 +377,8 @@ defineExpose({
   padding: var(--space-3) var(--space-4) var(--space-3);
   margin-inline: var(--space-4);
   box-shadow: var(--shadow-elevated);
+  container-type: inline-size;
+  container-name: chat-input;
   transition: box-shadow var(--duration-normal) var(--ease-out-expo),
     border-color var(--duration-normal) var(--ease-out-expo);
 }
@@ -817,6 +819,49 @@ defineExpose({
 
   .ci__thumb {
     transition: none;
+  }
+}
+
+/* ============================================================
+   Responsive: compact layout for narrow containers (Hybrid left pane)
+   ============================================================ */
+@container chat-input (max-width: 380px) {
+  .ci {
+    padding: var(--space-2) var(--space-2) var(--space-2);
+    margin-inline: var(--space-2);
+  }
+
+  .ci__toolbar {
+    gap: var(--space-1);
+  }
+
+  .ci__badges {
+    display: none;
+  }
+
+  .ci__selectors {
+    display: none;
+  }
+
+  .ci__divider {
+    display: none;
+  }
+
+  .ci__mode-toggle span {
+    display: none;
+  }
+
+  .ci__mode-toggle {
+    padding: 0 6px;
+    width: 24px;
+    height: 24px;
+    justify-content: center;
+  }
+}
+
+@container chat-input (max-width: 280px) {
+  .ci__mode-toggle {
+    display: none;
   }
 }
 </style>

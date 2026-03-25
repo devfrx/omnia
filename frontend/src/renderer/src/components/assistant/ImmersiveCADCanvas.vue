@@ -329,7 +329,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   background: var(--surface-0);
-  border-left: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 /* â”€â”€ Header â”€â”€ */

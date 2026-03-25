@@ -413,7 +413,7 @@ onBeforeUnmount(() => {
   left: 0;
   min-width: 340px;
   max-width: min(440px, calc(100vw - 32px));
-  background: rgba(28, 28, 28, 0.92);
+  background: rgba(28, 28, 28, 1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);

@@ -100,37 +100,37 @@ onUnmounted(() => {
 
     <!-- Expanded sidebar mode — full widget -->
     <div v-else class="cal-widget">
-        <!-- Section label (same style as "Conversazioni") -->
-        <div class="cal-widget__section-label">
-            <span>Calendario</span>
-        </div>
-
-        <!-- Header: icon + date + badge + chevron -->
+        <!-- Header row: date + event count + open link -->
         <div class="cal-widget__header" @click="toggleExpanded">
-            <span class="cal-widget__icon" aria-hidden="true">
-                <AppIcon name="calendar" :size="16" />
-            </span>
-            <span class="cal-widget__date">{{ formattedDate }}</span>
-            <span v-if="store.todayCount > 0" class="cal-widget__badge">
-                {{ store.todayCount }}
-            </span>
-            <button class="cal-widget__open-btn" title="Apri calendario" @click.stop="openCalendar">
-                <AppIcon name="external-link" :size="12" />
-            </button>
-            <span class="cal-widget__chevron" :class="{ 'cal-widget__chevron--open': expanded }" aria-hidden="true">
-                <AppIcon name="chevron-down" :size="12" :stroke-width="2.5" />
-            </span>
+            <div class="cal-widget__header-left">
+                <span class="cal-widget__day">{{ formattedDate }}</span>
+                <span v-if="store.todayCount > 0" class="cal-widget__count">
+                    {{ store.todayCount }} {{ store.todayCount === 1 ? 'evento' : 'eventi' }}
+                </span>
+                <span v-else class="cal-widget__count cal-widget__count--empty">nessun evento</span>
+            </div>
+            <div class="cal-widget__header-right">
+                <button class="cal-widget__open-btn" title="Apri calendario" @click.stop="openCalendar">
+                    <AppIcon name="external-link" :size="11" />
+                </button>
+                <span class="cal-widget__chevron" :class="{ 'cal-widget__chevron--open': expanded }">
+                    <AppIcon name="chevron-down" :size="11" />
+                </span>
+            </div>
         </div>
 
-        <!-- Next event preview (when list is collapsed) -->
-        <div v-if="!expanded && store.nextEvent" class="cal-widget__next">
-            <span class="cal-widget__next-time">{{ formatTime(store.nextEvent.start_time) }}</span>
-            <span class="cal-widget__next-title">{{ store.nextEvent.title }}</span>
-            <span class="cal-widget__next-rel">{{ nextEventRelative }}</span>
-        </div>
+        <!-- Next event pill (when collapsed) -->
+        <Transition name="cal-next">
+            <div v-if="!expanded && store.nextEvent" class="cal-widget__next">
+                <span class="cal-widget__next-dot" />
+                <span class="cal-widget__next-time">{{ formatTime(store.nextEvent.start_time) }}</span>
+                <span class="cal-widget__next-title">{{ store.nextEvent.title }}</span>
+                <span class="cal-widget__next-rel">{{ nextEventRelative }}</span>
+            </div>
+        </Transition>
 
-        <!-- Expanded event list -->
-        <transition name="cal-expand">
+        <!-- Expanded full list -->
+        <Transition name="cal-expand">
             <div v-if="expanded" class="cal-widget__list">
                 <div v-if="!store.todaySummary?.events.length" class="cal-widget__empty">
                     Nessun evento oggi
@@ -138,114 +138,81 @@ onUnmounted(() => {
                 <div v-for="event in store.todaySummary?.events"
                     :key="event.occurrence_date ? `${event.id}_${event.occurrence_date}` : event.id"
                     class="cal-widget__event">
+                    <span class="cal-widget__event-dot" />
                     <span class="cal-widget__event-time">{{ formatTime(event.start_time) }}</span>
                     <span class="cal-widget__event-title">{{ event.title }}</span>
                 </div>
             </div>
-        </transition>
+        </Transition>
     </div>
 </template>
 
 <style scoped>
-/* ═══════════════════════════════════════════════════════════
-   CalendarWidget — Sidebar calendar widget
-   ═══════════════════════════════════════════════════════════ */
+/* ── CalendarWidget — minimal sidebar design ── */
 
-/* ------------------------------------------------- Root */
 .cal-widget {
-    position: relative;
-    z-index: 1;
     flex-shrink: 0;
+    margin: 0 var(--space-3) var(--space-2);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: var(--surface-2);
+    overflow: hidden;
 }
 
-/* ------------------------------------------------- Section label
-   Mirrors .sidebar__section-label from AppSidebar */
-.cal-widget__section-label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) 14px var(--space-1);
-    font-size: var(--text-2xs);
-    font-weight: var(--weight-bold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
-
-.cal-widget__section-label::after {
-    content: '';
-    flex: 1;
-    height: var(--space-px);
-    background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
-}
-
-/* ------------------------------------------------- Header */
+/* ── Header ───────────────────────────────────────────────── */
 .cal-widget__header {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-1-5) 14px;
+    justify-content: space-between;
+    padding: 8px 10px;
     cursor: pointer;
-    border-radius: var(--radius-md);
-    margin: 0 var(--space-1);
-    transition:
-        background var(--transition-fast),
-        color var(--transition-fast);
+    transition: background var(--transition-fast);
+    user-select: none;
 }
 
 .cal-widget__header:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--surface-hover);
 }
 
 .cal-widget__header:active {
-    transform: scale(0.98);
+    background: var(--surface-active);
 }
 
-/* ------------------------------------------------- Icon */
-.cal-widget__icon {
+.cal-widget__header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.cal-widget__header-right {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 2px;
     flex-shrink: 0;
-    color: var(--text-muted);
-    opacity: var(--opacity-soft);
-    transition: opacity var(--transition-fast);
 }
 
-.cal-widget__header:hover .cal-widget__icon {
-    opacity: 1;
-}
-
-/* ------------------------------------------------- Date */
-.cal-widget__date {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
+.cal-widget__day {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
     color: var(--text-secondary);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    min-width: 0;
 }
 
-/* ------------------------------------------------- Badge (event count) */
-.cal-widget__badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: var(--radius-full, 9999px);
-    background: var(--accent);
-    color: #1a1a2e;
+.cal-widget__count {
     font-size: var(--text-2xs);
-    font-weight: var(--weight-bold);
-    line-height: 1;
+    color: var(--accent);
+    white-space: nowrap;
     flex-shrink: 0;
 }
 
-/* ------------------------------------------------- Open calendar button */
+.cal-widget__count--empty {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* ── Open + chevron buttons ───────────────────────────────── */
 .cal-widget__open-btn {
     display: flex;
     align-items: center;
@@ -257,21 +224,28 @@ onUnmounted(() => {
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
-    flex-shrink: 0;
-    transition: color var(--transition-fast), background var(--transition-fast);
+    opacity: 0;
+    transition:
+        opacity var(--transition-fast),
+        color var(--transition-fast),
+        background var(--transition-fast);
+}
+
+.cal-widget__header:hover .cal-widget__open-btn {
+    opacity: 1;
 }
 
 .cal-widget__open-btn:hover {
     color: var(--accent);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-hover);
 }
 
-/* ------------------------------------------------- Chevron */
 .cal-widget__chevron {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
     color: var(--text-muted);
     transition: transform var(--transition-fast);
 }
@@ -280,26 +254,34 @@ onUnmounted(() => {
     transform: rotate(180deg);
 }
 
-/* ------------------------------------------------- Next event preview */
+/* ── Next event pill ──────────────────────────────────────── */
 .cal-widget__next {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-1) 14px var(--space-1-5);
-    margin: 0 var(--space-1);
+    padding: 0 10px 8px;
+}
+
+.cal-widget__next-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    flex-shrink: 0;
+    box-shadow: 0 0 5px var(--accent-glow);
 }
 
 .cal-widget__next-time {
-    font-size: var(--text-xs);
-    font-weight: var(--weight-medium);
-    color: var(--accent);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
 }
 
 .cal-widget__next-title {
-    font-size: var(--text-xs);
-    color: var(--text-primary);
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -312,19 +294,19 @@ onUnmounted(() => {
     color: var(--text-muted);
     flex-shrink: 0;
     white-space: nowrap;
+    opacity: 0.7;
 }
 
-/* ------------------------------------------------- Expanded event list */
+/* ── Expanded event list ──────────────────────────────────── */
 .cal-widget__list {
-    max-height: 150px;
+    max-height: 140px;
     overflow-y: auto;
-    padding: var(--space-1) 0 var(--space-2);
-    margin: 0 var(--space-1);
+    padding: 0 0 6px;
+    border-top: 1px solid var(--glass-border);
 }
 
-/* Thin custom scrollbar */
 .cal-widget__list::-webkit-scrollbar {
-    width: 3px;
+    width: 2px;
 }
 
 .cal-widget__list::-webkit-scrollbar-track {
@@ -333,34 +315,42 @@ onUnmounted(() => {
 
 .cal-widget__list::-webkit-scrollbar-thumb {
     background: var(--glass-border);
-    border-radius: var(--radius-full, 9999px);
+    border-radius: var(--radius-full);
 }
 
-/* ------------------------------------------------- Event row */
+/* ── Event row ────────────────────────────────────────────── */
 .cal-widget__event {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-1) 14px;
-    border-radius: var(--radius-sm);
+    gap: 8px;
+    padding: 5px 10px;
     transition: background var(--transition-fast);
 }
 
 .cal-widget__event:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-hover);
+}
+
+.cal-widget__event-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--text-muted);
+    flex-shrink: 0;
+    opacity: 0.6;
 }
 
 .cal-widget__event-time {
-    font-size: var(--text-xs);
+    font-size: var(--text-2xs);
     font-weight: var(--weight-medium);
     color: var(--text-muted);
     flex-shrink: 0;
-    min-width: 38px;
+    min-width: 34px;
     font-variant-numeric: tabular-nums;
 }
 
 .cal-widget__event-title {
-    font-size: var(--text-xs);
+    font-size: var(--text-2xs);
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -368,20 +358,21 @@ onUnmounted(() => {
     min-width: 0;
 }
 
-/* ------------------------------------------------- Empty state */
+/* ── Empty state ──────────────────────────────────────────── */
 .cal-widget__empty {
-    padding: var(--space-2) 14px;
-    font-size: var(--text-xs);
+    padding: 8px 10px;
+    font-size: var(--text-2xs);
     color: var(--text-muted);
     font-style: italic;
+    border-top: 1px solid var(--glass-border);
 }
 
-/* ------------------------------------------------- Expand/collapse transition */
+/* ── Transitions ──────────────────────────────────────────── */
 .cal-expand-enter-active,
 .cal-expand-leave-active {
     transition:
-        max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.2s ease;
+        max-height 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.18s ease;
     overflow: hidden;
 }
 
@@ -393,13 +384,22 @@ onUnmounted(() => {
 
 .cal-expand-enter-to,
 .cal-expand-leave-from {
-    max-height: 150px;
+    max-height: 140px;
     opacity: 1;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Collapsed mode — icon-only circular button
-   ═══════════════════════════════════════════════════════════ */
+.cal-next-enter-active,
+.cal-next-leave-active {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.cal-next-enter-from,
+.cal-next-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+/* ══ Collapsed mode ══════════════════════════════════════════ */
 .cal-widget--collapsed {
     display: flex;
     flex-direction: column;
@@ -409,14 +409,6 @@ onUnmounted(() => {
     cursor: pointer;
 }
 
-.cal-widget__mini-time {
-    font-size: 0.6rem;
-    color: var(--text-muted);
-    text-align: center;
-    line-height: 1;
-    white-space: nowrap;
-}
-
 .cal-widget__icon-btn {
     position: relative;
     display: flex;
@@ -424,7 +416,7 @@ onUnmounted(() => {
     justify-content: center;
     width: 34px;
     height: 34px;
-    border-radius: var(--radius-full, 9999px);
+    border-radius: var(--radius-full);
     color: var(--text-secondary);
     cursor: pointer;
     transition:
@@ -437,7 +429,6 @@ onUnmounted(() => {
     color: var(--text-primary);
 }
 
-/* Mini badge — positioned top-right of icon circle */
 .cal-widget__mini-badge {
     position: absolute;
     top: 1px;
@@ -448,26 +439,19 @@ onUnmounted(() => {
     min-width: 14px;
     height: 14px;
     padding: 0 3px;
-    border-radius: var(--radius-full, 9999px);
+    border-radius: var(--radius-full);
     background: var(--accent);
     color: #1a1a2e;
-    font-size: 9px;
-    font-weight: var(--weight-bold);
+    font-size: 0.6rem;
+    font-weight: 700;
     line-height: 1;
-    pointer-events: none;
 }
 
-/* ------------------------------------------------- Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-
-    .cal-widget__header,
-    .cal-widget__icon,
-    .cal-widget__chevron,
-    .cal-widget__event,
-    .cal-widget__icon-btn,
-    .cal-expand-enter-active,
-    .cal-expand-leave-active {
-        transition: none;
-    }
+.cal-widget__mini-time {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1;
+    white-space: nowrap;
 }
 </style>

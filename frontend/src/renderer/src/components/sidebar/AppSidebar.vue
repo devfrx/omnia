@@ -135,36 +135,25 @@ async function onOpenFile(id: string): Promise<void> {
           </button>
         </div>
 
-        <!-- Primary navigation -->
+        <!-- Mode switcher tabs: Assistente / Ibrido -->
+        <div class="sidebar__mode-tabs">
+          <router-link to="/assistant" class="sidebar__mode-tab" active-class="sidebar__mode-tab--active"
+            @click="toggle">
+            <AppIcon name="orb" :size="14" />
+            <span>Assistente</span>
+          </router-link>
+          <router-link to="/hybrid" class="sidebar__mode-tab" active-class="sidebar__mode-tab--active" @click="toggle">
+            <AppIcon name="hybrid-sidebar" :size="14" />
+            <span>Ibrido</span>
+          </router-link>
+        </div>
+
+        <!-- Secondary navigation (tools) -->
         <nav class="sidebar__nav" aria-label="Navigazione principale">
-          <router-link to="/settings" class="sidebar__link" active-class="sidebar__link--active" title="Impostazioni"
-            @click="toggle">
-            <span class="sidebar__link-icon" aria-hidden="true">
-              <AppIcon name="settings" :size="16" />
-            </span>
-            <span class="sidebar__link-label">Impostazioni</span>
-          </router-link>
-
-          <router-link to="/assistant" class="sidebar__link" active-class="sidebar__link--active" title="Assistente"
-            @click="toggle">
-            <span class="sidebar__link-icon" aria-hidden="true">
-              <AppIcon name="orb" :size="16" />
-            </span>
-            <span class="sidebar__link-label">Assistente</span>
-          </router-link>
-
-          <router-link to="/hybrid" class="sidebar__link" active-class="sidebar__link--active" title="Ibrido"
-            @click="toggle">
-            <span class="sidebar__link-icon" aria-hidden="true">
-              <AppIcon name="hybrid-sidebar" :size="16" />
-            </span>
-            <span class="sidebar__link-label">Ibrido</span>
-          </router-link>
-
           <router-link to="/notes" class="sidebar__link" active-class="sidebar__link--active" title="Note"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <AppIcon name="file-text" :size="16" />
+              <AppIcon name="file-text" :size="15" />
             </span>
             <span class="sidebar__link-label">Note</span>
           </router-link>
@@ -172,7 +161,7 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/whiteboard" class="sidebar__link" active-class="sidebar__link--active" title="Lavagna"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <AppIcon name="whiteboard-card" :size="16" />
+              <AppIcon name="whiteboard-card" :size="15" />
             </span>
             <span class="sidebar__link-label">Lavagna</span>
           </router-link>
@@ -180,26 +169,33 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/email" class="sidebar__link" active-class="sidebar__link--active" title="Email"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <AppIcon name="email" :size="16" />
+              <AppIcon name="email" :size="15" />
             </span>
             <span class="sidebar__link-label">Email</span>
             <span v-if="unreadBadge" class="sidebar__badge">{{ unreadBadge }}</span>
           </router-link>
         </nav>
 
-        <!-- Calendar widget — shows today's events and next upcoming -->
+        <!-- Calendar widget -->
         <CalendarWidget :collapsed="false" />
 
         <!-- Conversations section -->
         <div class="sidebar__conversations">
-          <div class="sidebar__section-label">
-            <span>Conversazioni</span>
-          </div>
-
           <ConversationList :conversations="chatStore.conversations"
             :active-id="chatStore.currentConversation?.id ?? null" :streaming-id="chatStore.streamingConversationId"
             @select="onSelect" @create="onCreate" @delete="onDelete" @delete-all="onDeleteAll" @rename="onRename"
             @open-file="onOpenFile" />
+        </div>
+
+        <!-- Footer: settings -->
+        <div class="sidebar__footer">
+          <router-link to="/settings" class="sidebar__link sidebar__link--footer" active-class="sidebar__link--active"
+            @click="toggle">
+            <span class="sidebar__link-icon" aria-hidden="true">
+              <AppIcon name="settings" :size="15" />
+            </span>
+            <span class="sidebar__link-label">Impostazioni</span>
+          </router-link>
         </div>
       </aside>
     </Transition>
@@ -308,8 +304,65 @@ async function onOpenFile(id: string): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
-  padding: 0 var(--space-3) var(--space-3);
+  padding: 0 var(--space-3) var(--space-2);
   flex-shrink: 0;
+}
+
+/* ── Mode tabs (Assistente / Ibrido) ───────────────────────── */
+.sidebar__mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 0 var(--space-3) var(--space-3);
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.sidebar__mode-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  padding: 6px var(--space-2);
+  border-radius: calc(var(--radius-md) - 3px);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.sidebar__mode-tab:hover {
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+}
+
+.sidebar__mode-tab--active {
+  background: var(--surface-4);
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Footer (impostazioni) ─────────────────────────────────── */
+.sidebar__footer {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar__link--footer {
+  color: var(--text-muted);
+}
+
+.sidebar__link--footer:hover {
+  color: var(--text-secondary);
 }
 
 /* Nav link */
@@ -372,22 +425,6 @@ async function onOpenFile(id: string): Promise<void> {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-}
-
-/* Section label */
-.sidebar__section-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4) var(--space-2);
-  margin-top: var(--space-2);
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  border-top: 1px solid var(--border);
 }
 
 /* Scrollbar */

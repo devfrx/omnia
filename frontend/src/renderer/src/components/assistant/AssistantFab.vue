@@ -235,7 +235,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
 
 .fab__action-icon {
     flex-shrink: 0;
-    opacity: 0.65;
+    opacity: 0.85;
     transition: opacity var(--transition-fast);
 }
 

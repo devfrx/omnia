@@ -38,7 +38,10 @@ const _ICONS = {
   // ── Core UI ──────────────────────────────────────────────────────────────
 
   /** Generic close / remove */
-  'x': { icon: 'solar:close-bold' },
+  'x': {
+    inner: `<line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+    viewBox: '0 0 24 24',
+  },
 
   /** Downward-pointing chevron */
   'chevron-down': { icon: 'solar:alt-arrow-down-bold' },
@@ -56,7 +59,10 @@ const _ICONS = {
   'check': { icon: 'solar:check-read-bold' },
 
   /** Plus / add */
-  'plus': { icon: 'solar:add-bold' },
+  'plus': {
+    inner: `<line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+    viewBox: '0 0 24 24',
+  },
 
   /** Magnifying glass (search) */
   'search': { icon: 'solar:magnifer-bold' },
@@ -105,7 +111,7 @@ const _ICONS = {
   'message': { icon: 'solar:chat-round-bold' },
 
   /** Chat bubble with plus (new chat) */
-  'message-plus': { icon: 'solar:chat-round-add-bold' },
+  'message-plus': { icon: 'solar:pen-new-round-bold' },
 
   // ── Voice ─────────────────────────────────────────────────────────────────
 
@@ -160,7 +166,7 @@ const _ICONS = {
   // ── Layout / navigation ───────────────────────────────────────────────────
 
   /** Split panel layout */
-  'hybrid-panel': { icon: 'solar:sidebar-bold' },
+  'hybrid-panel': { icon: 'solar:sidebar-code-bold' },
 
   /** Sidebar-only layout */
   'hybrid-sidebar': { icon: 'solar:sidebar-minimalistic-bold' },
@@ -183,7 +189,7 @@ const _ICONS = {
   'thinking-cap': { icon: 'solar:diploma-bold' },
 
   /** Wrench / tool result */
-  'tool': { icon: 'solar:tools-bold' },
+  'tool': { icon: 'solar:tuning-2-bold' },
 
   /** Clock / timestamp */
   'clock': { icon: 'solar:clock-circle-bold' },
@@ -192,7 +198,7 @@ const _ICONS = {
   'user': { icon: 'solar:user-bold' },
 
   /** Git branch / fork */
-  'branch': { icon: 'solar:code-circle-bold' },
+  'branch': { icon: 'solar:branching-paths-up-bold' },
 
   // ── Files ─────────────────────────────────────────────────────────────────
 
@@ -234,7 +240,7 @@ const _ICONS = {
   'crosshair': { icon: 'solar:target-bold' },
 
   /** Auto-rotate / 360 */
-  'auto-rotate': { icon: 'solar:rotation-bold' },
+  'auto-rotate': { icon: 'solar:camera-rotate-bold' },
 
   /** Whiteboard card / sticky note */
   'whiteboard-card': { icon: 'solar:notes-bold' },
@@ -317,7 +323,7 @@ const _ICONS = {
   'shield': { icon: 'solar:shield-bold' },
 
   /** Chip / hardware */
-  'chip': { icon: 'solar:chip-bold' },
+  'chip': { icon: 'solar:cpu-bold' },
 
   /** Embedding / vector representation */
   'embedding': { icon: 'solar:programming-bold' },

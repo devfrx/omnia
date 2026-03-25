@@ -47,9 +47,6 @@ const connectionStatus = computed<'connected' | 'loading' | 'disconnected'>(() =
   return 'disconnected'
 })
 
-/** Human-readable TTS voice name from the voice store (set by voice_ready). */
-const ttsVoice = computed(() => voiceStore.ttsVoice)
-
 const windowControls = window.electron?.windowControls
 
 /** Minimize the application window */
@@ -89,86 +86,80 @@ onUnmounted(() => {
 
 <template>
   <header class="titlebar">
-    <!-- Sidebar toggle (hamburger) — no-drag so it's clickable -->
-    <button class="titlebar__menu-btn" aria-label="Apri sidebar" @click="uiStore.toggleSidebar">
-      <AppIcon name="menu" :size="14" />
-    </button>
-
-    <!-- Draggable region -->
-    <div class="titlebar__drag-region">
+    <!-- Left zone: hamburger + branding -->
+    <div class="titlebar__left">
+      <button class="titlebar__menu-btn" aria-label="Apri sidebar" @click="uiStore.toggleSidebar">
+        <AppIcon name="menu" :size="14" />
+      </button>
       <span class="titlebar__title">AL\CE</span>
+    </div>
 
-      <span class="titlebar__separator">&middot;</span>
-
-      <div class="titlebar__model-info">
+    <!-- Center zone: draggable + status capsule -->
+    <div class="titlebar__center">
+      <!-- Status capsule (no-drag for interactive) -->
+      <div class="titlebar__capsule">
         <span class="titlebar__status-dot" :class="`titlebar__status-dot--${connectionStatus}`" />
         <span class="titlebar__model-name" :class="{ 'titlebar__model-name--empty': !hasActiveModel }"
           :title="modelDisplayName">
           {{ modelDisplayName }}
         </span>
         <AliceSpinner v-if="connectionStatus === 'loading'" size="xs" />
+
+        <template v-if="voiceStore.sttAvailable && voiceStore.sttEngine">
+          <span class="titlebar__capsule-sep" />
+          <AppIcon name="stt-indicator" :size="10" class="titlebar__voice-icon" />
+          <span class="titlebar__voice-label">{{ voiceStore.sttEngine }}</span>
+          <span v-if="voiceStore.sttModel" class="titlebar__voice-detail">{{ voiceStore.sttModel }}</span>
+        </template>
+      </div>
+    </div>
+
+    <!-- Right zone: weather + window controls -->
+    <div class="titlebar__right">
+      <div v-if="weatherEnabled" class="titlebar__weather">
+        <WeatherWidget />
       </div>
 
-      <template v-if="voiceStore.sttAvailable || voiceStore.ttsAvailable">
-        <span class="titlebar__separator">&middot;</span>
-        <div class="titlebar__voice">
-          <!-- STT -->
-          <div v-if="voiceStore.sttAvailable && voiceStore.sttEngine" class="titlebar__voice-item">
-            <AppIcon name="stt-indicator" :size="9" class="titlebar__voice-icon" />
-            <span class="titlebar__voice-engine">{{ voiceStore.sttEngine }}</span>
-            <span v-if="voiceStore.sttModel" class="titlebar__voice-model">{{ voiceStore.sttModel }}</span>
-          </div>
-          <!-- STT / TTS divider -->
-          <span
-            v-if="voiceStore.sttAvailable && voiceStore.sttEngine && voiceStore.ttsAvailable && voiceStore.ttsEngine"
-            class="titlebar__voice-sep">/</span>
-          <!-- TTS -->
-          <div v-if="voiceStore.ttsAvailable && voiceStore.ttsEngine" class="titlebar__voice-item">
-            <AppIcon name="tts-indicator" :size="9" class="titlebar__voice-icon" />
-            <span class="titlebar__voice-engine">{{ voiceStore.ttsEngine }}</span>
-            <span v-if="ttsVoice" class="titlebar__voice-model">{{ ttsVoice }}</span>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- Weather widget — right side of drag region -->
-    <div v-if="weatherEnabled" class="titlebar__weather">
-      <WeatherWidget />
-    </div>
-
-    <!-- Window controls (no-drag so buttons are clickable) -->
-    <div class="titlebar__controls">
-      <button class="titlebar__btn titlebar__btn--minimize" aria-label="Minimize" @click="handleMinimize">
-        <AppIcon name="win-minimize" :size="10" />
-      </button>
-
-      <button class="titlebar__btn titlebar__btn--maximize" :aria-label="isMaximized ? 'Restore' : 'Maximize'"
-        @click="handleMaximize">
-        <AppIcon v-if="!isMaximized" name="win-maximize" :size="10" />
-        <AppIcon v-else name="win-restore" :size="10" />
-      </button>
-
-      <button class="titlebar__btn titlebar__btn--close" aria-label="Close" @click="handleClose">
-        <AppIcon name="win-close" :size="10" />
-      </button>
+      <div class="titlebar__controls">
+        <button class="titlebar__btn titlebar__btn--minimize" aria-label="Minimize" @click="handleMinimize">
+          <AppIcon name="win-minimize" :size="10" />
+        </button>
+        <button class="titlebar__btn titlebar__btn--maximize" :aria-label="isMaximized ? 'Restore' : 'Maximize'"
+          @click="handleMaximize">
+          <AppIcon v-if="!isMaximized" name="win-maximize" :size="10" />
+          <AppIcon v-else name="win-restore" :size="10" />
+        </button>
+        <button class="titlebar__btn titlebar__btn--close" aria-label="Close" @click="handleClose">
+          <AppIcon name="win-close" :size="10" />
+        </button>
+      </div>
     </div>
   </header>
 </template>
 
 <style scoped>
 .titlebar {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: var(--titlebar-height, 38px);
   min-height: var(--titlebar-height, 38px);
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
   z-index: var(--z-sticky);
   user-select: none;
+  -webkit-app-region: drag;
 }
 
-/* Sidebar toggle button (hamburger) */
+/* ── Left zone ──────────────────────────────────────────────── */
+.titlebar__left {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
 .titlebar__menu-btn {
   display: inline-flex;
   align-items: center;
@@ -195,42 +186,48 @@ onUnmounted(() => {
   background: var(--surface-active);
 }
 
-/* Draggable region fills all available space */
-.titlebar__drag-region {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding-left: var(--space-3);
-  -webkit-app-region: drag;
-}
-
 .titlebar__title {
   font-family: var(--font-display);
-  font-size: var(--text-xs);
+  font-size: 10px;
   font-weight: var(--weight-semibold);
-  letter-spacing: 2px;
-  color: var(--text-secondary);
-}
-
-/* Separator between title and model info */
-.titlebar__separator {
+  letter-spacing: 2.5px;
   color: var(--text-muted);
-  opacity: 0.3;
-  margin: 0 8px;
-  font-size: 14px;
+  opacity: 0.6;
+  padding-right: var(--space-3);
 }
 
-/* Model info container */
-.titlebar__model-info {
+/* ── Center zone ────────────────────────────────────────────── */
+.titlebar__center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 6px;
   -webkit-app-region: no-drag;
-  transition: opacity var(--transition-fast);
 }
 
-/* Connection status dot */
+.titlebar__capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--glass-border);
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.titlebar__capsule:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Status dot ─────────────────────────────────────────────── */
 .titlebar__status-dot {
   width: 5px;
   height: 5px;
@@ -240,23 +237,37 @@ onUnmounted(() => {
 
 .titlebar__status-dot--connected {
   background: var(--success);
+  box-shadow: 0 0 4px var(--success-glow);
 }
 
 .titlebar__status-dot--loading {
   background: var(--accent);
+  animation: dot-pulse-tb 1.5s ease-in-out infinite;
 }
 
 .titlebar__status-dot--disconnected {
   background: var(--danger);
 }
 
-/* Model name */
+@keyframes dot-pulse-tb {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ── Model name ─────────────────────────────────────────────── */
 .titlebar__model-name {
   font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
   color: var(--text-secondary);
-  max-width: 220px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -267,50 +278,46 @@ onUnmounted(() => {
   font-style: italic;
 }
 
-/* Voice info: STT + TTS */
-.titlebar__voice {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+/* ── Capsule separator ──────────────────────────────────────── */
+.titlebar__capsule-sep {
+  width: 1px;
+  height: 10px;
+  background: var(--border);
+  opacity: 0.5;
+  flex-shrink: 0;
 }
 
-.titlebar__voice-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* ── Voice info (inside capsule) ────────────────────────────── */
+.titlebar__voice-icon {
+  color: var(--text-muted);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.titlebar__voice-label {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
-.titlebar__voice-icon {
-  color: var(--text-muted);
-  opacity: 0.55;
-  flex-shrink: 0;
-  margin-top: 0.5px;
-}
-
-.titlebar__voice-engine {
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.3px;
-  color: var(--text-muted);
-  opacity: 0.75;
-}
-
-.titlebar__voice-model {
+.titlebar__voice-detail {
   font-size: 10px;
   color: var(--text-muted);
   opacity: 0.5;
   letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
-.titlebar__voice-sep {
-  font-size: 10px;
-  color: var(--text-muted);
-  opacity: 0.3;
-  margin: 0 1px;
+/* ── Right zone ─────────────────────────────────────────────── */
+.titlebar__right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
 }
 
-/* Weather widget in titlebar */
 .titlebar__weather {
   display: flex;
   align-items: center;
@@ -319,7 +326,7 @@ onUnmounted(() => {
   -webkit-app-region: no-drag;
 }
 
-/* Control button group */
+/* ── Window controls ────────────────────────────────────────── */
 .titlebar__controls {
   display: flex;
   height: 100%;

@@ -36,7 +36,7 @@ const emit = defineEmits<{
 // -----------------------------------------------------------------------
 
 /** Height of each conversation item in pixels. */
-const ITEM_HEIGHT = 52
+const ITEM_HEIGHT = 48
 /** Extra items rendered above/below the visible area. */
 const BUFFER = 5
 
@@ -187,19 +187,19 @@ function timeAgo(iso: string): string {
 
 <template>
   <div class="conv-list">
-    <!-- New conversation — prominent button with circle-plus badge -->
-    <button class="conv-list__new" aria-label="Nuova chat" @click="emit('create')">
-      <span class="conv-list__new-icon" aria-hidden="true">
-        <AppIcon name="plus" :size="11" :stroke-width="2.5" />
-      </span>
-      <span class="conv-list__new-label">Nuova chat</span>
-    </button>
-
-    <!-- Delete all — minimal text-link style -->
-    <button v-if="conversations.length > 0" class="conv-list__delete-all" aria-label="Elimina tutte le conversazioni"
-      @click="emit('delete-all')">
-      Elimina tutte
-    </button>
+    <!-- Section header: label + compact icon actions -->
+    <div class="conv-list__header">
+      <span class="conv-list__title">Conversazioni</span>
+      <div class="conv-list__header-actions">
+        <button class="conv-list__header-btn" aria-label="Nuova chat" title="Nuova chat" @click="emit('create')">
+          <AppIcon name="plus" :size="12" />
+        </button>
+        <button v-if="conversations.length > 0" class="conv-list__header-btn conv-list__header-btn--danger"
+          aria-label="Elimina tutte le conversazioni" title="Elimina tutte" @click="emit('delete-all')">
+          <AppIcon name="trash" :size="11" />
+        </button>
+      </div>
+    </div>
 
     <!-- Virtual-scrolled conversation list -->
     <div ref="scrollContainer" class="conv-list__scroller" role="listbox" aria-label="Conversazioni" tabindex="0"
@@ -211,8 +211,6 @@ function timeAgo(iso: string): string {
           'conv-item--focused': index === focusedIndex
         }" role="option" :aria-selected="conv.id === activeId" :style="{ transform: `translateY(${offset}px)` }"
           @click="emit('select', conv.id)">
-          <!-- Left accent bar (always present, styled per state) -->
-          <span class="conv-item__bar" aria-hidden="true" />
 
           <!-- Normal display -->
           <template v-if="renamingId !== conv.id">
@@ -221,13 +219,10 @@ function timeAgo(iso: string): string {
                 aria-label="Generazione in corso" />
               {{ conv.title ?? 'Nuova conversazione' }}
             </span>
-            <span class="conv-item__meta">
-              <span class="conv-item__meta-badge">
-                <AppIcon name="message" :size="9" :stroke-width="2.5" aria-hidden="true" />
-                <span>{{ conv.message_count }}</span>
-              </span>
+            <div class="conv-item__meta">
+              <span v-if="conv.message_count > 0" class="conv-item__count">{{ conv.message_count }}</span>
               <span class="conv-item__time">{{ timeAgo(conv.updated_at) }}</span>
-            </span>
+            </div>
           </template>
 
           <!-- Inline rename -->
@@ -259,10 +254,10 @@ function timeAgo(iso: string): string {
       </div>
     </div>
 
-    <!-- Empty state with staggered fade-in -->
+    <!-- Empty state -->
     <div v-if="conversations.length === 0" class="conv-list__empty">
       <span class="conv-list__empty-icon" aria-hidden="true">
-        <AppIcon name="message" :size="30" :stroke-width="1.2" />
+        <AppIcon name="message" :size="28" :stroke-width="1.2" />
       </span>
       <span class="conv-list__empty-text">Nessuna conversazione</span>
       <span class="conv-list__empty-sub">Crea una nuova chat per iniziare</span>
@@ -271,100 +266,74 @@ function timeAgo(iso: string): string {
 </template>
 
 <style scoped>
-/* ═══════════════════════════════════════════════════════════
-   ConversationList — Supabase-style ultra-flat design
-   ═══════════════════════════════════════════════════════════ */
+/* ─── ConversationList — compact sidebar list ─── */
 
-/* ------------------------------------------------- Root */
+/* Root */
 .conv-list {
   display: flex;
   flex-direction: column;
-  padding: var(--space-1) var(--space-2) var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
   flex: 1;
   min-height: 0;
   position: relative;
 }
 
-/* ------------------------------------------------- New chat button */
-.conv-list__new {
+/* ─── Section header ────────────────────────────────────────── */
+.conv-list__header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2) var(--space-2-5);
-  margin-bottom: var(--space-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-1);
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  cursor: pointer;
+  padding: var(--space-2) var(--space-2) var(--space-1-5);
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.conv-list__title {
+  flex: 1;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.conv-list__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.conv-list__header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
   transition:
     background var(--transition-fast),
-    border-color var(--transition-fast),
     color var(--transition-fast);
 }
 
-.conv-list__new-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: var(--text-muted);
-  transition: color var(--transition-fast);
-}
-
-.conv-list__new-label {
-  flex: 1;
-}
-
-.conv-list__new:hover {
+.conv-list__header-btn:hover {
   background: var(--surface-hover);
-  border-color: var(--border-hover);
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
-.conv-list__new:hover .conv-list__new-icon {
-  color: var(--text-primary);
-}
-
-.conv-list__new:focus-visible {
-  box-shadow: var(--focus-ring-shadow);
-  outline: none;
-}
-
-/* ------------------------------------------------- Delete all */
-.conv-list__delete-all {
-  align-self: flex-end;
-  display: flex;
-  align-items: center;
-  padding: var(--space-0-5) var(--space-1);
-  margin-bottom: var(--space-1);
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-regular);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    color var(--transition-fast),
-    opacity var(--transition-fast);
-}
-
-.conv-list__delete-all:hover {
+.conv-list__header-btn--danger:hover {
   color: var(--danger);
 }
 
-.conv-list__delete-all:focus-visible {
+.conv-list__header-btn:focus-visible {
   box-shadow: var(--focus-ring-shadow);
   outline: none;
-  border-radius: var(--radius-xs);
 }
 
-/* ------------------------------------------------- Scroller */
+/* ─── Scroller ──────────────────────────────────────────────── */
 .conv-list__scroller {
   flex: 1;
   overflow-y: auto;
@@ -375,7 +344,7 @@ function timeAgo(iso: string): string {
 }
 
 .conv-list__scroller::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 
 .conv-list__scroller::-webkit-scrollbar-track {
@@ -401,31 +370,28 @@ function timeAgo(iso: string): string {
   width: 100%;
 }
 
-/* ------------------------------------------------- Conversation item */
+/* ─── Conversation item ─────────────────────────────────────── */
 .conv-item {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: var(--space-2) var(--space-2-5);
+  padding: var(--space-1-5) var(--space-2-5);
   border-radius: var(--radius-sm);
   cursor: pointer;
   position: absolute;
   left: 0;
   right: 0;
-  height: 52px;
-  transition: background var(--transition-fast);
-}
-
-/* Accent bar — hidden in Supabase style */
-.conv-item__bar {
-  display: none;
+  height: 48px;
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .conv-item:hover {
   background: var(--surface-hover);
 }
 
-/* Active state — stronger bg fill, no bar */
+/* Active: accent left bar via inset shadow */
 .conv-item--active {
   background: var(--surface-active);
 }
@@ -434,7 +400,7 @@ function timeAgo(iso: string): string {
   background: var(--surface-active);
 }
 
-/* Streaming — same as active */
+/* Streaming — accent fill + pulsing dot */
 .conv-item--streaming {
   background: var(--surface-active);
 }
@@ -444,49 +410,47 @@ function timeAgo(iso: string): string {
   box-shadow: var(--focus-ring-shadow);
 }
 
-/* ------------------------------------------------- Title */
+/* ─── Title ─────────────────────────────────────────────────── */
 .conv-item__title {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   padding-right: 52px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
-.conv-item--active .conv-item__title {
-  color: var(--text-primary);
-}
-
-/* ------------------------------------------------- Metadata row */
+/* ─── Meta row ──────────────────────────────────────────────── */
 .conv-item__meta {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
-  font-size: var(--text-2xs);
-  color: var(--text-muted);
-  line-height: var(--leading-tight);
+  margin-top: 2px;
   padding-right: 52px;
 }
 
-.conv-item--active .conv-item__meta {
-  color: var(--text-secondary);
-}
-
-.conv-item__meta-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  opacity: 0.7;
+.conv-item__count {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
 }
 
 .conv-item__time {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
   margin-left: auto;
+  opacity: 0.7;
 }
 
-/* ------------------------------------------------- Streaming dot */
+.conv-item--active .conv-item__count,
+.conv-item--active .conv-item__time {
+  opacity: 0.85;
+}
+
+/* ─── Streaming dot ─────────────────────────────────────────── */
 .conv-item__streaming-dot {
   display: inline-block;
   width: 5px;
@@ -496,10 +460,22 @@ function timeAgo(iso: string): string {
   margin-right: var(--space-1);
   vertical-align: middle;
   flex-shrink: 0;
-  opacity: 1;
+  animation: streaming-pulse 1.4s ease-in-out infinite;
 }
 
-/* ------------------------------------------------- Rename input */
+@keyframes streaming-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ─── Rename input ──────────────────────────────────────────── */
 .conv-item__rename-input {
   width: 100%;
   padding: var(--space-1) var(--space-1-5);
@@ -507,7 +483,7 @@ function timeAgo(iso: string): string {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-family: var(--font-sans);
   outline: none;
   transition: border-color var(--transition-fast);
@@ -517,19 +493,20 @@ function timeAgo(iso: string): string {
   border-color: var(--accent);
 }
 
-/* ------------------------------------------------- Action buttons */
+/* ─── Action buttons ────────────────────────────────────────── */
 .conv-item__actions {
   position: absolute;
   top: 50%;
   right: var(--space-1);
   transform: translateY(-50%);
   display: flex;
-  gap: 2px;
+  gap: 1px;
   opacity: 0;
   pointer-events: none;
-  background: var(--surface-1);
-  padding: var(--space-0-5);
+  background: var(--surface-2);
+  padding: 3px;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
   transition: opacity var(--transition-fast);
 }
 
@@ -543,8 +520,8 @@ function timeAgo(iso: string): string {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: none;
   border-radius: var(--radius-xs);
   background: transparent;
@@ -573,7 +550,7 @@ function timeAgo(iso: string): string {
   color: var(--danger);
 }
 
-/* ------------------------------------------------- Empty state */
+/* ─── Empty state ───────────────────────────────────────────── */
 .conv-list__empty {
   position: absolute;
   inset: 0;
@@ -588,7 +565,7 @@ function timeAgo(iso: string): string {
 
 .conv-list__empty-icon {
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .conv-list__empty-text {
@@ -602,17 +579,17 @@ function timeAgo(iso: string): string {
   color: var(--text-muted);
 }
 
-/* ------------------------------------------------- Reduced motion */
+/* ─── Reduced motion ────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
 
   .conv-item,
   .conv-item__actions,
   .conv-item__rename-input,
-  .conv-list__new,
-  .conv-list__new-icon,
-  .conv-list__delete-all,
-  .conv-item__action {
+  .conv-list__header-btn,
+  .conv-item__action,
+  .conv-item__streaming-dot {
     transition: none;
+    animation: none;
   }
 }
 </style>
