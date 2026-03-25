@@ -17,6 +17,7 @@ from backend.core.event_bus import EventBus
 from backend.core.protocols import (
     ContextManagerProtocol,
     ConversationFileManagerProtocol,
+    EmbeddingClientProtocol,
     EmailServiceProtocol,
     LLMServiceProtocol,
     LMStudioManagerProtocol,
@@ -24,6 +25,7 @@ from backend.core.protocols import (
     NoteServiceProtocol,
     PluginManagerProtocol,
     PreferencesServiceProtocol,
+    QdrantServiceProtocol,
     STTServiceProtocol,
     TTSServiceProtocol,
     ToolRegistryProtocol,
@@ -65,6 +67,12 @@ class AppContext:
 
     email_service: EmailServiceProtocol | None = None
     """Async IMAP/SMTP email assistant service."""
+
+    qdrant_service: QdrantServiceProtocol | None = None
+    """Qdrant vector store service."""
+
+    embedding_client: EmbeddingClientProtocol | None = None
+    """Shared embedding client for all vector operations."""
 
     ws_connection_manager: WSConnectionManagerProtocol | None = None
     """Persistent event WebSocket connection manager."""

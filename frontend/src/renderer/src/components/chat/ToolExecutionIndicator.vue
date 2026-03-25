@@ -10,6 +10,7 @@ import { computed, reactive, defineAsyncComponent } from 'vue'
 
 import type { ToolExecution, ChartPayload } from '../../types/chat'
 import AliceSpinner from '../../components/ui/AliceSpinner.vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 const CADViewer = defineAsyncComponent(
     () => import('./CADViewer.vue')
@@ -100,17 +101,10 @@ function isPlainResult(exec: ToolExecution): boolean {
                 <!-- Tool name + status row -->
                 <div class="tool-exec__header">
                     <AliceSpinner v-if="exec.status === 'running'" size="xs" aria-label="In esecuzione" />
-                    <svg v-else-if="exec.status === 'done' && exec.success" class="tool-exec__status-icon" width="12"
-                        height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <svg v-else class="tool-exec__status-icon tool-exec__status-icon--err" width="12" height="12"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <AppIcon v-else-if="exec.status === 'done' && exec.success" name="check" :size="12"
+                        :stroke-width="2.5" class="tool-exec__status-icon" />
+                    <AppIcon v-else name="x" :size="12" :stroke-width="2.5"
+                        class="tool-exec__status-icon tool-exec__status-icon--err" />
                     <span class="tool-exec__name">{{ exec.toolName }}</span>
                 </div>
 
@@ -130,14 +124,10 @@ function isPlainResult(exec: ToolExecution): boolean {
                         <ChartViewer :payload="chartPayloadOf(exec.result)" />
                     </template>
                     <!-- Whiteboard card -->
-                    <template v-else-if="exec.contentType === 'application/vnd.alice.whiteboard+json' && parseWhiteboardPayload(exec.result)">
+                    <template
+                        v-else-if="exec.contentType === 'application/vnd.alice.whiteboard+json' && parseWhiteboardPayload(exec.result)">
                         <div class="tool-exec__wb-card">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="18" height="18" rx="2" />
-                                <path d="M3 9h18" />
-                                <path d="M9 3v18" />
-                            </svg>
+                            <AppIcon name="whiteboard-card" :size="12" :stroke-width="1.5" />
                             <span class="tool-exec__wb-title">{{ parseWhiteboardPayload(exec.result)?.title }}</span>
                             <span class="tool-exec__wb-badge">aperta nel pannello</span>
                         </div>
@@ -146,12 +136,8 @@ function isPlainResult(exec: ToolExecution): boolean {
                     <template v-else-if="isPlainResult(exec)">
                         <button class="tool-exec__result-toggle" @click="toggleResult(exec.executionId)">
                             <span class="tool-exec__result-preview">{{ truncate(exec.result) }}</span>
-                            <svg class="tool-exec__result-chevron"
-                                :class="{ 'tool-exec__result-chevron--open': expandedResults.has(exec.executionId) }"
-                                width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9" />
-                            </svg>
+                            <AppIcon name="chevron-down" :size="8" class="tool-exec__result-chevron"
+                                :class="{ 'tool-exec__result-chevron--open': expandedResults.has(exec.executionId) }" />
                         </button>
                         <div class="tool-exec__result-body"
                             :class="{ 'tool-exec__result-body--collapsed': !expandedResults.has(exec.executionId) }">

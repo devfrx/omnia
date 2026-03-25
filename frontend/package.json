@@ -22,6 +22,10 @@
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0",
+    "@fontsource-variable/geist": "^5.2.8",
+    "@iconify-json/solar": "^1.2.5",
+    "@iconify/utils": "^3.1.0",
+    "@iconify/vue": "^5.0.0",
     "@types/cytoscape": "^3.21.9",
     "cytoscape": "^3.33.1",
     "cytoscape-cola": "^2.5.1",

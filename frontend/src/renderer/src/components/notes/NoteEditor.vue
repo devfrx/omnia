@@ -9,6 +9,7 @@ import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { useNotesStore } from '../../stores/notes'
 import { useModal } from '../../composables/useModal'
 import { renderMarkdown } from '../../composables/useMarkdown'
+import AppIcon from '../ui/AppIcon.vue'
 
 const store = useNotesStore()
 const { confirm } = useModal()
@@ -196,11 +197,7 @@ function handleEditorKeydown(e: KeyboardEvent): void {
     <main class="editor">
         <!-- Empty state -->
         <div v-if="!note" class="editor__empty">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
-                opacity="0.3">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-            </svg>
+            <AppIcon name="file" :size="48" :stroke-width="1" style="opacity: 0.3" />
             <p>Seleziona una nota o creane una nuova</p>
         </div>
 
@@ -226,11 +223,7 @@ function handleEditorKeydown(e: KeyboardEvent): void {
                     <!-- Preview toggle -->
                     <button class="editor__btn" :class="{ 'editor__btn--active': isPreview }" title="Anteprima Markdown"
                         @click="isPreview = !isPreview">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                        </svg>
+                        <AppIcon name="eye" :size="14" />
                     </button>
 
                     <!-- Pin toggle -->
@@ -243,11 +236,7 @@ function handleEditorKeydown(e: KeyboardEvent): void {
 
                     <!-- Delete -->
                     <button class="editor__btn editor__btn--danger" title="Elimina nota" @click="onDelete">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
+                        <AppIcon name="trash" :size="14" />
                     </button>
                 </div>
             </header>
@@ -255,14 +244,10 @@ function handleEditorKeydown(e: KeyboardEvent): void {
             <!-- Folder selector -->
             <div class="editor__folder">
                 <div class="editor__folder-current" @click="folderDropdownOpen = !folderDropdownOpen">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                    </svg>
+                    <AppIcon name="folder" :size="12" />
                     <span>{{ note.folder_path || '/' }}</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        class="editor__folder-chevron" :class="{ 'editor__folder-chevron--open': folderDropdownOpen }">
-                        <polyline points="6 9 12 15 18 9" />
-                    </svg>
+                    <AppIcon name="chevron-down" :size="10" :stroke-width="2.5" class="editor__folder-chevron"
+                        :class="{ 'editor__folder-chevron--open': folderDropdownOpen }" />
                 </div>
 
                 <!-- Dropdown -->

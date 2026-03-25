@@ -38,11 +38,15 @@ def _make_config(**overrides) -> NotesConfig:
 
 
 @pytest.fixture
-async def note_svc(tmp_path: Path):
+async def note_svc(tmp_path: Path, mock_qdrant_service, mock_embedding_client):
     """Create, initialise, yield, and close a NoteService per test."""
     db_file = tmp_path / "notes.db"
     cfg = _make_config(db_path=str(db_file))
-    svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+    svc = NoteService(
+        config=cfg,
+        qdrant_service=mock_qdrant_service,
+        embedding_client=mock_embedding_client,
+    )
     await svc.initialize()
     yield svc
     await svc.close()
@@ -153,10 +157,16 @@ class TestLifecycle:
     """Constructor, initialize, close, and pre-init guard."""
 
     @pytest.mark.asyncio
-    async def test_initialize_creates_db(self, tmp_path: Path):
+    async def test_initialize_creates_db(
+        self, tmp_path: Path, mock_qdrant_service, mock_embedding_client,
+    ):
         db_file = tmp_path / "test.db"
         cfg = _make_config(db_path=str(db_file))
-        svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+        svc = NoteService(
+            config=cfg,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
         await svc.initialize()
         assert db_file.exists()
         await svc.close()
@@ -167,25 +177,43 @@ class TestLifecycle:
         await note_svc.initialize()
 
     @pytest.mark.asyncio
-    async def test_crud_before_initialize_raises(self, tmp_path: Path):
+    async def test_crud_before_initialize_raises(
+        self, tmp_path: Path, mock_qdrant_service, mock_embedding_client,
+    ):
         db_file = tmp_path / "test.db"
         cfg = _make_config(db_path=str(db_file))
-        svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+        svc = NoteService(
+            config=cfg,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
         with pytest.raises(RuntimeError, match="not initialised"):
             await svc.create("t", "c")
 
     @pytest.mark.asyncio
-    async def test_get_before_initialize_raises(self, tmp_path: Path):
+    async def test_get_before_initialize_raises(
+        self, tmp_path: Path, mock_qdrant_service, mock_embedding_client,
+    ):
         cfg = _make_config(db_path=str(tmp_path / "x.db"))
-        svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+        svc = NoteService(
+            config=cfg,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
         with pytest.raises(RuntimeError):
             await svc.get("some-id")
 
     @pytest.mark.asyncio
-    async def test_close_idempotent(self, tmp_path: Path):
+    async def test_close_idempotent(
+        self, tmp_path: Path, mock_qdrant_service, mock_embedding_client,
+    ):
         db_file = tmp_path / "test.db"
         cfg = _make_config(db_path=str(db_file))
-        svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+        svc = NoteService(
+            config=cfg,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
         await svc.initialize()
         await svc.close()
         await svc.close()  # should not raise
@@ -615,23 +643,41 @@ class TestEdgeCases:
         assert fetched.tags == ["x", "y", "z"]
 
     @pytest.mark.asyncio
-    async def test_list_before_initialize_raises(self, tmp_path: Path):
+    async def test_list_before_initialize_raises(
+        self, tmp_path: Path, mock_qdrant_service, mock_embedding_client,
+    ):
         cfg = _make_config(db_path=str(tmp_path / "x.db"))
-        svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+        svc = NoteService(
+            config=cfg,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
         with pytest.raises(RuntimeError):
             await svc.list()
 
     @pytest.mark.asyncio
-    async def test_search_before_initialize_raises(self, tmp_path: Path):
+    async def test_search_before_initialize_raises(
+        self, tmp_path: Path, mock_qdrant_service, mock_embedding_client,
+    ):
         cfg = _make_config(db_path=str(tmp_path / "x.db"))
-        svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+        svc = NoteService(
+            config=cfg,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
         with pytest.raises(RuntimeError):
             await svc.search("query")
 
     @pytest.mark.asyncio
-    async def test_delete_before_initialize_raises(self, tmp_path: Path):
+    async def test_delete_before_initialize_raises(
+        self, tmp_path: Path, mock_qdrant_service, mock_embedding_client,
+    ):
         cfg = _make_config(db_path=str(tmp_path / "x.db"))
-        svc = NoteService(config=cfg, llm_base_url="http://localhost:1234")
+        svc = NoteService(
+            config=cfg,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
         with pytest.raises(RuntimeError):
             await svc.delete("some-id")
 

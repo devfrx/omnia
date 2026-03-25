@@ -109,3 +109,16 @@ export interface ModelOperationResponse {
   error?: string | null
   started_at?: string
 }
+
+/** Qdrant vector store statistics */
+export interface VectorStoreCollectionInfo {
+  name: string
+  points_count: number
+  vectors_size: number
+}
+
+export interface VectorStoreStats {
+  mode: string
+  connected: boolean
+  collections: VectorStoreCollectionInfo[]
+}

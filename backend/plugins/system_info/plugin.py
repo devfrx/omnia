@@ -69,7 +69,8 @@ class SystemInfoPlugin(BasePlugin):
     plugin_name: str = "system_info"
     plugin_version: str = "1.0.0"
     plugin_description: str = (
-        "Provides CPU, RAM, disk and OS information plus a filtered process list."
+        "Provides current date/time, CPU, RAM, disk and OS information"
+        " plus a filtered process list."
     )
     plugin_dependencies: list[str] = []
     plugin_priority: int = 50
@@ -98,6 +99,18 @@ class SystemInfoPlugin(BasePlugin):
             A list of two ``ToolDefinition`` objects.
         """
         return [
+            ToolDefinition(
+                name="get_current_datetime",
+                description=(
+                    "Return the current local date, time, day of the week, "
+                    "timezone and ISO-8601 timestamp. Use this tool whenever "
+                    "the user asks for the current date or time."
+                ),
+                parameters={"type": "object", "properties": {}},
+                result_type="json",
+                risk_level="safe",
+                timeout_ms=5000,
+            ),
             ToolDefinition(
                 name="get_system_info",
                 description=(
@@ -153,13 +166,22 @@ class SystemInfoPlugin(BasePlugin):
         """Dispatch to the requested tool.
 
         Args:
-            tool_name: ``"get_system_info"`` or ``"get_process_list"``.
+            tool_name: One of ``"get_current_datetime"``,
+                ``"get_system_info"``, or ``"get_process_list"``.
             args: Caller-supplied keyword arguments.
             context: Execution metadata.
 
         Returns:
             A ``ToolResult`` with the JSON payload or an error.
         """
+        # get_current_datetime doesn't need psutil
+        if tool_name == "get_current_datetime":
+            return ToolResult.ok(
+                content=self._get_current_datetime(),
+                content_type="application/json",
+                execution_time_ms=0.0,
+            )
+
         if not _PSUTIL_AVAILABLE:
             return ToolResult.error("psutil not installed")
 
@@ -211,6 +233,36 @@ class SystemInfoPlugin(BasePlugin):
         return ConnectionStatus.DISCONNECTED
 
     # -- Private helpers ---------------------------------------------------
+
+    @staticmethod
+    def _get_current_datetime() -> dict[str, Any]:
+        """Return current local date, time, day of week and timezone.
+
+        Returns:
+            A dict with date, time, day_of_week, timezone and iso fields.
+        """
+        now = datetime.now().astimezone()
+        days_it = [
+            "lunedì", "martedì", "mercoledì", "giovedì",
+            "venerdì", "sabato", "domenica",
+        ]
+        months_it = [
+            "", "gennaio", "febbraio", "marzo", "aprile", "maggio",
+            "giugno", "luglio", "agosto", "settembre", "ottobre",
+            "novembre", "dicembre",
+        ]
+        return {
+            "date": now.strftime("%Y-%m-%d"),
+            "date_human": (
+                f"{days_it[now.weekday()]} {now.day}"
+                f" {months_it[now.month]} {now.year}"
+            ),
+            "time": now.strftime("%H:%M:%S"),
+            "day_of_week": days_it[now.weekday()],
+            "timezone": str(now.tzinfo),
+            "utc_offset": now.strftime("%z"),
+            "iso": now.isoformat(),
+        }
 
     def _collect_system_info(self) -> dict[str, Any]:
         """Gather whitelisted system metrics.

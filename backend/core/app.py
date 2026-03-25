@@ -132,11 +132,39 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as exc:
             logger.error("Failed to rebuild conversations from files: {}", exc)
 
+    # -- Embedding client + Qdrant service (shared) -------------------------
+    from backend.services.embedding_client import EmbeddingClient
+    from backend.services.qdrant_service import QdrantService
+
+    embedding_client = EmbeddingClient(
+        base_url=config.llm.base_url,
+        model=config.qdrant.embedding_model,
+        dimensions=config.qdrant.embedding_dim,
+        fallback_enabled=config.qdrant.embedding_fallback,
+    )
+    # Probe actual dims so ensure_collection uses the real vector size,
+    # not the potentially stale config value.
+    actual_dim = await embedding_client.probe_dimensions()
+    logger.info("Embedding dimensions probed: {}", actual_dim)
+    ctx.embedding_client = embedding_client
+
+    qdrant_service = QdrantService(config.qdrant)
+    try:
+        await qdrant_service.initialize()
+        ctx.qdrant_service = qdrant_service
+        logger.info("Qdrant service started (mode={})", config.qdrant.mode)
+    except Exception as exc:
+        logger.warning("Qdrant service failed to start: {}", exc)
+        qdrant_service = None
+
     # -- Memory service (Phase 9) ------------------------------------------
-    if config.memory.enabled:
+    if config.memory.enabled and qdrant_service:
         from backend.services.memory_service import MemoryService
 
-        memory_service = MemoryService(config.memory, config.llm.base_url)
+        memory_service = MemoryService(
+            config.memory, qdrant_service, embedding_client,
+            embedding_model=config.qdrant.embedding_model,
+        )
         try:
             await memory_service.initialize()
             ctx.memory_service = memory_service
@@ -146,10 +174,12 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             await memory_service.close()
 
     # -- Note service (Phase 13) -------------------------------------------
-    if config.notes.enabled:
+    if config.notes.enabled and qdrant_service:
         from backend.services.note_service import NoteService
 
-        note_service = NoteService(config.notes, config.llm.base_url)
+        note_service = NoteService(
+            config.notes, qdrant_service, embedding_client,
+        )
         try:
             await note_service.initialize()
             ctx.note_service = note_service
@@ -267,7 +297,11 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # -- Tool registry ------------------------------------------------------
     tool_registry = ToolRegistry(
-        plugin_manager=plugin_manager, event_bus=ctx.event_bus,
+        plugin_manager=plugin_manager,
+        event_bus=ctx.event_bus,
+        qdrant_service=ctx.qdrant_service,
+        embedding_client=ctx.embedding_client,
+        llm_config=config.llm,
     )
     try:
         await tool_registry.refresh()
@@ -364,56 +398,67 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     logger.info("AL\\CE backend started (v{})", __version__)
 
-    yield
-
-    # -- Shutdown -----------------------------------------------------------
     try:
-        await plugin_manager.shutdown()
-    except Exception as exc:
-        logger.error("Plugin system shutdown error: {}", exc)
-    try:
-        await lmstudio_manager.close()
-    except Exception as exc:
-        logger.error("LMStudio manager shutdown error: {}", exc)
-    try:
-        await llm_service.close()
-    except Exception as exc:
-        logger.error("LLM service shutdown error: {}", exc)
-    if ctx.stt_service:
+        yield
+    finally:
+        # -- Shutdown -----------------------------------------------------------
         try:
-            await ctx.stt_service.stop()
+            await plugin_manager.shutdown()
         except Exception as exc:
-            logger.error("STT shutdown error: {}", exc)
-    if ctx.tts_service:
+            logger.error("Plugin system shutdown error: {}", exc)
         try:
-            await ctx.tts_service.stop()
+            await lmstudio_manager.close()
         except Exception as exc:
-            logger.error("TTS shutdown error: {}", exc)
-    if ctx.vram_monitor:
+            logger.error("LMStudio manager shutdown error: {}", exc)
         try:
-            await ctx.vram_monitor.stop()
+            await llm_service.close()
         except Exception as exc:
-            logger.error("VRAM monitor shutdown error: {}", exc)
-    if ctx.memory_service:
+            logger.error("LLM service shutdown error: {}", exc)
+        if ctx.stt_service:
+            try:
+                await ctx.stt_service.stop()
+            except Exception as exc:
+                logger.error("STT shutdown error: {}", exc)
+        if ctx.tts_service:
+            try:
+                await ctx.tts_service.stop()
+            except Exception as exc:
+                logger.error("TTS shutdown error: {}", exc)
+        if ctx.vram_monitor:
+            try:
+                await ctx.vram_monitor.stop()
+            except Exception as exc:
+                logger.error("VRAM monitor shutdown error: {}", exc)
+        if ctx.memory_service:
+            try:
+                await ctx.memory_service.close()
+            except Exception as exc:
+                logger.error("Memory service shutdown error: {}", exc)
+        if ctx.note_service:
+            try:
+                await ctx.note_service.close()
+            except Exception as exc:
+                logger.error("Note service shutdown error: {}", exc)
+        if ctx.email_service:
+            try:
+                await ctx.email_service.close()
+            except Exception as exc:
+                logger.error("Email service shutdown error: {}", exc)
+        if ctx.qdrant_service:
+            try:
+                await ctx.qdrant_service.close()
+            except Exception as exc:
+                logger.error("Qdrant service shutdown error: {}", exc)
+        if ctx.embedding_client:
+            try:
+                await ctx.embedding_client.close()
+            except Exception as exc:
+                logger.error("Embedding client shutdown error: {}", exc)
         try:
-            await ctx.memory_service.close()
+            await engine.dispose()
         except Exception as exc:
-            logger.error("Memory service shutdown error: {}", exc)
-    if ctx.note_service:
-        try:
-            await ctx.note_service.close()
-        except Exception as exc:
-            logger.error("Note service shutdown error: {}", exc)
-    if ctx.email_service:
-        try:
-            await ctx.email_service.close()
-        except Exception as exc:
-            logger.error("Email service shutdown error: {}", exc)
-    try:
-        await engine.dispose()
-    except Exception as exc:
-        logger.error("Engine disposal error: {}", exc)
-    logger.info("AL\\CE backend stopped")
+            logger.error("Engine disposal error: {}", exc)
+        logger.info("AL\\CE backend stopped")
 
 
 # ---------------------------------------------------------------------------

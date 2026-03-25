@@ -12,6 +12,8 @@ export interface AliceSettings {
     contextCompressionEnabled: boolean
     contextCompressionThreshold: number
     contextCompressionReserve: number
+    toolRagEnabled: boolean
+    toolRagTopK: number
   }
   stt: {
     language: string
@@ -36,7 +38,9 @@ export const useSettingsStore = defineStore('settings', () => {
       maxToolIterations: 25,
       contextCompressionEnabled: true,
       contextCompressionThreshold: 0.75,
-      contextCompressionReserve: 4096
+      contextCompressionReserve: 4096,
+      toolRagEnabled: true,
+      toolRagTopK: 15
     },
     stt: {
       language: '',
@@ -121,6 +125,10 @@ export const useSettingsStore = defineStore('settings', () => {
           (llm.context_compression_threshold as number) ?? settings.value.llm.contextCompressionThreshold
         settings.value.llm.contextCompressionReserve =
           (llm.context_compression_reserve as number) ?? settings.value.llm.contextCompressionReserve
+        settings.value.llm.toolRagEnabled =
+          (llm.tool_rag_enabled as boolean) ?? settings.value.llm.toolRagEnabled
+        settings.value.llm.toolRagTopK =
+          (llm.tool_rag_top_k as number) ?? settings.value.llm.toolRagTopK
       }
       if (config.stt) {
         const stt = config.stt as Record<string, unknown>
@@ -158,7 +166,9 @@ export const useSettingsStore = defineStore('settings', () => {
           max_tool_iterations: settings.value.llm.maxToolIterations,
           context_compression_enabled: settings.value.llm.contextCompressionEnabled,
           context_compression_threshold: settings.value.llm.contextCompressionThreshold,
-          context_compression_reserve: settings.value.llm.contextCompressionReserve
+          context_compression_reserve: settings.value.llm.contextCompressionReserve,
+          tool_rag_enabled: settings.value.llm.toolRagEnabled,
+          tool_rag_top_k: settings.value.llm.toolRagTopK
         },
         stt: {
           ...(settings.value.stt.language ? { language: settings.value.stt.language } : {}),

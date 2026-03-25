@@ -28,13 +28,7 @@
         <!-- Empty state -->
         <div v-else-if="mcpStore.servers.length === 0" class="mcp-empty">
             <div class="mcp-empty__icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                    <line x1="6" y1="6" x2="6.01" y2="6" />
-                    <line x1="6" y1="18" x2="6.01" y2="18" />
-                </svg>
+                <AppIcon name="server" :size="32" :stroke-width="1.5" />
             </div>
             <p class="mcp-empty__text">Nessun server MCP configurato</p>
             <p class="mcp-empty__sub">
@@ -96,13 +90,8 @@
                     <button v-if="server.enabled && server.status !== 'connected'" class="mcp-btn mcp-btn--reconnect"
                         :disabled="mcpStore.reconnecting === server.name" :title="`Riconnetti ${server.name}`"
                         @click="mcpStore.reconnectServer(server.name)">
-                        <svg class="mcp-btn__icon"
-                            :class="{ 'mcp-btn__icon--spin': mcpStore.reconnecting === server.name }" width="14"
-                            height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="23 4 23 10 17 10" />
-                            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-                        </svg>
+                        <AppIcon name="refresh-cw" :size="14" class="mcp-btn__icon"
+                            :class="{ 'mcp-btn__icon--spin': mcpStore.reconnecting === server.name }" />
                         <span v-if="mcpStore.reconnecting !== server.name">Riconnetti</span>
                         <span v-else>Connessione...</span>
                     </button>
@@ -124,6 +113,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useMcpStore } from '../../stores/mcp'
+import AppIcon from '../ui/AppIcon.vue'
 
 const mcpStore = useMcpStore()
 

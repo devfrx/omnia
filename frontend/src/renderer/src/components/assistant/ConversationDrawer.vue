@@ -8,6 +8,7 @@
 import { ref, watch, nextTick } from 'vue'
 import { renderMarkdown } from '../../utils/markdownRenderer'
 import MessageVersionNav from '../chat/MessageVersionNav.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import type { ChatMessage } from '../../types/chat'
 
 const props = defineProps<{
@@ -85,11 +86,7 @@ function truncateContent(content: string, maxLen = 200): string {
                     <h2 class="drawer__title">Cronologia</h2>
                     <span v-if="messages.length" class="drawer__count">{{ messages.length }}</span>
                     <button class="drawer__close" aria-label="Chiudi cronologia" @click="emit('close')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <AppIcon name="x" :size="14" />
                     </button>
                 </div>
 
@@ -104,23 +101,12 @@ function truncateContent(content: string, maxLen = 200): string {
                             <div class="drawer__msg-actions">
                                 <button v-if="msg.role === 'user' && !isStreaming" class="drawer__edit-btn"
                                     aria-label="Modifica messaggio" @click="emit('edit', msg.id)">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
+                                    <AppIcon name="edit" :size="12" />
                                 </button>
                                 <button v-if="msg.role === 'assistant' && !branchDisabled"
                                     class="drawer-msg__branch-btn" aria-label="Dirama da qui"
                                     @click="emit('branch', msg.id)">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="6" cy="18" r="3" />
-                                        <circle cx="6" cy="6" r="3" />
-                                        <circle cx="18" cy="6" r="3" />
-                                        <path d="M6 9v6" />
-                                        <path d="M18 9a9 9 0 0 1-9 9" />
-                                    </svg>
+                                    <AppIcon name="branch" :size="12" />
                                 </button>
                                 <span class="drawer__msg-time">{{ formatTime(msg.created_at) }}</span>
                             </div>

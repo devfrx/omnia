@@ -238,6 +238,70 @@ class PluginManagerProtocol(Protocol):
 
 
 # ---------------------------------------------------------------------------
+# Qdrant service
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class QdrantServiceProtocol(Protocol):
+    """Protocol for the Qdrant vector store service."""
+
+    async def initialize(self) -> None: ...
+    async def close(self) -> None: ...
+
+    async def ensure_collection(
+        self, name: str, vector_size: int, distance: Any = ...,
+    ) -> None: ...
+
+    async def upsert(
+        self, collection: str, points: list[Any],
+    ) -> None: ...
+
+    async def search(
+        self, collection: str, vector: list[float],
+        k: int = 5, query_filter: Any | None = None,
+    ) -> list[Any]: ...
+
+    async def delete(
+        self, collection: str, *,
+        ids: list[str] | None = None,
+        query_filter: Any | None = None,
+    ) -> None: ...
+
+    async def scroll(
+        self, collection: str, query_filter: Any | None = None,
+        limit: int = 50, offset: str | int | None = None,
+    ) -> tuple[list[Any], str | int | None]: ...
+
+    async def count(
+        self, collection: str, query_filter: Any | None = None,
+    ) -> int: ...
+
+    async def get_collection_dim(self, name: str) -> int: ...
+
+
+# ---------------------------------------------------------------------------
+# Embedding client
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class EmbeddingClientProtocol(Protocol):
+    """Protocol for the embedding client facade."""
+
+    @property
+    def dimensions(self) -> int: ...
+
+    async def encode(self, text: str) -> list[float]: ...
+
+    async def encode_batch(
+        self, texts: list[str],
+    ) -> list[list[float]]: ...
+
+    async def close(self) -> None: ...
+
+
+# ---------------------------------------------------------------------------
 # Tool registry
 # ---------------------------------------------------------------------------
 
@@ -259,6 +323,10 @@ class ToolRegistryProtocol(Protocol):
         tools: list[dict[str, Any]],
         max_tools: int,
         priority_plugins: list[str] | None = None,
+    ) -> list[dict[str, Any]]: ...
+    async def embed_tools(self) -> None: ...
+    async def get_relevant_tools(
+        self, query: str, k: int,
     ) -> list[dict[str, Any]]: ...
 
 

@@ -19,6 +19,7 @@ import { ChatApiKey } from '../composables/useChat'
 import { useVoice } from '../composables/useVoice'
 import { useChatStore } from '../stores/chat'
 import { useVoiceStore } from '../stores/voice'
+import AppIcon from '../components/ui/AppIcon.vue'
 
 const chatStore = useChatStore()
 const chatApi = inject(ChatApiKey, null)
@@ -235,10 +236,7 @@ onBeforeUnmount(() => {
 
                 <Transition name="scroll-btn">
                     <button v-if="showScrollButton" class="hybrid-view__scroll-btn" @click="scrollToBottom(true)">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <AppIcon name="chevron-down" :size="18" />
                     </button>
                 </Transition>
             </div>

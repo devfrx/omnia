@@ -7,6 +7,7 @@
 import { onMounted, computed, defineAsyncComponent } from 'vue'
 import { useWhiteboardStore } from '../stores/whiteboard'
 import WhiteboardListSidebar from '../components/whiteboard/WhiteboardListSidebar.vue'
+import AppIcon from '../components/ui/AppIcon.vue'
 
 const TldrawCanvas = defineAsyncComponent(
   () => import('../components/whiteboard/TldrawCanvas.vue')
@@ -37,27 +38,15 @@ function onSnapshotChange(snapshot: Record<string, unknown>): void {
 
 <template>
   <div class="whiteboard-page">
-    <WhiteboardListSidebar
-      @select="onSelectBoard"
-      @delete="onDeleteBoard"
-    />
+    <WhiteboardListSidebar @select="onSelectBoard" @delete="onDeleteBoard" />
 
     <div class="whiteboard-page__canvas">
       <template v-if="hasBoard">
-        <TldrawCanvas
-          :board-id="boardId"
-          :snapshot="boardSnapshot"
-          @change="onSnapshotChange"
-        />
+        <TldrawCanvas :board-id="boardId" :snapshot="boardSnapshot" @change="onSnapshotChange" />
       </template>
       <template v-else>
         <div class="whiteboard-page__empty">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
-            stroke="var(--text-muted)" stroke-width="1" stroke-linecap="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M3 9h18" />
-            <path d="M9 3v18" />
-          </svg>
+          <AppIcon name="whiteboard-card" :size="48" :stroke-width="1" />
           <p>Seleziona una lavagna o chiedi ad AL\CE di crearne una.</p>
         </div>
       </template>

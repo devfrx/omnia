@@ -28,6 +28,7 @@ import { useVoiceStore } from '../stores/voice'
 import type { CadModelPayload, ChartPayload, WhiteboardPayload, ToolCall } from '../types/chat'
 import { isWhiteboardPayload } from '../types/chat'
 import { api } from '../services/api'
+import AppIcon from '../components/ui/AppIcon.vue'
 
 const ImmersiveCADCanvas = defineAsyncComponent(
     () => import('../components/assistant/ImmersiveCADCanvas.vue')
@@ -488,12 +489,7 @@ onMounted(() => {
                 <button v-if="hasCadModels && (!sidePanelOpen || sidePanelTab !== '3d')"
                     class="assistant-view__3d-toggle" title="Apri pannello 3D"
                     @click="() => { sidePanelOpen = true; sidePanelTab = '3d' }">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                        <path d="M2 17l10 5 10-5" />
-                        <path d="M2 12l10 5 10-5" />
-                    </svg>
+                    <AppIcon name="box-3d" :size="16" :stroke-width="1.5" />
                     <span v-if="cadModels.length > 1" class="assistant-view__3d-badge">{{ cadModels.length }}</span>
                 </button>
             </Transition>
@@ -503,14 +499,9 @@ onMounted(() => {
                 <button v-if="hasCharts && (!sidePanelOpen || sidePanelTab !== 'chart')"
                     class="assistant-view__chart-toggle" title="Mostra grafici"
                     @click="() => { sidePanelOpen = true; sidePanelTab = 'chart' }">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="20" x2="18" y2="10" />
-                        <line x1="12" y1="20" x2="12" y2="4" />
-                        <line x1="6" y1="20" x2="6" y2="14" />
-                    </svg>
+                    <AppIcon name="bar-chart" :size="16" :stroke-width="1.5" />
                     <span v-if="chartPayloads.length > 1" class="assistant-view__chart-badge">{{ chartPayloads.length
-                    }}</span>
+                        }}</span>
                 </button>
             </Transition>
 
@@ -519,12 +510,7 @@ onMounted(() => {
                 <button v-if="hasWhiteboards && (!sidePanelOpen || sidePanelTab !== 'whiteboard')"
                     class="assistant-view__wb-toggle" title="Mostra lavagne"
                     @click="() => { sidePanelOpen = true; sidePanelTab = 'whiteboard' }">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M3 9h18" />
-                        <path d="M9 3v18" />
-                    </svg>
+                    <AppIcon name="whiteboard-card" :size="16" :stroke-width="1.5" />
                     <span v-if="whiteboardPayloads.length > 1" class="assistant-view__wb-badge">{{
                         whiteboardPayloads.length }}</span>
                 </button>
@@ -553,47 +539,28 @@ onMounted(() => {
                     class="side-panel__tabs">
                     <button v-if="hasCadModels" class="side-panel__tab"
                         :class="{ 'side-panel__tab--active': sidePanelTab === '3d' }" @click="sidePanelTab = '3d'">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                            <path d="M2 17l10 5 10-5" />
-                            <path d="M2 12l10 5 10-5" />
-                        </svg>
+                        <AppIcon name="box-3d" :size="14" :stroke-width="1.5" />
                         <span>3D</span>
                         <span v-if="cadModels.length > 1" class="side-panel__tab-badge">{{ cadModels.length }}</span>
                     </button>
                     <button v-if="hasCharts" class="side-panel__tab"
                         :class="{ 'side-panel__tab--active': sidePanelTab === 'chart' }"
                         @click="sidePanelTab = 'chart'">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="20" x2="18" y2="10" />
-                            <line x1="12" y1="20" x2="12" y2="4" />
-                            <line x1="6" y1="20" x2="6" y2="14" />
-                        </svg>
+                        <AppIcon name="bar-chart" :size="14" :stroke-width="1.5" />
                         <span>Grafici</span>
                         <span v-if="chartPayloads.length > 1" class="side-panel__tab-badge">{{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                     </button>
                     <button v-if="hasWhiteboards" class="side-panel__tab"
                         :class="{ 'side-panel__tab--active': sidePanelTab === 'whiteboard' }"
                         @click="sidePanelTab = 'whiteboard'">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                            <path d="M3 9h18" />
-                            <path d="M9 3v18" />
-                        </svg>
+                        <AppIcon name="whiteboard-card" :size="14" :stroke-width="1.5" />
                         <span>Lavagna</span>
                         <span v-if="whiteboardPayloads.length > 1" class="side-panel__tab-badge">{{
                             whiteboardPayloads.length }}</span>
                     </button>
                     <button class="side-panel__close" aria-label="Chiudi pannello" @click="closeSidePanel">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <AppIcon name="x" :size="14" />
                     </button>
                 </div>
 
@@ -608,31 +575,21 @@ onMounted(() => {
                     <!-- Close button (only when no tab bar is shown) -->
                     <button v-if="[hasCadModels, hasCharts, hasWhiteboards].filter(Boolean).length <= 1"
                         class="side-panel__chart-close" aria-label="Chiudi pannello" @click="closeSidePanel">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <AppIcon name="x" :size="14" />
                     </button>
 
                     <!-- Chart navigation (when multiple charts) -->
                     <div v-if="chartPayloads.length > 1" class="side-panel__chart-nav">
                         <button class="side-panel__chart-nav-btn" :disabled="chartActiveIndex <= 0"
                             @click="chartActiveIndex = Math.max(0, chartActiveIndex - 1)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round">
-                                <polyline points="15 18 9 12 15 6" />
-                            </svg>
+                            <AppIcon name="chevron-left" :size="14" />
                         </button>
                         <span class="side-panel__chart-counter">{{ chartActiveIndex + 1 }} / {{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                         <button class="side-panel__chart-nav-btn"
                             :disabled="chartActiveIndex >= chartPayloads.length - 1"
                             @click="chartActiveIndex = Math.min(chartPayloads.length - 1, chartActiveIndex + 1)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round">
-                                <polyline points="9 18 15 12 9 6" />
-                            </svg>
+                            <AppIcon name="chevron-right" :size="14" />
                         </button>
                     </div>
 
@@ -645,31 +602,21 @@ onMounted(() => {
                     <!-- Close button (only when sole content) -->
                     <button v-if="[hasCadModels, hasCharts, hasWhiteboards].filter(Boolean).length <= 1"
                         class="side-panel__wb-close" aria-label="Chiudi pannello" @click="closeSidePanel">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <AppIcon name="x" :size="14" />
                     </button>
 
                     <!-- Whiteboard navigation (when multiple boards) -->
                     <div v-if="whiteboardPayloads.length > 1" class="side-panel__wb-nav">
                         <button class="side-panel__chart-nav-btn" :disabled="whiteboardActiveIndex <= 0"
                             @click="whiteboardActiveIndex = Math.max(0, whiteboardActiveIndex - 1)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round">
-                                <polyline points="15 18 9 12 15 6" />
-                            </svg>
+                            <AppIcon name="chevron-left" :size="14" />
                         </button>
                         <span class="side-panel__chart-counter">{{ whiteboardActiveIndex + 1 }} / {{
                             whiteboardPayloads.length }}</span>
                         <button class="side-panel__chart-nav-btn"
                             :disabled="whiteboardActiveIndex >= whiteboardPayloads.length - 1"
                             @click="whiteboardActiveIndex = Math.min(whiteboardPayloads.length - 1, whiteboardActiveIndex + 1)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round">
-                                <polyline points="9 18 15 12 9 6" />
-                            </svg>
+                            <AppIcon name="chevron-right" :size="14" />
                         </button>
                     </div>
 

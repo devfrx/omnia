@@ -6,6 +6,7 @@
  */
 import { computed } from 'vue'
 import { useChatStore } from '../../stores/chat'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
     state: 'idle' | 'listening' | 'thinking' | 'speaking' | 'processing'
@@ -35,27 +36,12 @@ const showStatus = computed(() => props.state !== 'idle')
         <Transition name="capsule-pop">
             <div v-if="showStatus && statusText" class="status-capsule" :class="`status-capsule--${state}`">
                 <!-- State icon -->
-                <svg v-if="state === 'listening'" class="status-capsule__icon" width="14" height="14"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z" />
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                    <line x1="12" y1="19" x2="12" y2="23" />
-                </svg>
-                <svg v-else-if="state === 'thinking'" class="status-capsule__icon status-capsule__icon--spin" width="14"
-                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" />
-                </svg>
-                <svg v-else-if="state === 'speaking'" class="status-capsule__icon" width="14" height="14"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-                    <path d="M18.5 5.5a10 10 0 0 1 0 13" />
-                </svg>
-                <svg v-else class="status-capsule__icon status-capsule__icon--spin" width="14" height="14"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path
-                        d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                </svg>
+                <AppIcon v-if="state === 'listening'" name="mic-alt" :size="16" class="status-capsule__icon" />
+                <AppIcon v-else-if="state === 'thinking'" name="spinner-arc" :size="16"
+                    class="status-capsule__icon status-capsule__icon--spin" />
+                <AppIcon v-else-if="state === 'speaking'" name="volume-two" :size="16" class="status-capsule__icon" />
+                <AppIcon v-else name="spinner-rays" :size="16"
+                    class="status-capsule__icon status-capsule__icon--spin" />
 
                 <span class="status-capsule__dot" />
                 <span class="status-capsule__text">{{ statusText }}</span>
@@ -65,10 +51,7 @@ const showStatus = computed(() => props.state !== 'idle')
         <!-- Tool execution list -->
         <TransitionGroup name="tool-pop" tag="div" class="status-tools">
             <div v-for="exec in toolExecutions" :key="exec.executionId" class="tool-capsule">
-                <svg class="tool-capsule__icon" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
+                <AppIcon name="lightning" :size="16" class="tool-capsule__icon" />
                 <span class="tool-capsule__text">{{ exec.toolName }}</span>
             </div>
         </TransitionGroup>

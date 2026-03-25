@@ -8,10 +8,34 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import signal
 import sys
 
 import uvicorn
+
+
+class _SuppressLifespanCancelledError(logging.Filter):
+    """Suppress spurious CancelledError tracebacks on clean Ctrl+C shutdown.
+
+    On Python 3.13+, after a graceful shutdown completes, uvicorn's
+    ``capture_signals()`` calls ``signal.raise_signal(SIGINT)`` to propagate
+    the signal to the parent process.  This re-triggers asyncio's internal
+    ``_on_sigint`` handler which calls ``loop.stop()`` and raises
+    ``KeyboardInterrupt``.  Any still-queued async tasks (such as uvicorn's
+    background lifespan task waiting on ``receive_queue.get()``) receive a
+    ``CancelledError``.  ``LifespanOn.main()`` catches ``BaseException`` and
+    logs it as an error — but the shutdown already completed successfully, so
+    the log is spurious noise, not a real failure.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:  # noqa: A003
+        if record.exc_info:
+            exc_type = record.exc_info[0]
+            if exc_type is not None and issubclass(exc_type, asyncio.CancelledError):
+                return False
+        return True
 
 
 def main() -> None:
@@ -33,6 +57,11 @@ def main() -> None:
     if args.reload:
         kwargs["reload"] = True
         kwargs["reload_dirs"] = [args.reload_dir]
+
+    # Suppress the benign CancelledError that uvicorn logs as ERROR on
+    # Python 3.13+ when Ctrl+C re-triggers asyncio's internal signal handler
+    # after a graceful shutdown has already completed successfully.
+    logging.getLogger("uvicorn.error").addFilter(_SuppressLifespanCancelledError())
 
     # On Windows, uvicorn's default signal handler raises KeyboardInterrupt
     # via signal.raise_signal(), which causes CancelledError tracebacks in

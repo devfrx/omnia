@@ -7,6 +7,7 @@
  */
 import { computed } from 'vue'
 import { useWhiteboardStore } from '../../stores/whiteboard'
+import AppIcon from '../ui/AppIcon.vue'
 
 const store = useWhiteboardStore()
 
@@ -43,32 +44,17 @@ function formatDate(iso: string): string {
     </div>
 
     <ul v-else class="wb-sidebar__list">
-      <li
-        v-for="board in store.boards"
-        :key="board.board_id"
-        class="wb-sidebar__item"
+      <li v-for="board in store.boards" :key="board.board_id" class="wb-sidebar__item"
         :class="{ 'wb-sidebar__item--active': board.board_id === activeBoardId }"
-        @click="emit('select', board.board_id)"
-      >
+        @click="emit('select', board.board_id)">
         <div class="wb-sidebar__item-top">
           <span class="wb-sidebar__item-title">{{ board.title }}</span>
-          <button
-            class="wb-sidebar__item-delete"
-            title="Elimina lavagna"
-            @click.stop="emit('delete', board.board_id)"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+          <button class="wb-sidebar__item-delete" title="Elimina lavagna" @click.stop="emit('delete', board.board_id)">
+            <AppIcon name="x" :size="12" />
           </button>
         </div>
         <div v-if="board.conversation_title" class="wb-sidebar__item-conv">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+          <AppIcon name="message" :size="10" />
           <span>{{ board.conversation_title }}</span>
         </div>
         <div class="wb-sidebar__item-meta">

@@ -54,8 +54,8 @@ dependencies = [
     # News
     "feedparser>=6.0",
 
-    # Memory (Phase 9)
-    "sqlite-vec>=0.1.6",
+    # Vector Store (Qdrant)
+    "qdrant-client[local]>=1.9",
 
     # MCP Client (Phase 11)
     "mcp>=1.0",

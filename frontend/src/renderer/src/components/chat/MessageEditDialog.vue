@@ -7,6 +7,7 @@
  * Escape to cancel.
  */
 import { ref, onMounted, nextTick } from 'vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
     /** Original message content to edit. */
@@ -65,11 +66,7 @@ onMounted(async () => {
                 <div class="edit-dialog__header">
                     <span class="edit-dialog__title">Modifica messaggio</span>
                     <button class="edit-dialog__close" aria-label="Annulla" @click="emit('cancel')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <AppIcon name="x" :size="16" />
                     </button>
                 </div>
                 <textarea ref="textareaRef" v-model="content" class="edit-dialog__textarea" rows="3"

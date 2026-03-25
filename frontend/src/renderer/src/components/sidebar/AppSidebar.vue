@@ -20,6 +20,7 @@ import { useModal } from '../../composables/useModal'
 import { api } from '../../services/api'
 import ConversationList from './ConversationList.vue'
 import CalendarWidget from '../calendar/CalendarWidget.vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 const chatStore = useChatStore()
 const uiStore = useUIStore()
@@ -130,11 +131,7 @@ async function onOpenFile(id: string): Promise<void> {
         <div class="sidebar__header">
           <span class="sidebar__brand">AL\CE</span>
           <button class="sidebar__close" aria-label="Chiudi sidebar" @click="toggle">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <AppIcon name="x" :size="14" :stroke-width="2.5" />
           </button>
         </div>
 
@@ -143,11 +140,7 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/settings" class="sidebar__link" active-class="sidebar__link--active" title="Impostazioni"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" />
-              </svg>
+              <AppIcon name="settings" :size="16" />
             </span>
             <span class="sidebar__link-label">Impostazioni</span>
           </router-link>
@@ -155,10 +148,7 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/assistant" class="sidebar__link" active-class="sidebar__link--active" title="Assistente"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-              </svg>
+              <AppIcon name="orb" :size="16" />
             </span>
             <span class="sidebar__link-label">Assistente</span>
           </router-link>
@@ -166,10 +156,7 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/hybrid" class="sidebar__link" active-class="sidebar__link--active" title="Ibrido"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="8" r="6" />
-                <path d="M4 20h16" opacity="0.5" />
-              </svg>
+              <AppIcon name="hybrid-sidebar" :size="16" />
             </span>
             <span class="sidebar__link-label">Ibrido</span>
           </router-link>
@@ -177,13 +164,7 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/notes" class="sidebar__link" active-class="sidebar__link--active" title="Note"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
+              <AppIcon name="file-text" :size="16" />
             </span>
             <span class="sidebar__link-label">Note</span>
           </router-link>
@@ -191,12 +172,7 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/whiteboard" class="sidebar__link" active-class="sidebar__link--active" title="Lavagna"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M3 9h18" />
-                <path d="M9 3v18" />
-              </svg>
+              <AppIcon name="whiteboard-card" :size="16" />
             </span>
             <span class="sidebar__link-label">Lavagna</span>
           </router-link>
@@ -204,10 +180,7 @@ async function onOpenFile(id: string): Promise<void> {
           <router-link to="/email" class="sidebar__link" active-class="sidebar__link--active" title="Email"
             @click="toggle">
             <span class="sidebar__link-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
+              <AppIcon name="email" :size="16" />
             </span>
             <span class="sidebar__link-label">Email</span>
             <span v-if="unreadBadge" class="sidebar__badge">{{ unreadBadge }}</span>

@@ -20,6 +20,7 @@ import { useChatStore } from '../../stores/chat'
 import { useSettingsStore } from '../../stores/settings'
 import { useUIStore } from '../../stores/ui'
 import { useVoiceStore } from '../../stores/voice'
+import AppIcon from '../ui/AppIcon.vue'
 
 const router = useRouter()
 const settingsStore = useSettingsStore()
@@ -268,11 +269,7 @@ defineExpose({
       <div v-for="file in pendingFiles" :key="file.name + file.size + file.lastModified" class="ci__thumb">
         <img :src="getThumbnail(file)" :alt="file.name" :title="file.name" />
         <button class="ci__thumb-rm" aria-label="Rimuovi allegato" @click="removeFile(file)">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-            stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <AppIcon name="x" :size="10" :stroke-width="2.5" />
         </button>
       </div>
     </div>
@@ -284,26 +281,13 @@ defineExpose({
         <div class="ci__dot" :class="isConnected ? 'dot--ok' : 'dot--err'" />
         <div v-if="settingsStore.activeModel" class="ci__badges">
           <span class="ci__badge" :class="{ 'ci__badge--on': supportsVision }" title="Vision">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
+            <AppIcon name="eye" :size="16" />
           </span>
           <span class="ci__badge" :class="{ 'ci__badge--on': supportsThinking }" title="Thinking">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2h7c.1-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
-              <line x1="10" y1="20" x2="14" y2="20" />
-              <line x1="10" y1="22" x2="14" y2="22" />
-            </svg>
+            <AppIcon name="lightbulb-simple" :size="16" />
           </span>
           <span class="ci__badge" :class="{ 'ci__badge--on': supportsToolUse }" title="Tool Use">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path
-                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-            </svg>
+            <AppIcon name="tool" :size="16" />
           </span>
         </div>
       </div>
@@ -317,18 +301,12 @@ defineExpose({
       <button class="ci__mode-toggle" @click="toggleMode">
         <!-- When in assistant → offer hybrid -->
         <template v-if="uiStore.mode === 'assistant'">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+          <AppIcon name="message" :size="11" />
           <span>Ibrida</span>
         </template>
         <!-- When in hybrid → offer assistant -->
         <template v-else>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="4" />
-          </svg>
+          <AppIcon name="orb" :size="11" />
           <span>Assistente</span>
         </template>
       </button>
@@ -349,11 +327,7 @@ defineExpose({
       <button class="ci__attach" :disabled="disabled || !supportsVision"
         :aria-label="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'"
         :title="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'" @click="openFilePicker">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path
-            d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-        </svg>
+        <AppIcon name="paperclip" :size="17" />
       </button>
 
       <!-- Hidden file input -->
@@ -377,19 +351,11 @@ defineExpose({
         <Transition name="btn-swap" mode="out-in">
           <button v-if="isStreaming" key="stop" class="ci__stop" aria-label="Interrompi generazione"
             @click="emit('stop')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none" />
-            </svg>
+            <AppIcon name="stop" :size="16" />
           </button>
           <button v-else key="send" class="ci__send" :disabled="(!text.trim() && pendingFiles.length === 0) || disabled"
             aria-label="Invia messaggio" @click="submit">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
+            <AppIcon name="send" :size="16" />
           </button>
         </Transition>
       </div>

@@ -338,18 +338,17 @@ class LLMService:
         date_str = f"{day_name} {now.day} {month_name} {now.year}"
 
         time_block = (
-            f"\n\n## Data e ora corrente\n\n"
+            f"## Data e ora corrente\n\n"
             f"- **Data odierna**: {date_str}\n"
             f"- **Data ISO**: {now.strftime('%Y-%m-%d')}\n"
             f"- **Ora**: {now.strftime('%H:%M')}\n"
-            f"\n\n## LANGUAGE RULE (mandatory)\n\n"
-            f"Detect the language of the user's message and reply in that SAME language.\n"
-            f"Examples: user writes in English → reply in English. "
-            f"User writes in Italian → reply in Italian. "
-            f"User writes in French → reply in French.\n"
-            f"NEVER default to Italian just because the system prompt is written in Italian.\n"
+
         )
-        return base + time_block
+        # Prepend temporal context so it sits at the TOP of the system prompt
+        # (beginning of context window = maximum model attention).
+        # Appending it at the end risks "lost in the middle" suppression,
+        # causing the model to revert to its training-time date assumption.
+        return time_block + base
 
     def get_system_prompt(
         self, memory_context: str | None = None,

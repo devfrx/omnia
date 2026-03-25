@@ -10,6 +10,7 @@ import { useEmailStore } from '../stores/email'
 import EmailFoldersSidebar from '../components/email/EmailFoldersSidebar.vue'
 import InboxList from '../components/email/InboxList.vue'
 import EmailViewer from '../components/email/EmailViewer.vue'
+import AppIcon from '../components/ui/AppIcon.vue'
 
 const emailStore = useEmailStore()
 
@@ -29,10 +30,7 @@ onMounted(async () => {
     <section class="email-page__viewer">
       <EmailViewer v-if="emailStore.currentEmail" />
       <div v-else class="email-page__empty">
-        <svg class="email-page__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-          <polyline points="22 6 12 13 2 6" />
-        </svg>
+        <AppIcon name="mail" class="email-page__empty-icon" :size="56" :stroke-width="1" />
         <span class="email-page__empty-title">Seleziona un'email</span>
         <span class="email-page__empty-text">
           Scegli un messaggio dalla lista per visualizzarlo qui

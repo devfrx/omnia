@@ -28,6 +28,8 @@ llm:
   num_ctx: 8192
   num_gpu: -1
   keep_alive: "5m"
+  tool_rag_enabled: true
+  tool_rag_top_k: 15
   context_compression_enabled: true
   context_compression_threshold: 0.75
   context_compression_reserve: 4096
@@ -185,10 +187,6 @@ news:
 
 memory:
   enabled: true
-  # db_path: "data/memory.db"  # default, relative to project root
-  embedding_model: "text-embedding-mxbai-embed-large-v1"
-  embedding_dim: 1024
-  embedding_fallback: true
   top_k: 5
   similarity_threshold: 0.4
   inject_in_context: true
@@ -205,12 +203,23 @@ notes:
   enabled: true
   # db_path: "data/notes.db"
   embedding_enabled: true
-  embedding_model: "text-embedding-mxbai-embed-large-v1"
-  embedding_dim: 1024
-  embedding_fallback: true
   max_content_chars_llm: 8000
   semantic_threshold: 0.70
   max_search_results: 20
+
+
+# ──────────────────────────────────────────────────
+# Qdrant Vector Store
+# ──────────────────────────────────────────────────
+
+qdrant:
+  mode: "embedded"                  # "embedded" (in-process) or "server" (Docker/remote)
+  path: "data/qdrant"              # [embedded] data directory
+  host: "localhost"                # [server] Qdrant host
+  port: 6333                       # [server] Qdrant gRPC port
+  embedding_model: "text-embedding-mxbai-embed-large-v1"
+  embedding_dim: 1024
+  embedding_fallback: false        # mxbai-embed-large-v1 is 1024-dim; fastembed's default model is 384-dim — no compatible CPU fallback available
 
 
 # ──────────────────────────────────────────────────

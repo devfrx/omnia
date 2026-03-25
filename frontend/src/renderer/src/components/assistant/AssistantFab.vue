@@ -11,6 +11,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '../../stores/chat'
 import { useUIStore } from '../../stores/ui'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
     orbState: 'idle' | 'listening' | 'thinking' | 'speaking' | 'processing'
@@ -37,7 +38,7 @@ interface FabAction {
 
 const actions: FabAction[] = [
     { id: 'history', label: 'Cronologia' },
-    { id: 'mode', label: 'Modalità Ibrida' },
+    // { id: 'mode', label: 'Modalità Ibrida' },
     { id: 'new-conv', label: 'Nuova chat' },
     { id: 'settings', label: 'Impostazioni' },
 ]
@@ -84,41 +85,19 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
                     :style="{ '--delay': `${(actions.length - 1 - i) * 45}ms` }" @click="handleAction(a.id)">
 
                     <!-- History icon -->
-                    <svg v-if="a.id === 'history'" class="fab__action-icon" width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                    </svg>
+                    <AppIcon v-if="a.id === 'history'" name="clock" :size="16" :stroke-width="1.5"
+                        class="fab__action-icon" />
 
                     <!-- Mode switch icon -->
-                    <svg v-else-if="a.id === 'mode'" class="fab__action-icon" width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="1.5">
-                        <circle cx="9" cy="10" r="6" />
-                        <path d="M15 9a5 5 0 0 1 5 5v0a2 2 0 0 1-2 2h-5l-2.5 2.5V16" />
-                    </svg>
+                    <AppIcon v-else-if="a.id === 'mode'" name="hybrid-panel" :size="16" :stroke-width="1.5"
+                        class="fab__action-icon" />
 
                     <!-- New conversation icon -->
-                    <svg v-else-if="a.id === 'new-conv'" class="fab__action-icon" width="16" height="16"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        <line x1="12" y1="8" x2="12" y2="14" />
-                        <line x1="9" y1="11" x2="15" y2="11" />
-                    </svg>
+                    <AppIcon v-else-if="a.id === 'new-conv'" name="message-plus" :size="16" :stroke-width="1.5"
+                        class="fab__action-icon" />
 
                     <!-- Settings icon -->
-                    <svg v-else class="fab__action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65
-                               1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65
-                               1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65
-                               1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65
-                               1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65
-                               1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65
-                               1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65
-                               1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65
-                               1.65 0 0 0-1.51 1z" />
-                    </svg>
+                    <AppIcon v-else name="settings" :size="16" :stroke-width="1.5" class="fab__action-icon" />
 
                     <span class="fab__action-label">{{ a.label }}</span>
                 </button>
@@ -128,11 +107,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
         <!-- Trigger button -->
         <button class="fab__trigger" @click="toggle" aria-label="Azioni rapide">
             <span v-if="isActive && !expanded" class="fab__dot" :class="`fab__dot--${orbState}`" />
-            <svg class="fab__trigger-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <AppIcon name="plus" :size="16" class="fab__trigger-icon" />
         </button>
     </div>
 </template>

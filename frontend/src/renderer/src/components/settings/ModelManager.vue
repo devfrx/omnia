@@ -9,6 +9,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { LMStudioModel } from '../../types/settings'
 import AliceSpinner from '../../components/ui/AliceSpinner.vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 const settingsStore = useSettingsStore()
 
@@ -154,11 +155,7 @@ onMounted(() => {
         <div v-if="errorMessage" class="mm-error">
             {{ errorMessage }}
             <button class="mm-error__close" aria-label="Chiudi errore" @click="errorMessage = null">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <AppIcon name="x" :size="14" />
             </button>
         </div>
 
@@ -216,7 +213,7 @@ onMounted(() => {
                         model.params_string }}</span>
                     <span class="mm-model__meta-item">{{ formatSize(model.size) }}</span>
                     <span v-if="model.quantization?.name" class="mm-model__meta-item">{{ model.quantization.name
-                        }}</span>
+                    }}</span>
                     <span v-if="model.format" class="mm-model__meta-item">{{ model.format.toUpperCase() }}</span>
                     <span class="mm-model__meta-item">ctx {{ model.max_context_length.toLocaleString() }}</span>
                 </div>
@@ -225,29 +222,15 @@ onMounted(() => {
                 <div v-if="model.capabilities.vision || model.capabilities.thinking || model.capabilities.trained_for_tool_use"
                     class="mm-model__caps">
                     <span v-if="model.capabilities.vision" class="mm-cap">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                        </svg>
+                        <AppIcon name="eye" :size="12" />
                         Vision
                     </span>
                     <span v-if="model.capabilities.thinking" class="mm-cap">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2V17h7v-.7c.2-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
-                            <path d="M10 21h4" />
-                            <path d="M9 17h6" />
-                        </svg>
+                        <AppIcon name="thinking-cap" :size="12" />
                         Thinking
                     </span>
                     <span v-if="model.capabilities.trained_for_tool_use" class="mm-cap">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                        </svg>
+                        <AppIcon name="tool" :size="12" />
                         Tool Use
                     </span>
                 </div>
@@ -258,10 +241,7 @@ onMounted(() => {
                         <span class="mm-instance__id">{{ inst.id.slice(0, 12) }}…</span>
                         <span class="mm-instance__detail">ctx {{ inst.config.context_length.toLocaleString() }}</span>
                         <span v-if="inst.config.flash_attention" class="mm-instance__detail">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                            </svg>
+                            <AppIcon name="lightning-flash" :size="14" />
                             Flash Attn
                         </span>
                         <span v-if="inst.config.eval_batch_size" class="mm-instance__detail">batch {{
@@ -334,14 +314,7 @@ onMounted(() => {
                         </div>
 
                         <div class="mm-dialog__vram">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="6" width="20" height="12" rx="2" />
-                                <line x1="6" y1="10" x2="6" y2="14" />
-                                <line x1="10" y1="10" x2="10" y2="14" />
-                                <line x1="14" y1="10" x2="14" y2="14" />
-                                <line x1="18" y1="10" x2="18" y2="14" />
-                            </svg>
+                            <AppIcon name="chip" :size="14" />
                             <span>VRAM stimata: ~{{ estimatedVram }} GB</span>
                             <span class="mm-dialog__vram-base">(modello: {{ formatSize(loadDialogModel.size) }})</span>
                         </div>

@@ -14,6 +14,7 @@ import { useCodeBlocks } from '../../composables/useCodeBlocks'
 import ThinkingSection from './ThinkingSection.vue'
 import ToolCallSection from './ToolCallSection.vue'
 import MessageVersionNav from './MessageVersionNav.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import type { ChatMessage, CadModelPayload, ChartPayload, WhiteboardPayload } from '../../types/chat'
 import { isWhiteboardPayload } from '../../types/chat'
 
@@ -199,11 +200,7 @@ onUnmounted(() => {
       <span class="bubble__time">{{ formattedTime }}</span>
       <button v-if="isEditable" class="bubble__edit-btn" aria-label="Modifica messaggio"
         @click="emit('edit', message.id)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg>
+        <AppIcon name="edit" :size="14" />
       </button>
     </div>
 
@@ -224,10 +221,8 @@ onUnmounted(() => {
         <button class="context-summary__toggle" @click="summaryCollapsed = !summaryCollapsed">
           <span class="context-summary__icon">📦</span>
           <span class="context-summary__title">Contesto compresso</span>
-          <svg class="context-summary__chevron" :class="{ 'context-summary__chevron--open': !summaryCollapsed }"
-            width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M3 5L6 8L9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
+          <AppIcon name="chevron-down" :size="12" :stroke-width="1.5" class="context-summary__chevron"
+            :class="{ 'context-summary__chevron--open': !summaryCollapsed }" />
         </button>
         <div class="context-summary__body" :class="{ 'context-summary__body--collapsed': summaryCollapsed }">
           <!-- eslint-disable-next-line vue/no-v-html — content is sanitised by markdown-it -->
@@ -246,12 +241,7 @@ onUnmounted(() => {
 
       <!-- Whiteboard card (tool message with whiteboard payload) -->
       <div v-if="whiteboardPayload" class="whiteboard-card">
-        <svg class="whiteboard-card__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <path d="M3 9h18" />
-          <path d="M9 3v18" />
-        </svg>
+        <AppIcon name="whiteboard-card" :size="14" :stroke-width="1.5" class="whiteboard-card__icon" />
         <span class="whiteboard-card__title">{{ whiteboardPayload.title }}</span>
         <span class="whiteboard-card__badge">Lavagna</span>
       </div>
@@ -259,17 +249,11 @@ onUnmounted(() => {
       <!-- Plain tool result — collapsible -->
       <template v-if="isPlainToolResult">
         <button class="tool-result__toggle" @click="toolResultCollapsed = !toolResultCollapsed">
-          <svg class="tool-result__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <AppIcon name="check" :size="12" :stroke-width="2.5" class="tool-result__icon" />
           <span class="tool-result__label">Risultato</span>
           <span v-if="toolResultCollapsed" class="tool-result__preview">{{ toolResultPreview }}</span>
-          <svg class="tool-result__chevron" :class="{ 'tool-result__chevron--open': !toolResultCollapsed }" width="10"
-            height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <AppIcon name="chevron-down" :size="10" class="tool-result__chevron"
+            :class="{ 'tool-result__chevron--open': !toolResultCollapsed }" />
         </button>
         <div class="tool-result__body" :class="{ 'tool-result__body--collapsed': toolResultCollapsed }">
           <div class="tool-result__inner">
@@ -298,14 +282,7 @@ onUnmounted(() => {
       <button v-if="isBranchable" class="bubble__branch-btn" aria-label="Dirama conversazione da qui"
         :title="`Inizia una nuova conversazione da questo punto`" @click="emit('branch', message.id)">
         <!-- Git fork icon -->
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="6" cy="6" r="3" />
-          <circle cx="18" cy="6" r="3" />
-          <path d="M6 9v6" />
-          <path d="M18 9a9 9 0 0 1-9 9" />
-        </svg>
+        <AppIcon name="branch" :size="14" />
       </button>
     </div>
 
@@ -313,11 +290,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <div v-if="overlayImageUrl" class="image-overlay" @click.self="closeOverlay">
         <button class="image-overlay__close" aria-label="Chiudi" @click="closeOverlay">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <AppIcon name="x" :size="24" />
         </button>
         <img :src="overlayImageUrl" :alt="overlayImageAlt" class="image-overlay__img" />
       </div>

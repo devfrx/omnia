@@ -89,16 +89,57 @@ class OpenAIEmbeddingClient:
         return data["data"][0]["embedding"]
 
     async def encode_batch(self, texts: list[str]) -> list[list[float]]:
-        """Encode multiple texts in one API call."""
-        resp = await self._client.post(
-            "/v1/embeddings",
-            json={"input": texts, "model": self._model},
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        # API returns items sorted by index
-        items = sorted(data["data"], key=lambda d: d["index"])
-        return [item["embedding"] for item in items]
+        """Encode multiple texts, chunking to avoid server limits.
+
+        Tries the full batch first; on failure, falls back to
+        sequential single-text calls so it works even on servers
+        that reject batch ``input`` (e.g. some LM Studio versions).
+        """
+        if not texts:
+            return []
+
+        # Fast path — try as a single batch
+        try:
+            resp = await self._client.post(
+                "/v1/embeddings",
+                json={"input": texts, "model": self._model},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            items = sorted(data["data"], key=lambda d: d["index"])
+            return [item["embedding"] for item in items]
+        except httpx.HTTPStatusError:
+            # Batch rejected — fall back to one-by-one
+            logger.debug(
+                "Batch embedding rejected, falling back to sequential "
+                "({} texts)",
+                len(texts),
+            )
+
+        results: list[list[float]] = []
+        for text in texts:
+            vec = await self.encode(text)
+            results.append(vec)
+        return results
+
+    async def is_model_loaded(self) -> bool:
+        """Return True if the embedding model is currently loaded in LM Studio.
+
+        Queries ``GET /v1/models`` and checks whether ``self._model``
+        appears in the returned list.  Returns False on any network or
+        parse error so callers can fail gracefully.
+        """
+        try:
+            resp = await self._client.get(
+                "/v1/models",
+                timeout=httpx.Timeout(connect=3.0, read=5.0, write=3.0, pool=3.0),
+            )
+            resp.raise_for_status()
+            items = resp.json().get("data") or []
+            loaded_ids = {m.get("id", "") for m in items}
+            return self._model in loaded_ids
+        except Exception:
+            return False
 
     async def close(self) -> None:
         await self._client.aclose()
@@ -214,6 +255,64 @@ class EmbeddingClient:
     @property
     def dimensions(self) -> int:
         return self._openai.dimensions
+
+    async def probe_dimensions(self) -> int:
+        """Discover the actual embedding dimensionality by making one test call.
+
+        Only probes if the embedding model is already loaded in LM Studio
+        (checked via ``GET /v1/models``).  This avoids triggering an
+        auto-load when the model is not running — callers get back the
+        configured default dimension and the model stays unloaded.
+
+        Corrects the internal dim value (and collection size used for
+        ``ensure_collection``) if the configured value doesn't match
+        what the model actually returns.  Disables the fastembed fallback
+        when its dim would differ from the probed dim.
+
+        Returns:
+            Actual number of dimensions produced by the active backend.
+        """
+        # Guard: don't trigger an LM Studio auto-load if the model isn't up.
+        model_loaded = await self._openai.is_model_loaded()
+        if not model_loaded:
+            logger.debug(
+                "Embedding model '{}' not loaded in LM Studio — skipping probe"
+                " (using configured dim={})",
+                self._openai._model,
+                self._openai._dim,
+            )
+            return self._openai.dimensions
+
+        try:
+            vec = await self._openai.encode("probe")
+            actual = len(vec)
+        except Exception:
+            # API unavailable — use fastembed to probe
+            if self._fastembed is not None:
+                try:
+                    vec = await self._fastembed.encode("probe")
+                    actual = len(vec)
+                except Exception:
+                    return self._openai.dimensions
+            else:
+                return self._openai.dimensions
+
+        if actual != self._openai._dim:
+            logger.warning(
+                "Embedding dim mismatch — config says {} but model returns {}."
+                " Updating to {}.",
+                self._openai._dim, actual, actual,
+            )
+            self._openai._dim = actual
+            # Disable fastembed if its dim no longer matches
+            if self._fastembed is not None and self._fastembed._dim != actual:
+                logger.warning(
+                    "fastembed fallback disabled — its dim ({}) != actual dim ({})",
+                    self._fastembed._dim, actual,
+                )
+                self._fastembed = None
+
+        return actual
 
     async def encode(self, text: str) -> list[float]:
         """Encode a single text, falling back to CPU if the API is unreachable."""

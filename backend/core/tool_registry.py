@@ -11,7 +11,12 @@ import asyncio
 import json
 import re
 import time
+import uuid
 from typing import Any
+
+from backend.core.config import LLMConfig
+from backend.core.protocols import EmbeddingClientProtocol, QdrantServiceProtocol
+from backend.services.qdrant_service import COLLECTION_TOOLS, PROJECT_NS
 
 from loguru import logger
 
@@ -121,6 +126,10 @@ class ToolRegistry:
         self,
         plugin_manager: PluginManager,
         event_bus: EventBus,
+        *,
+        qdrant_service: QdrantServiceProtocol | None = None,
+        embedding_client: EmbeddingClientProtocol | None = None,
+        llm_config: LLMConfig | None = None,
     ) -> None:
         self._plugin_manager = plugin_manager
         self._event_bus = event_bus
@@ -130,6 +139,10 @@ class ToolRegistry:
         self._openai_cache: list[dict[str, Any]] = []
         self._lock = asyncio.Lock()
         self._logger = logger.bind(component="ToolRegistry")
+
+        self._qdrant = qdrant_service
+        self._embedder = embedding_client
+        self._llm_config = llm_config
 
     # ------------------------------------------------------------------
     # Refresh / rebuild
@@ -250,6 +263,13 @@ class ToolRegistry:
                 len(plugins),
             )
 
+        # Embed tools for Tool RAG
+        if self._qdrant and self._embedder:
+            try:
+                await self.embed_tools()
+            except Exception as exc:
+                self._logger.warning("Tool embedding failed: {}", exc)
+
     # ------------------------------------------------------------------
     # Query methods
     # ------------------------------------------------------------------
@@ -364,6 +384,195 @@ class ToolRegistry:
             The tool definition or ``None`` if not registered.
         """
         return self._tools.get(tool_name)
+
+    # ------------------------------------------------------------------
+    # Tool RAG — embed & retrieve
+    # ------------------------------------------------------------------
+
+    async def embed_tools(self) -> None:
+        """Embed all registered tools into Qdrant for Tool RAG.
+
+        Each tool is represented as:
+        ``"{name}: {description}. params: {param1, param2, ...}"``
+        """
+        if not self._qdrant or not self._embedder:
+            return
+
+        await self._qdrant.ensure_collection(
+            COLLECTION_TOOLS,
+            self._embedder.dimensions,
+        )
+
+        async with self._lock:
+            tools_snapshot = dict(self._tools)
+            plugin_map_snapshot = dict(self._tool_to_plugin)
+
+        # Build embedding texts
+        names: list[str] = []
+        texts: list[str] = []
+        for ns_name, tool_def in tools_snapshot.items():
+            params = ", ".join(
+                tool_def.parameters.get("properties", {}).keys()
+            )
+            text = f"{ns_name}: {tool_def.description}. params: {params}"
+            names.append(ns_name)
+            texts.append(text)
+
+        if not texts:
+            return
+
+        vectors = await self._embedder.encode_batch(texts)
+
+        # Upsert tool points
+        points: list[Any] = []
+        for ns_name, vector in zip(names, vectors):
+            from qdrant_client import models as qmodels
+            tool_def = tools_snapshot[ns_name]
+            fmt = tool_def.to_openai_format()
+            fmt["function"]["name"] = ns_name
+
+            points.append(
+                qmodels.PointStruct(
+                    id=str(uuid.uuid5(PROJECT_NS, ns_name)),
+                    vector=vector,
+                    payload={
+                        "tool_name": ns_name,
+                        "plugin_name": plugin_map_snapshot.get(ns_name, ""),
+                        "openai_def": fmt,
+                    },
+                )
+            )
+
+        await self._qdrant.upsert(COLLECTION_TOOLS, points)
+
+        # Remove orphan points (tools that no longer exist)
+        current_ids = {
+            str(uuid.uuid5(PROJECT_NS, n)) for n in names
+        }
+        offset = None
+        orphan_ids: list[str] = []
+        while True:
+            records, next_offset = await self._qdrant.scroll(
+                COLLECTION_TOOLS, limit=100, offset=offset,
+            )
+            if not records:
+                break
+            for r in records:
+                if str(r.id) not in current_ids:
+                    orphan_ids.append(str(r.id))
+            if next_offset is None:
+                break
+            offset = next_offset
+
+        if orphan_ids:
+            await self._qdrant.delete(COLLECTION_TOOLS, ids=orphan_ids)
+            self._logger.info(
+                "Removed {} orphan tool embeddings", len(orphan_ids),
+            )
+
+        self._logger.info(
+            "Embedded {} tools into Qdrant", len(points),
+        )
+
+    async def get_relevant_tools(
+        self,
+        query: str,
+        k: int = 15,
+    ) -> list[dict[str, Any]]:
+        """Retrieve the most relevant tools for a query via semantic search.
+
+        Falls back to get_available_tools() if Qdrant is unavailable.
+        Always includes tools from priority plugins.
+
+        Args:
+            query: User message to match tools against.
+            k: Maximum number of tools to return.
+
+        Returns:
+            OpenAI-format tool definitions.
+        """
+        if not self._qdrant or not self._embedder:
+            return await self.get_available_tools()
+
+        try:
+            vector = await self._embedder.encode(query)
+        except Exception as exc:
+            self._logger.warning(
+                "Embedding failed, falling back to full tools: {}", exc,
+            )
+            return await self.get_available_tools()
+
+        try:
+            hits = await self._qdrant.search(
+                COLLECTION_TOOLS, vector, k=k,
+            )
+        except Exception as exc:
+            self._logger.warning(
+                "Qdrant search failed, falling back to full tools: {}", exc,
+            )
+            return await self.get_available_tools()
+
+        if not hits:
+            # Empty collection (e.g. embed_tools hasn't run yet)
+            self._logger.debug(
+                "Tool RAG returned 0 hits, falling back to full tools",
+            )
+            return await self.get_available_tools()
+
+        # Collect tool names from hits
+        hit_names: set[str] = set()
+        for hit in hits:
+            if hit.payload:
+                name = hit.payload.get("tool_name", "")
+                if name:
+                    hit_names.add(name)
+
+        # Build result from the cached OpenAI definitions
+        async with self._lock:
+            cache_snapshot = list(self._openai_cache)
+            plugin_map = dict(self._tool_to_plugin)
+
+        # Add priority plugin tools
+        priority_plugins = set()
+        if self._llm_config:
+            priority_plugins = set(self._llm_config.priority_plugins)
+
+        result: list[dict[str, Any]] = []
+        seen: set[str] = set()
+
+        # First pass: add tools from hits + priority plugins
+        for entry in cache_snapshot:
+            ns_name: str = entry["function"]["name"]
+            plugin_name = plugin_map.get(ns_name)
+            if plugin_name is None:
+                continue
+
+            is_hit = ns_name in hit_names
+            is_priority = plugin_name in priority_plugins
+
+            if not is_hit and not is_priority:
+                continue
+
+            # Filter by plugin status
+            plugin = self._plugin_manager.get_plugin(plugin_name)
+            if plugin is None:
+                continue
+            try:
+                status = await plugin.get_connection_status()
+            except Exception:
+                continue
+            if status not in (
+                ConnectionStatus.CONNECTED,
+                ConnectionStatus.DEGRADED,
+                ConnectionStatus.UNKNOWN,
+            ):
+                continue
+
+            if ns_name not in seen:
+                result.append(entry)
+                seen.add(ns_name)
+
+        return result
 
     # ------------------------------------------------------------------
     # Execution

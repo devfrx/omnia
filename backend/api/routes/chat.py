@@ -874,13 +874,22 @@ async def ws_chat(websocket: WebSocket) -> None:
                 # --- fetch available tools for LLM ------------------------
                 tools: list[dict[str, Any]] | None = None
                 if ctx.tool_registry and ctx.config.llm.tools_enabled:
-                    tools = await ctx.tool_registry.get_available_tools()
-                    if tools and ctx.config.llm.max_tools > 0:
-                        tools = ctx.tool_registry.limit_tools(
-                            tools,
-                            max_tools=ctx.config.llm.max_tools,
-                            priority_plugins=ctx.config.llm.priority_plugins,
+                    if (
+                        ctx.config.llm.tool_rag_enabled
+                        and ctx.qdrant_service is not None
+                    ):
+                        tools = await ctx.tool_registry.get_relevant_tools(
+                            user_content,
+                            ctx.config.llm.tool_rag_top_k,
                         )
+                    else:
+                        tools = await ctx.tool_registry.get_available_tools()
+                        if tools and ctx.config.llm.max_tools > 0:
+                            tools = ctx.tool_registry.limit_tools(
+                                tools,
+                                max_tools=ctx.config.llm.max_tools,
+                                priority_plugins=ctx.config.llm.priority_plugins,
+                            )
                     if not tools:
                         tools = None  # empty list confuses some LLMs
 
@@ -1887,24 +1896,38 @@ async def get_conversation(
                 tool_tokens = 0
                 if ctx.tool_registry and ctx.config.llm.tools_enabled:
                     try:
-                        avail_tools = (
-                            await ctx.tool_registry
-                            .get_available_tools()
-                        )
-                        if avail_tools:
-                            if ctx.config.llm.max_tools > 0:
-                                avail_tools = (
-                                    ctx.tool_registry.limit_tools(
-                                        avail_tools,
-                                        max_tools=(
-                                            ctx.config.llm.max_tools
-                                        ),
-                                        priority_plugins=(
-                                            ctx.config.llm
-                                            .priority_plugins
-                                        ),
-                                    )
+                        if (
+                            ctx.config.llm.tool_rag_enabled
+                            and ctx.qdrant_service is not None
+                        ):
+                            # For context estimation use top_k tools
+                            # as a representative sample.
+                            avail_tools = (
+                                await ctx.tool_registry
+                                .get_relevant_tools(
+                                    "",
+                                    ctx.config.llm.tool_rag_top_k,
                                 )
+                            )
+                        else:
+                            avail_tools = (
+                                await ctx.tool_registry
+                                .get_available_tools()
+                            )
+                            if avail_tools:
+                                if ctx.config.llm.max_tools > 0:
+                                    avail_tools = (
+                                        ctx.tool_registry.limit_tools(
+                                            avail_tools,
+                                            max_tools=(
+                                                ctx.config.llm.max_tools
+                                            ),
+                                            priority_plugins=(
+                                                ctx.config.llm
+                                                .priority_plugins
+                                            ),
+                                        )
+                                    )
                             tool_tokens = (
                                 ctx.context_manager.estimate_tokens(
                                     json.dumps(

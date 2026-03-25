@@ -11,6 +11,7 @@
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 
 import type { ConversationSummary } from '../../types/chat'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
   /** Conversation summaries to display. */
@@ -189,10 +190,7 @@ function timeAgo(iso: string): string {
     <!-- New conversation — prominent button with circle-plus badge -->
     <button class="conv-list__new" aria-label="Nuova chat" @click="emit('create')">
       <span class="conv-list__new-icon" aria-hidden="true">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
+        <AppIcon name="plus" :size="11" :stroke-width="2.5" />
       </span>
       <span class="conv-list__new-label">Nuova chat</span>
     </button>
@@ -225,10 +223,7 @@ function timeAgo(iso: string): string {
             </span>
             <span class="conv-item__meta">
               <span class="conv-item__meta-badge">
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                  aria-hidden="true">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
+                <AppIcon name="message" :size="9" :stroke-width="2.5" aria-hidden="true" />
                 <span>{{ conv.message_count }}</span>
               </span>
               <span class="conv-item__time">{{ timeAgo(conv.updated_at) }}</span>
@@ -245,31 +240,19 @@ function timeAgo(iso: string): string {
           <div class="conv-item__actions" @click.stop>
             <button v-if="renamingId !== conv.id" class="conv-item__action" aria-label="Apri cartella"
               title="Apri nel file manager" @click="emit('open-file', conv.id)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
+              <AppIcon name="folder" :size="11" />
             </button>
             <button v-if="renamingId !== conv.id" class="conv-item__action" aria-label="Rinomina conversazione"
               title="Rinomina" @click="startRename(conv)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              </svg>
+              <AppIcon name="pencil" :size="11" />
             </button>
             <button v-if="renamingId === conv.id" class="conv-item__action conv-item__action--confirm"
               aria-label="Conferma" title="Conferma" @click="confirmRename(conv.id)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <AppIcon name="check" :size="11" :stroke-width="2.5" />
             </button>
             <button class="conv-item__action conv-item__action--danger" aria-label="Elimina conversazione"
               title="Elimina" :disabled="conv.id === streamingId" @click="emit('delete', conv.id)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14H6L5 6" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-                <path d="M9 6V4h6v2" />
-              </svg>
+              <AppIcon name="trash" :size="11" />
             </button>
           </div>
         </div>
@@ -279,9 +262,7 @@ function timeAgo(iso: string): string {
     <!-- Empty state with staggered fade-in -->
     <div v-if="conversations.length === 0" class="conv-list__empty">
       <span class="conv-list__empty-icon" aria-hidden="true">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <AppIcon name="message" :size="30" :stroke-width="1.2" />
       </span>
       <span class="conv-list__empty-text">Nessuna conversazione</span>
       <span class="conv-list__empty-sub">Crea una nuova chat per iniziare</span>

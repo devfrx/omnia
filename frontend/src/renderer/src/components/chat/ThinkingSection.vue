@@ -9,6 +9,7 @@
 import { ref, watch, computed } from 'vue'
 
 import { useCodeBlocks } from '../../composables/useCodeBlocks'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
     /** Pre-rendered HTML of thinking content. */
@@ -53,21 +54,12 @@ if (props.autoExpand) {
         aria-label="Ragionamento del modello">
         <button class="thinking-section__toggle" :aria-expanded="!collapsed" aria-label="Mostra/nascondi ragionamento"
             @click="collapsed = !collapsed">
-            <svg class="thinking-section__icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path
-                    d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
-                <line x1="9" y1="21" x2="15" y2="21" />
-                <line x1="10" y1="23" x2="14" y2="23" />
-            </svg>
+            <AppIcon name="lightbulb" :size="14" class="thinking-section__icon" />
             <span class="thinking-section__label">Ragionamento</span>
             <span v-if="collapsed && badgeText" class="thinking-section__badge">{{ badgeText }} caratteri</span>
             <span v-if="isStreaming && !collapsed" class="thinking-section__streaming-text">pensando...</span>
-            <svg class="thinking-section__chevron" :class="{ 'thinking-section__chevron--collapsed': collapsed }"
-                width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <AppIcon name="chevron-down" :size="12" class="thinking-section__chevron"
+                :class="{ 'thinking-section__chevron--collapsed': collapsed }" />
         </button>
         <div class="thinking-section__body" :class="{ 'thinking-section__body--collapsed': collapsed }">
             <div class="thinking-section__inner">

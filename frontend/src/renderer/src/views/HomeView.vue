@@ -13,18 +13,12 @@
       <div class="home-view__mode-toggle">
         <button class="home-view__mode-btn" :class="{ 'home-view__mode-btn--active': uiStore.mode === 'assistant' }"
           @click="selectMode('assistant')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="4" />
-          </svg>
+          <AppIcon name="orb" :size="16" :stroke-width="1.5" />
           Assistente
         </button>
         <button class="home-view__mode-btn" :class="{ 'home-view__mode-btn--active': uiStore.mode === 'hybrid' }"
           @click="selectMode('hybrid')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="14" rx="2" />
-            <circle cx="12" cy="10" r="2" />
-          </svg>
+          <AppIcon name="hybrid-home" :size="16" :stroke-width="1.5" />
           Ibrido
         </button>
       </div>
@@ -32,9 +26,7 @@
       <!-- Start CTA -->
       <button class="home-view__start" @click="start">
         Inizia
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
+        <AppIcon name="chevron-right" :size="12" :stroke-width="2.5" />
       </button>
 
       <p class="home-view__hint">
@@ -48,6 +40,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AmbientBackground from '../components/assistant/AmbientBackground.vue'
+import AppIcon from '../components/ui/AppIcon.vue'
 import { useUIStore, type UIMode } from '../stores/ui'
 
 const uiStore = useUIStore()

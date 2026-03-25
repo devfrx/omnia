@@ -9,6 +9,7 @@
 import { computed, reactive } from 'vue'
 
 import type { ToolCall } from '../../types/chat'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
     /** The tool_calls array from the assistant message. */
@@ -75,18 +76,11 @@ function formatArgs(args: string): string {
     <div class="tool-section" role="region" aria-label="Tool calls">
         <!-- Header -->
         <button class="tool-section__header" :aria-expanded="allExpanded" @click="toggleAll">
-            <svg class="tool-section__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path
-                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-            </svg>
+            <AppIcon name="tool" :size="14" class="tool-section__icon" aria-hidden="true" />
             <span class="tool-section__title">Strumenti usati</span>
             <span class="tool-section__badge">{{ badgeText }}</span>
-            <svg class="tool-section__chevron" :class="{ 'tool-section__chevron--open': allExpanded }" width="12"
-                height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <AppIcon name="chevron-down" :size="12" class="tool-section__chevron"
+                :class="{ 'tool-section__chevron--open': allExpanded }" aria-hidden="true" />
         </button>
 
         <!-- Timeline list (always visible) -->
@@ -102,12 +96,9 @@ function formatArgs(args: string): string {
                         <span v-if="!expandedCalls.has(tc.id ?? '')" class="tool-section__hint">
                             {{ argsSummary(tc.function.arguments) }}
                         </span>
-                        <svg class="tool-section__step-chevron"
-                            :class="{ 'tool-section__step-chevron--open': expandedCalls.has(tc.id ?? '') }" width="10"
-                            height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <AppIcon name="chevron-down" :size="10" class="tool-section__step-chevron"
+                            :class="{ 'tool-section__step-chevron--open': expandedCalls.has(tc.id ?? '') }"
+                            aria-hidden="true" />
                     </button>
                     <div class="tool-section__args-wrapper"
                         :class="{ 'tool-section__args-wrapper--collapsed': !expandedCalls.has(tc.id ?? '') }">

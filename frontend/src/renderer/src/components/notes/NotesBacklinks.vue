@@ -7,6 +7,7 @@
  */
 import { ref } from 'vue'
 import { useNotesStore } from '../../stores/notes'
+import AppIcon from '../ui/AppIcon.vue'
 
 const store = useNotesStore()
 const collapsed = ref(false)
@@ -20,20 +21,14 @@ function openNote(id: string): void {
     <aside class="backlinks" :class="{ 'backlinks--collapsed': collapsed }">
         <header class="backlinks__header" @click="collapsed = !collapsed">
             <span class="backlinks__title">Backlinks</span>
-            <svg class="backlinks__chevron" :class="{ 'backlinks__chevron--collapsed': collapsed }" width="12"
-                height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <AppIcon class="backlinks__chevron" :class="{ 'backlinks__chevron--collapsed': collapsed }"
+                name="chevron-right" :size="12" :stroke-width="2.5" />
         </header>
 
         <div v-if="!collapsed" class="backlinks__body">
             <template v-if="store.backlinks.length > 0">
                 <button v-for="bl in store.backlinks" :key="bl.id" class="backlinks__item" @click="openNote(bl.id)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                    </svg>
+                    <AppIcon name="file" :size="12" />
                     <span class="backlinks__item-title">{{ bl.title }}</span>
                 </button>
             </template>

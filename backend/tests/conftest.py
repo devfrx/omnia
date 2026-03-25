@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import pytest
+from unittest.mock import AsyncMock
+
 from httpx import ASGITransport, AsyncClient
 
 from backend.core.app import create_app
@@ -36,3 +38,31 @@ async def client(app):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+
+
+@pytest.fixture
+def mock_embedding_client():
+    """Mock EmbeddingClientProtocol returning 4-dim vectors."""
+    client = AsyncMock()
+    client.dimensions = 4
+    client.encode = AsyncMock(return_value=[0.1, 0.2, 0.3, 0.4])
+    client.encode_batch = AsyncMock(
+        side_effect=lambda texts: [[0.1, 0.2, 0.3, 0.4]] * len(texts)
+    )
+    client.close = AsyncMock()
+    return client
+
+
+@pytest.fixture
+def mock_qdrant_service():
+    """Mock QdrantServiceProtocol."""
+    service = AsyncMock()
+    service.initialize = AsyncMock()
+    service.close = AsyncMock()
+    service.ensure_collection = AsyncMock()
+    service.upsert = AsyncMock()
+    service.search = AsyncMock(return_value=[])
+    service.delete = AsyncMock()
+    service.scroll = AsyncMock(return_value=([], None))
+    service.count = AsyncMock(return_value=0)
+    return service

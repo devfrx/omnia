@@ -12,6 +12,7 @@ import { useNotesStore } from '../../stores/notes'
 import UiContextMenu from '../ui/UiContextMenu.vue'
 import UiContextMenuItem from '../ui/UiContextMenuItem.vue'
 import UiContextMenuDivider from '../ui/UiContextMenuDivider.vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 // Register cola — guard against HMR double-registration
 try {
@@ -487,11 +488,7 @@ onUnmounted(() => {
         <!-- Linking mode indicator -->
         <div v-if="linkingSource" class="graph-linking-bar">
             <span class="graph-linking-bar__icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
+                <AppIcon name="link" :size="14" />
             </span>
             <span>Seleziona la nota da collegare a <strong>{{ linkingSourceLabel }}</strong></span>
             <button class="graph-linking-bar__cancel" @click="cancelLinking">Annulla</button>
@@ -504,46 +501,23 @@ onUnmounted(() => {
             <template v-if="ctxNodeId">
                 <UiContextMenuItem label="Apri nota" @click="ctxOpenNote">
                     <template #icon>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="16" y1="13" x2="8" y2="13" />
-                            <line x1="16" y1="17" x2="8" y2="17" />
-                        </svg>
+                        <AppIcon name="file-text" :size="16" :stroke-width="1.5" />
                     </template>
                 </UiContextMenuItem>
                 <UiContextMenuItem label="Focalizza connessioni" @click="ctxFocusNeighbors">
                     <template #icon>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8" />
-                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                            <line x1="11" y1="8" x2="11" y2="14" />
-                            <line x1="8" y1="11" x2="14" y2="11" />
-                        </svg>
+                        <AppIcon name="search-plus" :size="16" :stroke-width="1.5" />
                     </template>
                 </UiContextMenuItem>
                 <UiContextMenuItem label="Collega a..." @click="ctxStartLinking">
                     <template #icon>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                        </svg>
+                        <AppIcon name="link" :size="16" :stroke-width="1.5" />
                     </template>
                 </UiContextMenuItem>
                 <UiContextMenuDivider />
                 <UiContextMenuItem label="Elimina nota" danger @click="ctxDeleteNote">
                     <template #icon>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
-                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                        </svg>
+                        <AppIcon name="trash" :size="16" :stroke-width="1.5" />
                     </template>
                 </UiContextMenuItem>
             </template>
@@ -552,32 +526,18 @@ onUnmounted(() => {
             <template v-else>
                 <UiContextMenuItem label="Nuova nota" @click="ctxNewNote">
                     <template #icon>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
+                        <AppIcon name="plus" :size="16" :stroke-width="1.5" />
                     </template>
                 </UiContextMenuItem>
                 <UiContextMenuDivider />
                 <UiContextMenuItem label="Ricalcola layout" @click="ctxResetLayout">
                     <template #icon>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="23 4 23 10 17 10" />
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                        </svg>
+                        <AppIcon name="refresh-cw" :size="16" :stroke-width="1.5" />
                     </template>
                 </UiContextMenuItem>
                 <UiContextMenuItem label="Adatta alla vista" @click="ctxFitView">
                     <template #icon>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-                            <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-                            <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-                            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-                        </svg>
+                        <AppIcon name="maximize-fit" :size="16" :stroke-width="1.5" />
                     </template>
                 </UiContextMenuItem>
             </template>

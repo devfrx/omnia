@@ -8,6 +8,7 @@
  */
 import { ref, onMounted, onBeforeUnmount, watch, type PropType } from 'vue'
 import { api } from '@renderer/services/api'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps({
   /** Board ID used to trigger full remount on board switch. */
@@ -109,14 +110,7 @@ onBeforeUnmount(() => {
   <div class="tldraw-host">
     <!-- Orphan state: board was deleted from the whiteboard page -->
     <div v-if="isOrphaned" class="tldraw-orphaned">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-        stroke-linecap="round" stroke-linejoin="round" class="tldraw-orphaned__icon">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="M3 9h18" />
-        <path d="M9 3v18" />
-        <line x1="8" y1="12" x2="16" y2="20" stroke-width="1.5" />
-        <line x1="16" y1="12" x2="8" y2="20" stroke-width="1.5" />
-      </svg>
+      <AppIcon name="whiteboard-deleted" :size="24" :stroke-width="1.5" class="tldraw-orphaned__icon" />
       <p class="tldraw-orphaned__text">Lavagna non più disponibile</p>
       <p class="tldraw-orphaned__hint">Il file è stato eliminato dalla pagina Lavagne</p>
     </div>

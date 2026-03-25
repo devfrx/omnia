@@ -7,6 +7,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUIStore, type UIMode } from '../../stores/ui'
+import AppIcon from '../ui/AppIcon.vue'
 
 const uiStore = useUIStore()
 const router = useRouter()
@@ -43,19 +44,11 @@ function switchMode(mode: UIMode): void {
         <button v-for="m in modes" :key="m.id" class="mode-switcher__btn"
             :class="{ 'mode-switcher__btn--active': uiStore.mode === m.id }" @click="switchMode(m.id)">
             <!-- Assistant: concentric orb/eye icon -->
-            <svg v-if="m.id === 'assistant'" class="mode-switcher__icon" width="18" height="18" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="6" />
-                <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
-            </svg>
+            <AppIcon v-if="m.id === 'assistant'" name="orb-full" :size="18" :stroke-width="1.5"
+                class="mode-switcher__icon" />
 
             <!-- Hybrid: overlapping circle + bubble -->
-            <svg v-else class="mode-switcher__icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.5">
-                <circle cx="9" cy="10" r="6" />
-                <path d="M15 9a5 5 0 0 1 5 5v0a2 2 0 0 1-2 2h-5l-2.5 2.5V16" />
-            </svg>
+            <AppIcon v-else name="hybrid-panel" :size="18" :stroke-width="1.5" class="mode-switcher__icon" />
 
             <!-- Tooltip label (appears to the right on hover) -->
             <Transition name="label-slide">

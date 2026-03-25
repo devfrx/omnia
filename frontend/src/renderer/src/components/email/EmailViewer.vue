@@ -4,6 +4,7 @@
  * action toolbar, sender avatar, and formatted body.
  */
 import { useEmailStore } from '../../stores/email'
+import AppIcon from '../ui/AppIcon.vue'
 
 const emailStore = useEmailStore()
 
@@ -61,41 +62,19 @@ function formatFullDate(dateStr: string): string {
     <!-- Top action bar -->
     <div class="viewer__topbar">
       <button class="viewer__topbar-btn" title="Chiudi" @click="emailStore.clearCurrentEmail()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="19" y1="12" x2="5" y2="12" />
-          <polyline points="12 19 5 12 12 5" />
-        </svg>
+        <AppIcon name="arrow-left" :size="16" />
       </button>
 
       <div class="viewer__topbar-actions">
-        <button
-          class="viewer__topbar-btn"
+        <button class="viewer__topbar-btn"
           :title="emailStore.currentEmail.is_read ? 'Segna come non letta' : 'Segna come letta'"
-          @click="handleMarkRead(!emailStore.currentEmail?.is_read)"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <template v-if="emailStore.currentEmail.is_read">
-              <path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9" />
-              <polyline points="22 6 12 13 2 6" />
-              <circle cx="19" cy="19" r="3" fill="var(--accent)" stroke="var(--accent)" />
-            </template>
-            <template v-else>
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-              <polyline points="22 6 12 13 2 6" />
-            </template>
-          </svg>
+          @click="handleMarkRead(!emailStore.currentEmail?.is_read)">
+          <AppIcon :name="emailStore.currentEmail.is_read ? 'email-read' : 'email-unread'" :size="16"
+            :stroke-width="1.8" />
         </button>
 
-        <button
-          class="viewer__topbar-btn viewer__topbar-btn--accent"
-          title="Archivia"
-          @click="handleArchive"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <polyline points="21 8 21 21 3 21 3 8" />
-            <rect x="1" y="3" width="22" height="5" />
-            <line x1="10" y1="12" x2="14" y2="12" />
-          </svg>
+        <button class="viewer__topbar-btn viewer__topbar-btn--accent" title="Archivia" @click="handleArchive">
+          <AppIcon name="archive" :size="16" :stroke-width="1.8" />
         </button>
       </div>
     </div>
@@ -137,9 +116,7 @@ function formatFullDate(dateStr: string): string {
 
       <!-- Attachment badge -->
       <div v-if="emailStore.currentEmail.has_attachments" class="viewer__attachment-badge">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">
-          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-        </svg>
+        <AppIcon name="paperclip" :size="14" :stroke-width="1.8" />
         <span>Allegati presenti</span>
       </div>
     </div>
@@ -274,7 +251,8 @@ function formatFullDate(dateStr: string): string {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding-left: 52px; /* aligned with sender info */
+  padding-left: 52px;
+  /* aligned with sender info */
 }
 
 .viewer__recipient-row {

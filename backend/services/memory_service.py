@@ -1,65 +1,22 @@
-"""AL\\CE — Persistent semantic memory service.
+﻿"""AL\\CE — Persistent semantic memory service (Qdrant backend).
 
-CRUD + vector search via ``sqlite-vec`` on a dedicated SQLite DB
-(``data/memory.db``).  All I/O is async via ``aiosqlite``.
+Stores, retrieves, and manages semantic memories using Qdrant vector search
+with automatic expiry cleanup for session-scoped entries.
 """
 
 from __future__ import annotations
 
 import asyncio
-import importlib.resources
-import struct
 import uuid
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from datetime import datetime, timezone
 from typing import Any
 
-import aiosqlite
 from loguru import logger
+from qdrant_client import models
 
-from backend.core.config import PROJECT_ROOT, MemoryConfig
-from backend.services.embedding_client import EmbeddingClient
-
-
-# ---------------------------------------------------------------------------
-# Exceptions
-# ---------------------------------------------------------------------------
-
-class MemoryDimensionMismatchError(Exception):
-    """Raised when embedding dimension doesn't match the stored vectors."""
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def _serialize_f32(vec: list[float]) -> bytes:
-    """Pack a float list into a little-endian f32 blob for sqlite-vec."""
-    return struct.pack(f"<{len(vec)}f", *vec)
-
-
-def _resolve_vec_extension_path() -> str:
-    """Resolve the sqlite-vec loadable extension DLL/so path.
-
-    Uses ``importlib.resources`` to find the shared library bundled
-    with the ``sqlite_vec`` Python package.
-    """
-    pkg = importlib.resources.files("sqlite_vec")
-    # The package ships a single shared lib (vec0.dll / vec0.so / vec0.dylib)
-    for item in pkg.iterdir():
-        name = item.name
-        if name.startswith("vec0") and (
-            name.endswith(".dll")
-            or name.endswith(".so")
-            or name.endswith(".dylib")
-        ):
-            return str(item)
-    # Fallback: let sqlite try the bare module name
-    return "vec0"
+from backend.core.config import MemoryConfig
+from backend.core.protocols import EmbeddingClientProtocol, QdrantServiceProtocol
+from backend.services.qdrant_service import COLLECTION_MEMORY
 
 
 # ---------------------------------------------------------------------------
@@ -113,219 +70,59 @@ class MemoryEntry:
 
 
 # ---------------------------------------------------------------------------
-# SQL constants
-# ---------------------------------------------------------------------------
-
-_CREATE_ENTRIES_SQL = """
-CREATE TABLE IF NOT EXISTS memory_entries (
-    id              TEXT PRIMARY KEY,
-    content         TEXT    NOT NULL,
-    scope           TEXT    NOT NULL DEFAULT 'long_term',
-    category        TEXT,
-    source          TEXT    NOT NULL DEFAULT 'llm',
-    created_at      TEXT    NOT NULL,
-    expires_at      TEXT,
-    conversation_id TEXT,
-    embedding_model TEXT    NOT NULL
-);
-"""
-
-_CREATE_VECTORS_SQL = """
-CREATE VIRTUAL TABLE IF NOT EXISTS memory_vectors
-USING vec0(id TEXT PRIMARY KEY, embedding FLOAT[{dim}] distance_metric=cosine);
-"""
-
-
-
-
-# ---------------------------------------------------------------------------
 # MemoryService
 # ---------------------------------------------------------------------------
 
 class MemoryService:
-    """Persistent semantic memory: embed, store, and search via sqlite-vec.
+    """Semantic memory service backed by Qdrant.
 
     Args:
-        config: ``MemoryConfig`` sub-section from AL\\CE config.
-        llm_base_url: Base URL of the LLM / embedding API server.
+        config: Memory configuration section.
+        qdrant_service: Shared Qdrant vector store.
+        embedding_client: Shared embedding client.
     """
 
-    def __init__(self, config: MemoryConfig, llm_base_url: str) -> None:
+    def __init__(
+        self,
+        config: MemoryConfig,
+        qdrant_service: QdrantServiceProtocol,
+        embedding_client: EmbeddingClientProtocol,
+        *,
+        embedding_model: str = "",
+    ) -> None:
         self._config = config
-        self._llm_base_url = llm_base_url
-        self._db: aiosqlite.Connection | None = None
-        self._embed: EmbeddingClient | None = None
+        self._qdrant = qdrant_service
+        self._embedder = embedding_client
+        self._embedding_model = embedding_model
         self._cleanup_task: asyncio.Task[None] | None = None
-        self._closed = False
+        self._log = logger.bind(component="MemoryService")
 
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
 
     async def initialize(self) -> None:
-        """Open DB, load sqlite-vec, create tables, start cleanup loop.
-
-        Idempotent — safe to call on hot-reload.
-        """
-        if self._db is not None:
-            logger.debug("MemoryService already initialised, skipping")
-            return
-
-        self._closed = False
-
-        db_path = Path(self._config.db_path)
-        if not db_path.is_absolute():
-            db_path = PROJECT_ROOT / db_path
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-
-        logger.info("Opening memory DB at {}", db_path)
-        self._db = await aiosqlite.connect(str(db_path))
-        self._db.row_factory = aiosqlite.Row
-        await self._db.execute("PRAGMA journal_mode=WAL;")
-
-        # Load sqlite-vec extension
-        vec_path = _resolve_vec_extension_path()
-        await self._db.enable_load_extension(True)
-        await self._db.load_extension(vec_path)
-        await self._db.enable_load_extension(False)
-        logger.info("Loaded sqlite-vec extension from {}", vec_path)
-
-        # Create entries table (idempotent).
-        await self._db.execute(_CREATE_ENTRIES_SQL)
-        await self._db.commit()
-
-        # Migrate vectors table if definition is stale (wrong dim or no cosine).
-        needs_reembed = await self._maybe_migrate_vectors()
-
-        await self._db.execute(
-            _CREATE_VECTORS_SQL.format(dim=self._config.embedding_dim)
+        """Ensure collection exists and start cleanup loop."""
+        await self._qdrant.ensure_collection(
+            COLLECTION_MEMORY,
+            self._embedder.dimensions,
         )
-        await self._db.commit()
-
-        # Embedding client
-        self._embed = EmbeddingClient(
-            base_url=self._llm_base_url,
-            model=self._config.embedding_model,
-            dimensions=self._config.embedding_dim,
-            fallback_enabled=self._config.embedding_fallback,
-        )
-
-        # Re-embed entries that lost their vectors during migration.
-        if needs_reembed:
-            await self._reembed_all()
-
-        logger.info(
-            "MemoryService ready (model={}, dim={})",
-            self._config.embedding_model,
-            self._config.embedding_dim,
-        )
-
-        # Background cleanup
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+        self._log.info(
+            "Memory service initialized (collection={}, dim={})",
+            COLLECTION_MEMORY, self._embedder.dimensions,
+        )
 
     async def close(self) -> None:
-        """Shut down cleanup task, embedding client, and DB connection."""
-        if self._closed:
-            return
-        self._closed = True
-
+        """Cancel cleanup task. Does NOT close qdrant or embedding client."""
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
             try:
                 await self._cleanup_task
             except asyncio.CancelledError:
                 pass
-
-        if self._embed:
-            await self._embed.close()
-            self._embed = None
-
-        if self._db:
-            await self._db.close()
-            self._db = None
-
-        logger.info("MemoryService closed")
-
-    # ------------------------------------------------------------------
-    # Schema migration
-    # ------------------------------------------------------------------
-
-    async def _maybe_migrate_vectors(self) -> bool:
-        """Drop memory_vectors if its DDL doesn't match the current config.
-
-        Reads the actual ``CREATE VIRTUAL TABLE`` statement from
-        ``sqlite_master`` and checks for the correct embedding dimension
-        and ``distance_metric=cosine``.  Dropping the table here is safe:
-        ``initialize()`` will immediately recreate it and ``_reembed_all()``
-        will repopulate it from ``memory_entries``.
-
-        Returns:
-            ``True`` if the table was dropped and must be recreated/re-embedded.
-        """
-        assert self._db is not None
-
-        cursor = await self._db.execute(
-            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'memory_vectors'"
-        )
-        row = await cursor.fetchone()
-        if row is None:
-            # Table doesn't exist yet — will be created fresh, no migration needed.
-            return False
-
-        current_ddl: str = (row["sql"] or "").lower()
-        want_dim = f"float[{self._config.embedding_dim}]"
-
-        dim_ok = want_dim in current_ddl
-        cosine_ok = "distance_metric=cosine" in current_ddl
-
-        if dim_ok and cosine_ok:
-            return False
-
-        reasons: list[str] = []
-        if not dim_ok:
-            reasons.append(f"dim mismatch (want {self._config.embedding_dim})")
-        if not cosine_ok:
-            reasons.append("cosine metric missing")
-        logger.info("Rebuilding memory_vectors: {}", ", ".join(reasons))
-
-        await self._db.execute("DROP TABLE IF EXISTS memory_vectors")
-        await self._db.commit()
-        return True
-
-    async def _reembed_all(self) -> None:
-        """Re-embed every entry in ``memory_entries`` into the vectors table.
-
-        Called after a migration that dropped the old vectors.
-        """
-        assert self._db is not None and self._embed is not None
-
-        cursor = await self._db.execute(
-            "SELECT id, content FROM memory_entries"
-        )
-        entries = await cursor.fetchall()
-        if not entries:
-            return
-
-        logger.info("Re-embedding {} memory entries after migration", len(entries))
-        for entry in entries:
-            try:
-                vector = await self._embed.encode(entry["content"])
-                if len(vector) != self._config.embedding_dim:
-                    logger.warning(
-                        "Skipping memory {} — embedding dim {} != expected {}",
-                        entry["id"], len(vector), self._config.embedding_dim,
-                    )
-                    continue
-                await self._db.execute(
-                    "INSERT INTO memory_vectors (id, embedding) VALUES (?, ?)",
-                    (entry["id"], _serialize_f32(vector)),
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Failed to re-embed memory {}: {}", entry["id"], exc
-                )
-        await self._db.commit()
-        logger.info("Re-embedding complete")
+        self._cleanup_task = None
+        self._log.info("Memory service closed")
 
     # ------------------------------------------------------------------
     # CRUD
@@ -354,49 +151,31 @@ class MemoryService:
         Returns:
             The created ``MemoryEntry``.
         """
-        if not self._db or not self._embed:
-            raise RuntimeError("MemoryService not initialised")
-
         entry_id = uuid.uuid4()
-        now = _utcnow()
-        vector = await self._embed.encode(content)
+        now = datetime.now(timezone.utc)
 
-        if len(vector) != self._config.embedding_dim:
-            raise MemoryDimensionMismatchError(
-                f"Expected {self._config.embedding_dim} dims, "
-                f"got {len(vector)}"
-            )
+        vector = await self._embedder.encode(content)
 
-        try:
-            await self._db.execute(
-                """
-                INSERT INTO memory_entries
-                    (id, content, scope, category, source,
-                     created_at, expires_at, conversation_id, embedding_model)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    str(entry_id),
-                    content,
-                    scope,
-                    category,
-                    source,
-                    now.isoformat(),
-                    expires_at.isoformat() if expires_at else None,
-                    conversation_id or None,
-                    self._config.embedding_model,
-                ),
-            )
-            await self._db.execute(
-                "INSERT INTO memory_vectors (id, embedding) VALUES (?, ?)",
-                (str(entry_id), _serialize_f32(vector)),
-            )
-            await self._db.commit()
-        except Exception:
-            await self._db.rollback()
-            raise
+        point = models.PointStruct(
+            id=str(entry_id),
+            vector=vector,
+            payload={
+                "content": content,
+                "scope": scope,
+                "category": category or "",
+                "source": source,
+                "conversation_id": conversation_id or "",
+                "created_at": now.isoformat(),
+                "expires_at": expires_at.isoformat() if expires_at else "",
+                "embedding_model": self._embedding_model,
+            },
+        )
+        await self._qdrant.upsert(COLLECTION_MEMORY, [point])
 
-        logger.debug("Memory added id={} scope={}", entry_id, scope)
+        self._log.debug(
+            "Memory added: id={} scope={} category={}",
+            entry_id, scope, category,
+        )
         return MemoryEntry(
             id=entry_id,
             content=content,
@@ -406,7 +185,7 @@ class MemoryService:
             created_at=now,
             expires_at=expires_at,
             conversation_id=uuid.UUID(conversation_id) if conversation_id else None,
-            embedding_model=self._config.embedding_model,
+            embedding_model=self._embedding_model,
         )
 
     async def search(
@@ -426,63 +205,44 @@ class MemoryService:
         Returns:
             List of dicts with ``entry`` (MemoryEntry) and ``score`` (float).
         """
-        if not self._db or not self._embed:
-            raise RuntimeError("MemoryService not initialised")
+        vector = await self._embedder.encode(query)
 
-        scope = (filter or {}).get("scope")
-        category = (filter or {}).get("category")
+        # Build Qdrant filter conditions
+        conditions: list[models.Condition] = []
+        if filter:
+            if "scope" in filter:
+                conditions.append(
+                    models.FieldCondition(
+                        key="scope",
+                        match=models.MatchValue(value=filter["scope"]),
+                    )
+                )
+            if "category" in filter:
+                conditions.append(
+                    models.FieldCondition(
+                        key="category",
+                        match=models.MatchValue(value=filter["category"]),
+                    )
+                )
 
-        query_vec = await self._embed.encode(query)
+        query_filter = models.Filter(must=conditions) if conditions else None
 
-        if len(query_vec) != self._config.embedding_dim:
-            raise MemoryDimensionMismatchError(
-                f"Expected {self._config.embedding_dim} dims, "
-                f"got {len(query_vec)}"
-            )
-
-        # sqlite-vec cosine: distance ∈ [0, 2]; similarity = 1 - distance
-        cursor = await self._db.execute(
-            """
-            SELECT v.id, v.distance
-            FROM memory_vectors v
-            WHERE v.embedding MATCH ?
-            ORDER BY v.distance
-            LIMIT ?
-            """,
-            (_serialize_f32(query_vec), k * 3),
+        # Over-fetch to allow post-filtering of expired entries
+        hits = await self._qdrant.search(
+            COLLECTION_MEMORY, vector, k=k * 2, query_filter=query_filter,
         )
-        rows = await cursor.fetchall()
 
-        now_iso = _utcnow().isoformat()
+        now_iso = datetime.now(timezone.utc).isoformat()
         results: list[dict[str, Any]] = []
-        for row in rows:
-            similarity = 1.0 - row["distance"]
-            if similarity < self._config.similarity_threshold:
+        for hit in hits:
+            payload = hit.payload or {}
+            expires = payload.get("expires_at", "")
+            if expires and expires < now_iso:
                 continue
-
-            entry_cur = await self._db.execute(
-                "SELECT * FROM memory_entries WHERE id = ?",
-                (row["id"],),
-            )
-            entry_row = await entry_cur.fetchone()
-            if entry_row is None:
+            if hit.score < self._config.similarity_threshold:
                 continue
-
-            # Expired?
-            exp = entry_row["expires_at"]
-            if exp and exp < now_iso:
-                continue
-
-            # Scope / category filter
-            if scope and entry_row["scope"] != scope:
-                continue
-            if category and entry_row["category"] != category:
-                continue
-
-            results.append({
-                "entry": _row_to_entry(entry_row),
-                "score": round(similarity, 4),
-            })
+            entry = self._payload_to_entry(hit.id, payload)
+            results.append({"entry": entry, "score": round(hit.score, 4)})
             if len(results) >= k:
                 break
 
@@ -492,23 +252,11 @@ class MemoryService:
         """Remove a memory by ID.
 
         Returns:
-            ``True`` if a row was deleted, ``False`` if not found.
+            ``True`` if deletion was attempted.
         """
-        if not self._db:
-            raise RuntimeError("MemoryService not initialised")
-        mid = str(memory_id)
-
-        cur = await self._db.execute(
-            "DELETE FROM memory_entries WHERE id = ?", (mid,)
-        )
-        await self._db.execute(
-            "DELETE FROM memory_vectors WHERE id = ?", (mid,)
-        )
-        await self._db.commit()
-        deleted = cur.rowcount > 0
-        if deleted:
-            logger.debug("Memory deleted id={}", memory_id)
-        return deleted
+        await self._qdrant.delete(COLLECTION_MEMORY, ids=[memory_id])
+        self._log.debug("Memory deleted: {}", memory_id)
+        return True
 
     async def delete_by_scope(self, scope: str) -> int:
         """Delete all memories with the given scope.
@@ -519,36 +267,43 @@ class MemoryService:
         Returns:
             Number of deleted entries.
         """
-        if not self._db:
-            raise RuntimeError("MemoryService not initialised")
-
-        cur = await self._db.execute(
-            "DELETE FROM memory_entries WHERE scope = ?", (scope,)
+        count_filter = models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="scope",
+                    match=models.MatchValue(value=scope),
+                )
+            ]
         )
-        await self._db.execute(
-            "DELETE FROM memory_vectors WHERE id NOT IN "
-            "(SELECT id FROM memory_entries)"
-        )
-        await self._db.commit()
-        count = cur.rowcount
-        if count:
-            logger.info("Deleted {} memories with scope={}", count, scope)
+        count = await self._qdrant.count(COLLECTION_MEMORY, count_filter)
+        if count > 0:
+            await self._qdrant.delete(
+                COLLECTION_MEMORY, query_filter=count_filter,
+            )
+        self._log.info("Deleted {} memories with scope={}", count, scope)
         return count
 
     async def delete_all(self) -> int:
-        """Delete every memory entry and its vector.
+        """Delete every memory entry.
 
         Returns:
             Number of deleted entries.
         """
-        if not self._db:
-            raise RuntimeError("MemoryService not initialised")
-
-        cur = await self._db.execute("DELETE FROM memory_entries")
-        await self._db.execute("DELETE FROM memory_vectors")
-        await self._db.commit()
-        count = cur.rowcount
-        logger.info("Deleted all {} memories", count)
+        count = await self._qdrant.count(COLLECTION_MEMORY)
+        if count > 0:
+            offset = None
+            while True:
+                records, next_offset = await self._qdrant.scroll(
+                    COLLECTION_MEMORY, limit=100, offset=offset,
+                )
+                if not records:
+                    break
+                ids = [str(r.id) for r in records]
+                await self._qdrant.delete(COLLECTION_MEMORY, ids=ids)
+                if next_offset is None:
+                    break
+                offset = next_offset
+        self._log.info("Deleted all {} memories", count)
         return count
 
     async def list(
@@ -561,100 +316,122 @@ class MemoryService:
         """List memory entries with optional filters.
 
         Args:
-            filter: Optional dict with ``scope``, ``category``,
-                ``created_after`` keys.
+            filter: Optional dict with ``scope``, ``category`` keys.
             limit: Maximum results.
             offset: Pagination offset.
 
         Returns:
             Tuple of (entries, total_count).
         """
-        if not self._db:
-            raise RuntimeError("MemoryService not initialised")
-
         scope = (filter or {}).get("scope")
         category = (filter or {}).get("category")
-        created_after = (filter or {}).get("created_after")
 
-        clauses: list[str] = []
-        params: list[Any] = []
-
+        conditions: list[models.Condition] = []
         if scope:
-            clauses.append("scope = ?")
-            params.append(scope)
+            conditions.append(
+                models.FieldCondition(
+                    key="scope",
+                    match=models.MatchValue(value=scope),
+                )
+            )
         if category:
-            if category == "uncategorised":
-                clauses.append("category IS NULL")
-            else:
-                clauses.append("category = ?")
-                params.append(category)
-        if created_after:
-            clauses.append("created_at > ?")
-            params.append(created_after.isoformat())
+            conditions.append(
+                models.FieldCondition(
+                    key="category",
+                    match=models.MatchValue(value=category),
+                )
+            )
 
-        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        query_filter = models.Filter(must=conditions) if conditions else None
 
-        # Total count for pagination
-        count_cur = await self._db.execute(
-            f"SELECT COUNT(*) AS cnt FROM memory_entries{where}",
-            params[:],
+        total = await self._qdrant.count(COLLECTION_MEMORY, query_filter)
+
+        records, _ = await self._qdrant.scroll(
+            COLLECTION_MEMORY,
+            query_filter=query_filter,
+            limit=limit,
+            offset=offset if offset > 0 else None,
         )
-        total = (await count_cur.fetchone())["cnt"]
 
-        params.extend([limit, offset])
-        cursor = await self._db.execute(
-            f"SELECT * FROM memory_entries{where} "
-            f"ORDER BY created_at DESC LIMIT ? OFFSET ?",
-            params,
-        )
-        rows = await cursor.fetchall()
-        return [_row_to_entry(r) for r in rows], total
+        entries = [
+            self._payload_to_entry(r.id, r.payload or {})
+            for r in records
+        ]
+        return entries, total
 
     async def stats(self) -> dict[str, Any]:
         """Return aggregate statistics about stored memories.
 
         Returns:
-            Dict with ``total``, ``by_scope``, ``by_category``, and
-            ``db_size_bytes``.
+            Dict with ``total``, ``by_scope``, ``by_category``,
+            and ``db_size_bytes``.
         """
-        if not self._db:
-            raise RuntimeError("MemoryService not initialised")
+        total = await self._qdrant.count(COLLECTION_MEMORY)
 
-        cur = await self._db.execute(
-            "SELECT COUNT(*) AS cnt FROM memory_entries"
-        )
-        total = (await cur.fetchone())["cnt"]
+        by_scope: dict[str, int] = {}
+        for scope_name in ("long_term", "session", "user_fact"):
+            scope_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="scope",
+                        match=models.MatchValue(value=scope_name),
+                    )
+                ]
+            )
+            by_scope[scope_name] = await self._qdrant.count(
+                COLLECTION_MEMORY, scope_filter,
+            )
 
-        cur = await self._db.execute(
-            "SELECT scope, COUNT(*) AS cnt "
-            "FROM memory_entries GROUP BY scope"
-        )
-        by_scope = {r["scope"]: r["cnt"] for r in await cur.fetchall()}
-
-        cur = await self._db.execute(
-            "SELECT category, COUNT(*) AS cnt "
-            "FROM memory_entries GROUP BY category"
-        )
-        by_category = {
-            (r["category"] or "uncategorised"): r["cnt"]
-            for r in await cur.fetchall()
-        }
-
-        db_path = Path(self._config.db_path)
-        if not db_path.is_absolute():
-            db_path = PROJECT_ROOT / db_path
-
-        def _stat_size() -> int:
-            return db_path.stat().st_size if db_path.exists() else 0
-
-        db_size = await asyncio.to_thread(_stat_size)
+        # Aggregate categories by scrolling all records
+        by_category: dict[str, int] = {}
+        offset = None
+        while True:
+            records, next_offset = await self._qdrant.scroll(
+                COLLECTION_MEMORY, limit=100, offset=offset,
+            )
+            if not records:
+                break
+            for r in records:
+                cat = (r.payload or {}).get("category", "") or ""
+                if cat:
+                    by_category[cat] = by_category.get(cat, 0) + 1
+            if next_offset is None:
+                break
+            offset = next_offset
 
         return {
             "total": total,
             "by_scope": by_scope,
             "by_category": by_category,
-            "db_size_bytes": db_size,
+            "db_size_bytes": 0,  # Not applicable for Qdrant
         }
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _payload_to_entry(
+        point_id: str | int, payload: dict[str, Any],
+    ) -> MemoryEntry:
+        """Convert a Qdrant payload to a MemoryEntry."""
+        created = payload.get("created_at", "")
+        expires = payload.get("expires_at", "")
+        cid = payload.get("conversation_id", "")
+        return MemoryEntry(
+            id=uuid.UUID(str(point_id)),
+            content=payload.get("content", ""),
+            scope=payload.get("scope", "long_term"),
+            category=payload.get("category", "") or None,
+            source=payload.get("source", "user"),
+            created_at=(
+                datetime.fromisoformat(created) if created
+                else datetime.now(timezone.utc)
+            ),
+            expires_at=datetime.fromisoformat(expires) if expires else None,
+            conversation_id=uuid.UUID(cid) if cid else None,
+            embedding_model=payload.get("embedding_model", ""),
+        )
 
     # ------------------------------------------------------------------
     # Background cleanup
@@ -662,88 +439,55 @@ class MemoryService:
 
     async def _cleanup_loop(self) -> None:
         """Remove expired and stale entries: once at start, then every 6 h."""
-        interval = 6 * 3600  # seconds
-        # Run cleanup immediately so expired entries don't persist
-        # across restarts for up to 6 hours.
+        interval = 6 * 3600
         try:
-            await self._run_cleanup()
+            await self._cleanup_expired()
         except Exception:
-            logger.opt(exception=True).warning(
+            self._log.opt(exception=True).warning(
                 "Initial memory cleanup failed"
             )
         while True:
             try:
                 await asyncio.sleep(interval)
-                await self._run_cleanup()
+                await self._cleanup_expired()
             except asyncio.CancelledError:
                 return
             except Exception:
-                logger.opt(exception=True).warning(
+                self._log.opt(exception=True).warning(
                     "Memory cleanup cycle failed"
                 )
 
-    async def _run_cleanup(self) -> None:
-        """Delete expired entries and optionally old unused entries."""
-        if not self._db:
-            return
-        now_iso = _utcnow().isoformat()
+    async def _cleanup_expired(self) -> int:
+        """Delete memories past their expiry time.
 
-        # Expired entries
-        cur = await self._db.execute(
-            "DELETE FROM memory_entries "
-            "WHERE expires_at IS NOT NULL AND expires_at < ?",
-            (now_iso,),
-        )
-        expired_count = cur.rowcount
+        Returns:
+            Number of expired entries removed.
+        """
+        now_iso = datetime.now(timezone.utc).isoformat()
+        removed = 0
+        offset = None
 
-        # Orphan vectors for deleted entries
-        await self._db.execute(
-            "DELETE FROM memory_vectors WHERE id NOT IN "
-            "(SELECT id FROM memory_entries)"
-        )
-
-        # Auto-cleanup old entries
-        stale_count = 0
-        if self._config.auto_cleanup_days > 0:
-            cutoff = (
-                _utcnow() - timedelta(days=self._config.auto_cleanup_days)
-            ).isoformat()
-            cur = await self._db.execute(
-                "DELETE FROM memory_entries WHERE created_at < ?",
-                (cutoff,),
+        while True:
+            records, next_offset = await self._qdrant.scroll(
+                COLLECTION_MEMORY, limit=100, offset=offset,
             )
-            stale_count = cur.rowcount
-            # Clean orphan vectors again
-            await self._db.execute(
-                "DELETE FROM memory_vectors WHERE id NOT IN "
-                "(SELECT id FROM memory_entries)"
-            )
+            if not records:
+                break
 
-        await self._db.commit()
-        if expired_count or stale_count:
-            logger.info(
-                "Memory cleanup: expired={}, stale={}",
-                expired_count,
-                stale_count,
-            )
+            expired_ids: list[str] = []
+            for r in records:
+                expires = (r.payload or {}).get("expires_at", "")
+                if expires and expires < now_iso:
+                    expired_ids.append(str(r.id))
 
+            if expired_ids:
+                await self._qdrant.delete(COLLECTION_MEMORY, ids=expired_ids)
+                removed += len(expired_ids)
 
-# ---------------------------------------------------------------------------
-# Row → MemoryEntry helper
-# ---------------------------------------------------------------------------
+            if next_offset is None:
+                break
+            offset = next_offset
 
-def _row_to_entry(row: aiosqlite.Row) -> MemoryEntry:
-    """Convert an aiosqlite Row from memory_entries to a MemoryEntry."""
-    exp = row["expires_at"]
-    cid = row["conversation_id"]
-    return MemoryEntry(
-        id=uuid.UUID(row["id"]),
-        content=row["content"],
-        scope=row["scope"],
-        category=row["category"],
-        source=row["source"],
-        created_at=datetime.fromisoformat(row["created_at"]),
-        expires_at=datetime.fromisoformat(exp) if exp else None,
-        conversation_id=uuid.UUID(cid) if cid else None,
-        embedding_model=row["embedding_model"],
-    )
+        if removed:
+            self._log.info("Cleaned up {} expired memories", removed)
+        return removed

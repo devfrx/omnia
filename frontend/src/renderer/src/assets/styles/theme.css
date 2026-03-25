@@ -238,8 +238,8 @@
 
 /* ── Font Stacks ───────────────────────────────────────────── */
 :root {
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Oxygen, sans-serif;
+  --font-sans: 'Geist Variable', 'Geist', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Oxygen, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
     'Liberation Mono', monospace;
   --font-display: 'Kaluar', var(--font-sans);

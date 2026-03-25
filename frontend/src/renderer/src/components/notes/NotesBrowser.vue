@@ -9,6 +9,7 @@
 import { ref, watch, onUnmounted } from 'vue'
 import { useNotesStore } from '../../stores/notes'
 import { useModal } from '../../composables/useModal'
+import AppIcon from '../ui/AppIcon.vue'
 
 const store = useNotesStore()
 const { confirm } = useModal()
@@ -119,10 +120,7 @@ function preview(content: string): string {
         <!-- New note + view toggle row -->
         <div class="browser__toolbar">
             <button class="browser__new-btn" @click="onCreateNote">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
+                <AppIcon name="plus" :size="14" />
                 Nuova nota
             </button>
             <div class="browser__view-toggle">
@@ -137,14 +135,7 @@ function preview(content: string): string {
                 </button>
                 <button class="browser__view-btn" :class="{ 'browser__view-btn--active': store.viewMode === 'graph' }"
                     title="Vista grafo" @click="store.setViewMode('graph')">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round">
-                        <circle cx="6" cy="6" r="2" />
-                        <circle cx="18" cy="8" r="2" />
-                        <circle cx="12" cy="18" r="2" />
-                        <line x1="7.5" y1="7.5" x2="10.5" y2="16.5" />
-                        <line x1="16.5" y1="9.5" x2="13.5" y2="16.5" />
-                    </svg>
+                    <AppIcon name="share-graph" :size="14" />
                 </button>
             </div>
         </div>
@@ -152,10 +143,8 @@ function preview(content: string): string {
         <!-- Markdown & backlinks guide (collapsible) -->
         <div class="browser__section browser__guide">
             <button class="browser__guide-toggle" @click="guideOpen = !guideOpen">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    class="browser__guide-chevron" :class="{ 'browser__guide-chevron--open': guideOpen }">
-                    <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <AppIcon name="chevron-right" :size="10" :stroke-width="2.5" class="browser__guide-chevron"
+                    :class="{ 'browser__guide-chevron--open': guideOpen }" />
                 <span class="browser__section-label" style="margin-bottom: 0">Guida Markdown</span>
             </button>
             <div v-if="guideOpen" class="browser__guide-body">
@@ -224,10 +213,7 @@ function preview(content: string): string {
             <div class="browser__section-header">
                 <div class="browser__section-label">Cartelle</div>
                 <button class="browser__section-add" title="Nuova cartella" @click="showNewFolder = !showNewFolder">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
+                    <AppIcon name="plus" :size="12" />
                 </button>
             </div>
 
@@ -250,11 +236,7 @@ function preview(content: string): string {
                     <span class="browser__folder-count">{{ folder.count }}</span>
                     <button v-if="folder.path" class="browser__folder-delete" title="Elimina cartella"
                         @click.stop="onDeleteFolder(folder.path, folder.count)">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <AppIcon name="x" :size="10" />
                     </button>
                 </span>
             </button>
@@ -299,14 +281,7 @@ function preview(content: string): string {
                     </button>
                     <button class="browser__item-action browser__item-action--danger" title="Elimina nota"
                         @click="onDeleteNote(note.id, note.title)">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14H6L5 6" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
-                            <path d="M9 6V4h6v2" />
-                        </svg>
+                        <AppIcon name="trash" :size="11" />
                     </button>
                 </div>
             </div>

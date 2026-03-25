@@ -11,6 +11,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { resolveBackendUrl } from '../../services/api'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
     /** Relative or absolute URL to the GLB model file. */
@@ -261,48 +262,25 @@ onUnmounted(() => {
         <!-- Toolbar -->
         <div class="cad-viewer__toolbar">
             <div class="cad-viewer__title-group">
-                <svg class="cad-viewer__badge" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                    <path d="M2 17l10 5 10-5" />
-                    <path d="M2 12l10 5 10-5" />
-                </svg>
+                <AppIcon name="box-3d" :size="14" :stroke-width="1.5" class="cad-viewer__badge" />
                 <span class="cad-viewer__title">{{ modelName ?? '3D Model' }}</span>
                 <span class="cad-viewer__format">.glb</span>
             </div>
             <div class="cad-viewer__actions">
                 <button class="cad-viewer__btn" :class="{ 'cad-viewer__btn--active': autoRotate }" title="Auto-rotate"
                     @click="toggleAutoRotate">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12a9 9 0 1 1-6.22-8.56" />
-                        <polyline points="21 3 21 12 12 12" />
-                    </svg>
+                    <AppIcon name="auto-rotate" :size="14" />
                 </button>
                 <button class="cad-viewer__btn" :class="{ 'cad-viewer__btn--active': wireframe }" title="Wireframe"
                     @click="toggleWireframe">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="12" y1="3" x2="12" y2="21" />
-                    </svg>
+                    <AppIcon name="wireframe" :size="14" />
                 </button>
                 <button class="cad-viewer__btn" title="Reset camera" @click="resetCamera">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 2v4m0 12v4M2 12h4m12 0h4" />
-                    </svg>
+                    <AppIcon name="crosshair" :size="14" />
                 </button>
                 <div class="cad-viewer__divider" />
                 <button class="cad-viewer__btn cad-viewer__btn--download" title="Download GLB" @click="downloadModel">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
+                    <AppIcon name="download" :size="14" />
                 </button>
             </div>
         </div>
@@ -317,12 +295,7 @@ onUnmounted(() => {
 
             <!-- Error overlay -->
             <div v-if="errorMsg" class="cad-viewer__overlay cad-viewer__overlay--error">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="15" y1="9" x2="9" y2="15" />
-                    <line x1="9" y1="9" x2="15" y2="15" />
-                </svg>
+                <AppIcon name="circle-x" :size="28" :stroke-width="1.5" />
                 <span class="cad-viewer__overlay-text">{{ errorMsg }}</span>
             </div>
 

@@ -10,6 +10,7 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import type { AudioDevice } from '../../composables/useVoice'
 import { useVoiceStore } from '../../stores/voice'
+import AppIcon from '../ui/AppIcon.vue'
 
 const store = useVoiceStore()
 
@@ -130,14 +131,8 @@ const ringOuterStyle = computed(() => ({
 
       <!-- Icon: mic or processing dots -->
       <Transition name="icon-morph" mode="out-in">
-        <svg v-if="!isProcessing" key="mic" class="mic-btn__icon" :class="{ 'mic-btn__icon--rec': isActive }" width="20"
-          height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-          <line x1="12" y1="19" x2="12" y2="23" />
-          <line x1="8" y1="23" x2="16" y2="23" />
-        </svg>
+        <AppIcon v-if="!isProcessing" key="mic" name="mic" :size="20" class="mic-btn__icon"
+          :class="{ 'mic-btn__icon--rec': isActive }" />
         <span v-else key="dots" class="mic-btn__dots">
           <span /><span /><span />
         </span>

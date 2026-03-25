@@ -7,6 +7,7 @@
  * Auto-hides after the transcript is consumed.
  */
 import { computed } from 'vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
   /** The current transcript text from STT. */
@@ -79,11 +80,7 @@ function handleDismiss(): void {
         <p class="to__text">{{ text }}</p>
         <div class="to__actions">
           <button class="to__btn to__btn--send" aria-label="Invia come messaggio" @click="handleSend">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
+            <AppIcon name="send" :size="14" />
             Invia
           </button>
           <button class="to__btn to__btn--dismiss" aria-label="Annulla" @click="handleDismiss">

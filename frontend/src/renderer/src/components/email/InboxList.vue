@@ -8,6 +8,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useEmailStore } from '../../stores/email'
 import UiSkeleton from '../ui/UiSkeleton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 const emailStore = useEmailStore()
 
@@ -81,52 +82,30 @@ function subjectPreview(subject: string): string {
     <!-- Search bar -->
     <div class="inbox__search">
       <div class="inbox__search-wrapper">
-        <svg class="inbox__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="inbox__search-input"
-          placeholder="Cerca email…"
-        />
+        <AppIcon class="inbox__search-icon" name="search" />
+        <input v-model="searchQuery" type="text" class="inbox__search-input" placeholder="Cerca email…" />
       </div>
     </div>
 
     <!-- Toolbar: count + filters + refresh -->
     <div class="inbox__toolbar">
       <div class="inbox__filters">
-        <button
-          class="inbox__filter"
-          :class="{ 'inbox__filter--active': filterMode === 'all' }"
-          @click="filterMode = 'all'"
-        >
+        <button class="inbox__filter" :class="{ 'inbox__filter--active': filterMode === 'all' }"
+          @click="filterMode = 'all'">
           Tutte
         </button>
-        <button
-          class="inbox__filter"
-          :class="{ 'inbox__filter--active': filterMode === 'unread' }"
-          @click="filterMode = 'unread'"
-        >
+        <button class="inbox__filter" :class="{ 'inbox__filter--active': filterMode === 'unread' }"
+          @click="filterMode = 'unread'">
           Non lette
           <span v-if="emailStore.unreadCount > 0" class="inbox__filter-count">
             {{ emailStore.unreadCount }}
           </span>
         </button>
       </div>
-      <button
-        class="inbox__refresh"
-        :disabled="emailStore.loading"
-        :class="{ 'inbox__refresh--spinning': emailStore.loading }"
-        title="Aggiorna"
-        @click="emailStore.fetchInbox(emailStore.currentFolder)"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10" />
-          <polyline points="1 20 1 14 7 14" />
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-        </svg>
+      <button class="inbox__refresh" :disabled="emailStore.loading"
+        :class="{ 'inbox__refresh--spinning': emailStore.loading }" title="Aggiorna"
+        @click="emailStore.fetchInbox(emailStore.currentFolder)">
+        <AppIcon name="refresh-ccw" />
       </button>
     </div>
 
@@ -143,20 +122,13 @@ function subjectPreview(subject: string): string {
 
     <!-- Error state -->
     <div v-else-if="emailStore.error" class="inbox__state">
-      <svg class="inbox__state-icon inbox__state-icon--error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
+      <AppIcon class="inbox__state-icon inbox__state-icon--error" name="alert-circle" :stroke-width="1.5" />
       <span class="inbox__state-text inbox__state-text--error">{{ emailStore.error }}</span>
     </div>
 
     <!-- Empty state -->
     <div v-else-if="filteredInbox.length === 0" class="inbox__state">
-      <svg class="inbox__state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-        <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-      </svg>
+      <AppIcon class="inbox__state-icon" name="inbox" :stroke-width="1.2" />
       <span class="inbox__state-text">
         {{ filterMode === 'unread' ? 'Nessuna email non letta' : 'Nessuna email' }}
       </span>
@@ -164,16 +136,10 @@ function subjectPreview(subject: string): string {
 
     <!-- Email list -->
     <div v-else class="inbox__list">
-      <button
-        v-for="mail in filteredInbox"
-        :key="mail.uid"
-        class="inbox__item"
-        :class="{
-          'inbox__item--unread': !mail.is_read,
-          'inbox__item--selected': isSelected(mail.uid),
-        }"
-        @click="emailStore.fetchEmail(mail.uid, emailStore.currentFolder)"
-      >
+      <button v-for="mail in filteredInbox" :key="mail.uid" class="inbox__item" :class="{
+        'inbox__item--unread': !mail.is_read,
+        'inbox__item--selected': isSelected(mail.uid),
+      }" @click="emailStore.fetchEmail(mail.uid, emailStore.currentFolder)">
         <!-- Unread dot -->
         <span v-if="!mail.is_read" class="inbox__unread-dot" />
 
@@ -338,7 +304,9 @@ function subjectPreview(subject: string): string {
 }
 
 @keyframes spin-refresh {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Skeleton loading ────────────────── */

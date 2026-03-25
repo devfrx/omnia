@@ -25,7 +25,8 @@ import type {
   ModelLoadResponse,
   ModelOperationResponse,
   ModelUnloadResponse,
-  ModelsStatusResponse
+  ModelsStatusResponse,
+  VectorStoreStats
 } from '../types/settings'
 import type { CalendarEvent, TodaySummary } from '../types/calendar'
 import type { AuditConfirmationsResponse } from '../types/audit'
@@ -723,5 +724,15 @@ export const api = {
       `/whiteboards/${encodeURIComponent(boardId)}/snapshot`,
       { method: 'PATCH', body: JSON.stringify({ snapshot }) }
     ),
+
+  // -- Qdrant Vector Store --------------------------------------------------
+
+  /** Fetch Qdrant vector store statistics. */
+  getVectorStoreStats: (): Promise<VectorStoreStats> =>
+    request<VectorStoreStats>('/vector-store/stats'),
+
+  /** Trigger re-embedding of all registered tools. */
+  reembedTools: (): Promise<{ status: string }> =>
+    request<{ status: string }>('/vector-store/reembed-tools', { method: 'POST' }),
 
 }

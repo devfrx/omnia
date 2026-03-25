@@ -15,6 +15,8 @@ const props = defineProps<{
     disabled?: boolean
 }>()
 
+import AppIcon from '../ui/AppIcon.vue'
+
 const emit = defineEmits<{
     switch: [index: number]
 }>()
@@ -36,18 +38,12 @@ function next(): void {
     <div v-if="totalVersions > 1" class="version-nav" role="navigation" aria-label="Versioni messaggio">
         <button class="version-nav__btn" :disabled="disabled || activeIndex <= 0" aria-label="Versione precedente"
             @click="prev">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <AppIcon name="chevron-left" :size="12" :stroke-width="2.5" />
         </button>
         <span class="version-nav__label">{{ activeIndex + 1 }} / {{ totalVersions }}</span>
         <button class="version-nav__btn" :disabled="disabled || activeIndex >= totalVersions - 1"
             aria-label="Versione successiva" @click="next">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <AppIcon name="chevron-right" :size="12" :stroke-width="2.5" />
         </button>
     </div>
 </template>

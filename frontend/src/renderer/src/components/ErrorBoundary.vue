@@ -6,6 +6,7 @@
  * renders a user-friendly fallback with a retry button.
  */
 import { onErrorCaptured, ref } from 'vue'
+import AppIcon from './ui/AppIcon.vue'
 
 const emit = defineEmits<{
     /** Emitted when a child component throws an error. */
@@ -35,12 +36,7 @@ function retry(): void {
     <slot v-if="!hasError" />
     <div v-else class="error-boundary" role="alert">
         <div class="error-boundary__icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <AppIcon name="alert-circle" :size="32" :stroke-width="1.5" />
         </div>
         <p class="error-boundary__title">Qualcosa è andato storto</p>
         <p class="error-boundary__detail">{{ errorMessage }}</p>

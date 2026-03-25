@@ -10,6 +10,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { AudioDevice } from '../../composables/useVoice'
+import AppIcon from '../ui/AppIcon.vue'
 import ModelSelector from '../settings/ModelSelector.vue'
 import MicrophoneButton from '../voice/MicrophoneButton.vue'
 import ContextBar from '../chat/ContextBar.vue'
@@ -273,9 +274,7 @@ defineExpose({
                     <span class="fib__state-label">{{ stateLabel }}</span>
                     <span class="fib__duration">{{ voiceStore.formattedDuration }}</span>
                     <button class="fib__stop-btn fib__stop-btn--rec" aria-label="Interrompi registrazione">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                        </svg>
+                        <AppIcon name="stop-fill" :size="14" />
                     </button>
                 </template>
 
@@ -284,11 +283,7 @@ defineExpose({
                     <div class="fib__spinner" />
                     <span class="fib__state-label fib__state-label--shimmer">{{ stateLabel }}</span>
                     <button class="fib__stop-btn" aria-label="Annulla">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <AppIcon name="x" :size="12" :stroke-width="2.5" />
                     </button>
                 </template>
 
@@ -299,9 +294,7 @@ defineExpose({
                     </div>
                     <span class="fib__state-label">{{ stateLabel }}</span>
                     <button class="fib__stop-btn" aria-label="Interrompi generazione">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                        </svg>
+                        <AppIcon name="stop-fill" :size="14" />
                     </button>
                 </template>
 
@@ -312,9 +305,7 @@ defineExpose({
                     </div>
                     <span class="fib__state-label">{{ stateLabel }}</span>
                     <button class="fib__stop-btn" aria-label="Interrompi">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                        </svg>
+                        <AppIcon name="stop-fill" :size="14" />
                     </button>
                 </template>
             </div>
@@ -329,11 +320,7 @@ defineExpose({
                         class="fib__thumb">
                         <img :src="getThumbnail(file)" :alt="file.name" :title="file.name" />
                         <button class="fib__thumb-rm" aria-label="Rimuovi allegato" @click="removeFile(file)">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
+                            <AppIcon name="x" :size="10" :stroke-width="2.5" />
                         </button>
                     </div>
                 </div>
@@ -345,27 +332,13 @@ defineExpose({
                         <div class="fib__dot" :class="isConnected ? 'dot--ok' : 'dot--err'" />
                         <div v-if="settingsStore.activeModel" class="fib__badges">
                             <span class="fib__badge" :class="{ 'fib__badge--on': supportsVision }" title="Vision">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                    <circle cx="12" cy="12" r="3" />
-                                </svg>
+                                <AppIcon name="eye" :size="11" />
                             </span>
                             <span class="fib__badge" :class="{ 'fib__badge--on': supportsThinking }" title="Thinking">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <path
-                                        d="M12 2a7 7 0 0 0-4.6 12.3c.6.5 1 1.2 1.1 2h7c.1-.8.5-1.5 1.1-2A7 7 0 0 0 12 2z" />
-                                    <line x1="10" y1="20" x2="14" y2="20" />
-                                    <line x1="10" y1="22" x2="14" y2="22" />
-                                </svg>
+                                <AppIcon name="lightbulb-simple" :size="11" />
                             </span>
                             <span class="fib__badge" :class="{ 'fib__badge--on': supportsToolUse }" title="Tool Use">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <path
-                                        d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                                </svg>
+                                <AppIcon name="tool" :size="11" />
                             </span>
                         </div>
                     </div>
@@ -379,18 +352,11 @@ defineExpose({
                     <!-- Mode toggle chip -->
                     <button class="fib__mode-toggle" @click="toggleMode">
                         <template v-if="uiStore.mode === 'assistant'">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
+                            <AppIcon name="message" :size="11" />
                             <span>Ibrida</span>
                         </template>
                         <template v-else>
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <circle cx="12" cy="12" r="4" />
-                            </svg>
+                            <AppIcon name="orb" :size="11" />
                             <span>Assistente</span>
                         </template>
                     </button>
@@ -411,11 +377,7 @@ defineExpose({
                     <button class="fib__attach" :disabled="disabled || !supportsVision"
                         :title="supportsVision ? 'Allega immagine' : 'Il modello attivo non supporta immagini'"
                         @click="openFilePicker">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                        </svg>
+                        <AppIcon name="paperclip" :size="16" />
                     </button>
 
                     <input ref="fileInputRef" type="file" accept="image/*" multiple class="fib__file-input"
@@ -439,20 +401,12 @@ defineExpose({
                         <Transition name="btn-swap" mode="out-in">
                             <button v-if="isStreaming" key="stop" class="fib__stop" aria-label="Interrompi generazione"
                                 @click="emit('stop')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none" />
-                                </svg>
+                                <AppIcon name="stop" :size="16" />
                             </button>
                             <button v-else key="send" class="fib__send"
                                 :disabled="(!text.trim() && pendingFiles.length === 0) || disabled"
                                 aria-label="Invia messaggio" @click="submit">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="22" y1="2" x2="11" y2="13" />
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                                </svg>
+                                <AppIcon name="send" :size="16" />
                             </button>
                         </Transition>
                     </div>
@@ -822,23 +776,13 @@ defineExpose({
     gap: var(--space-2);
 }
 
-/* Toolbar */
-.fib__toolbar {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    height: 32px;
-    overflow: hidden;
-    min-width: 0;
-}
-
 /* ── Toolbar ── */
 .fib__toolbar {
     display: flex;
     align-items: center;
     gap: var(--space-2);
     height: 32px;
-    overflow: hidden;
+    overflow: visible;
     min-width: 0;
 }
 

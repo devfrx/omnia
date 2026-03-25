@@ -12,6 +12,7 @@ import { useUIStore } from '../stores/ui'
 import { usePluginsStore } from '../stores/plugins'
 import WeatherWidget from './plugins/WeatherWidget.vue'
 import AliceSpinner from './ui/AliceSpinner.vue'
+import AppIcon from './ui/AppIcon.vue'
 
 /** Tracks whether the window is currently maximized */
 const isMaximized = ref(false)
@@ -90,12 +91,7 @@ onUnmounted(() => {
   <header class="titlebar">
     <!-- Sidebar toggle (hamburger) — no-drag so it's clickable -->
     <button class="titlebar__menu-btn" aria-label="Apri sidebar" @click="uiStore.toggleSidebar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-      </svg>
+      <AppIcon name="menu" :size="14" />
     </button>
 
     <!-- Draggable region -->
@@ -118,11 +114,7 @@ onUnmounted(() => {
         <div class="titlebar__voice">
           <!-- STT -->
           <div v-if="voiceStore.sttAvailable && voiceStore.sttEngine" class="titlebar__voice-item">
-            <svg class="titlebar__voice-icon" width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true">
-              <rect x="2.5" y="0.5" width="4" height="5" rx="2" fill="currentColor" />
-              <path d="M1 4.5a3.5 3 0 007 0" stroke="currentColor" stroke-width="1" fill="none" />
-              <line x1="4.5" y1="8.5" x2="4.5" y2="7" stroke="currentColor" stroke-width="1" />
-            </svg>
+            <AppIcon name="stt-indicator" :size="9" class="titlebar__voice-icon" />
             <span class="titlebar__voice-engine">{{ voiceStore.sttEngine }}</span>
             <span v-if="voiceStore.sttModel" class="titlebar__voice-model">{{ voiceStore.sttModel }}</span>
           </div>
@@ -132,10 +124,7 @@ onUnmounted(() => {
             class="titlebar__voice-sep">/</span>
           <!-- TTS -->
           <div v-if="voiceStore.ttsAvailable && voiceStore.ttsEngine" class="titlebar__voice-item">
-            <svg class="titlebar__voice-icon" width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true">
-              <polygon points="0.5,2.5 2.5,2.5 5,0.5 5,8.5 2.5,6.5 0.5,6.5" fill="currentColor" />
-              <path d="M6.5 3a2 2 0 010 3" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" />
-            </svg>
+            <AppIcon name="tts-indicator" :size="9" class="titlebar__voice-icon" />
             <span class="titlebar__voice-engine">{{ voiceStore.ttsEngine }}</span>
             <span v-if="ttsVoice" class="titlebar__voice-model">{{ ttsVoice }}</span>
           </div>
@@ -151,31 +140,17 @@ onUnmounted(() => {
     <!-- Window controls (no-drag so buttons are clickable) -->
     <div class="titlebar__controls">
       <button class="titlebar__btn titlebar__btn--minimize" aria-label="Minimize" @click="handleMinimize">
-        <!-- Minimize icon: horizontal line -->
-        <svg width="10" height="1" viewBox="0 0 10 1">
-          <rect width="10" height="1" fill="currentColor" />
-        </svg>
+        <AppIcon name="win-minimize" :size="10" />
       </button>
 
       <button class="titlebar__btn titlebar__btn--maximize" :aria-label="isMaximized ? 'Restore' : 'Maximize'"
         @click="handleMaximize">
-        <!-- Maximize / Restore icon -->
-        <svg v-if="!isMaximized" width="10" height="10" viewBox="0 0 10 10">
-          <rect x="0.5" y="0.5" width="9" height="9" rx="0" fill="none" stroke="currentColor" stroke-width="1" />
-        </svg>
-        <svg v-else width="10" height="10" viewBox="0 0 10 10">
-          <rect x="2.5" y="0.5" width="7" height="7" rx="0" fill="none" stroke="currentColor" stroke-width="1" />
-          <rect x="0.5" y="2.5" width="7" height="7" rx="0" fill="var(--bg-secondary)" stroke="currentColor"
-            stroke-width="1" />
-        </svg>
+        <AppIcon v-if="!isMaximized" name="win-maximize" :size="10" />
+        <AppIcon v-else name="win-restore" :size="10" />
       </button>
 
       <button class="titlebar__btn titlebar__btn--close" aria-label="Close" @click="handleClose">
-        <!-- Close icon: X -->
-        <svg width="10" height="10" viewBox="0 0 10 10">
-          <line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2" />
-          <line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2" />
-        </svg>
+        <AppIcon name="win-close" :size="10" />
       </button>
     </div>
   </header>

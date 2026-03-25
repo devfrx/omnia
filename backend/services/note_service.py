@@ -1,15 +1,13 @@
 """AL\\CE — Obsidian-like note vault service.
 
-CRUD + FTS5 full-text search + optional vector search via ``sqlite-vec``
-on a dedicated SQLite DB (``data/notes.db``).  All I/O is async via
-``aiosqlite``.
+CRUD + FTS5 full-text search + optional semantic vector search via
+Qdrant on a dedicated SQLite DB (``data/notes.db``).  All I/O is async
+via ``aiosqlite``.
 """
 
 from __future__ import annotations
 
-import importlib.resources
 import re
-import struct
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,9 +15,11 @@ from typing import Any
 
 import aiosqlite
 from loguru import logger
+from qdrant_client import models
 
 from backend.core.config import PROJECT_ROOT, NotesConfig
-from backend.services.embedding_client import EmbeddingClient
+from backend.core.protocols import EmbeddingClientProtocol, QdrantServiceProtocol
+from backend.services.qdrant_service import COLLECTION_NOTES
 
 _WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
@@ -30,26 +30,6 @@ _WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
-
-
-def _serialize_f32(vec: list[float]) -> bytes:
-    """Pack a float list into a little-endian f32 blob for sqlite-vec."""
-    return struct.pack(f"<{len(vec)}f", *vec)
-
-
-def _resolve_vec_extension_path() -> str:
-    """Resolve the sqlite-vec loadable extension DLL/so path."""
-    pkg = importlib.resources.files("sqlite_vec")
-    for item in pkg.iterdir():
-        name = item.name
-        if name.startswith("vec0") and (
-            name.endswith(".dll")
-            or name.endswith(".so")
-            or name.endswith(".dylib")
-        ):
-            return str(item)
-    logger.warning("sqlite-vec extension not found in package, falling back to bare 'vec0'")
-    return "vec0"
 
 
 def _extract_wikilinks(content: str) -> list[str]:
@@ -162,11 +142,6 @@ CREATE TABLE IF NOT EXISTS note_entries (
 );
 """
 
-_CREATE_VECTORS_SQL = """
-CREATE VIRTUAL TABLE IF NOT EXISTS note_vectors
-USING vec0(id TEXT PRIMARY KEY, embedding FLOAT[{dim}] distance_metric=cosine);
-"""
-
 _CREATE_FTS_SQL = """
 CREATE VIRTUAL TABLE IF NOT EXISTS note_fts
 USING fts5(title, content, tags, content=note_entries, content_rowid=rowid);
@@ -195,18 +170,24 @@ END;
 # ----------------------------------------------------------------------- #
 
 class NoteService:
-    """Obsidian-like note vault with FTS5 + optional vector search.
+    """Obsidian-like note vault with FTS5 + optional Qdrant vector search.
 
     Args:
         config: ``NotesConfig`` sub-section from AL\\CE config.
-        llm_base_url: Base URL of the LLM / embedding API server.
+        qdrant_service: Shared Qdrant vector store service.
+        embedding_client: Shared embedding client.
     """
 
-    def __init__(self, config: NotesConfig, llm_base_url: str) -> None:
+    def __init__(
+        self,
+        config: NotesConfig,
+        qdrant_service: QdrantServiceProtocol,
+        embedding_client: EmbeddingClientProtocol,
+    ) -> None:
         self._config = config
-        self._llm_base_url = llm_base_url
+        self._qdrant = qdrant_service
+        self._embedder = embedding_client
         self._db: aiosqlite.Connection | None = None
-        self._embed: EmbeddingClient | None = None
         self._closed = False
 
     # ------------------------------------------------------------------ #
@@ -214,7 +195,7 @@ class NoteService:
     # ------------------------------------------------------------------ #
 
     async def initialize(self) -> None:
-        """Open DB, create tables, optionally load sqlite-vec."""
+        """Open DB, create tables, optionally set up Qdrant collection."""
         if self._db is not None:
             logger.debug("NoteService already initialised, skipping")
             return
@@ -231,63 +212,34 @@ class NoteService:
         self._db.row_factory = aiosqlite.Row
         await self._db.execute("PRAGMA journal_mode=WAL;")
 
-        # Vector extension (optional)
-        if self._config.embedding_enabled:
-            vec_path = _resolve_vec_extension_path()
-            await self._db.enable_load_extension(True)
-            await self._db.load_extension(vec_path)
-            await self._db.enable_load_extension(False)
-            logger.info("Loaded sqlite-vec for notes from {}", vec_path)
-
         # Schema
         await self._db.execute(_CREATE_ENTRIES_SQL)
-        if self._config.embedding_enabled:
-            await self._db.execute(
-                _CREATE_VECTORS_SQL.format(
-                    dim=self._config.embedding_dim,
-                )
-            )
         await self._db.execute(_CREATE_FTS_SQL)
         await self._db.executescript(_FTS_TRIGGERS_SQL)
         await self._db.commit()
 
-        # Embedding client
+        # Qdrant collection for vector search
         if self._config.embedding_enabled:
-            self._embed = EmbeddingClient(
-                base_url=self._llm_base_url,
-                model=self._config.embedding_model,
-                dimensions=self._config.embedding_dim,
-                fallback_enabled=self._config.embedding_fallback,
+            await self._qdrant.ensure_collection(
+                COLLECTION_NOTES,
+                self._embedder.dimensions,
             )
-
-        # Check for embedding dimension migration
-        if self._config.embedding_enabled:
-            migrated = await self._maybe_migrate_vectors()
-            if migrated:
-                await self._db.execute(
-                    _CREATE_VECTORS_SQL.format(
-                        dim=self._config.embedding_dim,
-                    )
-                )
-                await self._db.commit()
-                if self._embed:
-                    await self._reembed_all()
 
         logger.info(
             "NoteService ready (embedding={}, dim={})",
             self._config.embedding_enabled,
-            self._config.embedding_dim,
+            self._embedder.dimensions if self._config.embedding_enabled else 0,
         )
 
     async def close(self) -> None:
-        """Shut down embedding client and DB connection."""
+        """Close aiosqlite DB connection.
+
+        Does NOT close ``_qdrant`` or ``_embedder`` — they are shared
+        services whose lifecycle is managed by the application context.
+        """
         if self._closed:
             return
         self._closed = True
-
-        if self._embed:
-            await self._embed.close()
-            self._embed = None
 
         if self._db:
             await self._db.close()
@@ -295,95 +247,7 @@ class NoteService:
 
         logger.info("NoteService closed")
 
-    # ------------------------------------------------------------------ #
-    # Vector migration
-    # ------------------------------------------------------------------ #
 
-    async def _maybe_migrate_vectors(self) -> bool:
-        """Drop note_vectors if its DDL doesn't match the current config.
-
-        Reads the actual ``CREATE VIRTUAL TABLE`` statement from
-        ``sqlite_master`` and checks for the correct embedding dimension
-        and ``distance_metric=cosine``.  Dropping is safe: ``initialize()``
-        will recreate the table and ``_reembed_all()`` will repopulate it.
-
-        Returns:
-            ``True`` if the table was dropped and must be recreated.
-        """
-        assert self._db is not None
-
-        cursor = await self._db.execute(
-            "SELECT sql FROM sqlite_master "
-            "WHERE type = 'table' AND name = 'note_vectors'"
-        )
-        row = await cursor.fetchone()
-        if row is None:
-            return False
-
-        current_ddl: str = (row["sql"] or "").lower()
-        want_dim = f"float[{self._config.embedding_dim}]"
-
-        dim_ok = want_dim in current_ddl
-        cosine_ok = "distance_metric=cosine" in current_ddl
-
-        if dim_ok and cosine_ok:
-            return False
-
-        reasons: list[str] = []
-        if not dim_ok:
-            reasons.append(
-                f"dim mismatch (want {self._config.embedding_dim})"
-            )
-        if not cosine_ok:
-            reasons.append("cosine metric missing")
-        logger.info(
-            "Rebuilding note_vectors: {}", ", ".join(reasons),
-        )
-
-        await self._db.execute("DROP TABLE IF EXISTS note_vectors")
-        await self._db.commit()
-        return True
-
-    async def _reembed_all(self) -> None:
-        """Re-embed every note entry into the vectors table.
-
-        Called after a migration that dropped the old vectors.
-        """
-        assert self._db is not None and self._embed is not None
-
-        cursor = await self._db.execute(
-            "SELECT id, title, content FROM note_entries"
-        )
-        entries = await cursor.fetchall()
-        if not entries:
-            return
-
-        logger.info(
-            "Re-embedding {} note entries after migration",
-            len(entries),
-        )
-        for entry in entries:
-            try:
-                text = f"{entry['title']}\n{entry['content']}"
-                vector = await self._embed.encode(text)
-                if len(vector) != self._config.embedding_dim:
-                    logger.warning(
-                        "Skipping note {} — embedding dim {} != expected {}",
-                        entry["id"], len(vector), self._config.embedding_dim,
-                    )
-                    continue
-                await self._db.execute(
-                    "INSERT INTO note_vectors (id, embedding) "
-                    "VALUES (?, ?)",
-                    (entry["id"], _serialize_f32(vector)),
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Failed to re-embed note {}: {}",
-                    entry["id"], exc,
-                )
-        await self._db.commit()
-        logger.info("Re-embedding complete")
 
     # ------------------------------------------------------------------ #
     # CRUD
@@ -430,26 +294,27 @@ class NoteService:
             ),
         )
 
-        # Vector embedding
-        if self._embed:
+        await self._db.commit()
+
+        # Qdrant vector embedding
+        if self._config.embedding_enabled:
             try:
-                text = f"{title}\n{content}"
-                vector = await self._embed.encode(text)
-                if len(vector) != self._config.embedding_dim:
-                    logger.warning(
-                        "Embedding dim mismatch: got {} expected {}",
-                        len(vector), self._config.embedding_dim,
-                    )
-                else:
-                    await self._db.execute(
-                        "INSERT INTO note_vectors (id, embedding) "
-                        "VALUES (?, ?)",
-                        (note_id, _serialize_f32(vector)),
-                    )
+                embed_text = f"{title}\n{content}"
+                vector = await self._embedder.encode(embed_text)
+                point = models.PointStruct(
+                    id=note_id,
+                    vector=vector,
+                    payload={
+                        "id": note_id,
+                        "title": title,
+                        "folder_path": folder_path,
+                        "tags": ",".join(tag_list) if tag_list else "",
+                        "updated_at": now,
+                    },
+                )
+                await self._qdrant.upsert(COLLECTION_NOTES, [point])
             except Exception as exc:
                 logger.warning("Failed to embed note {}: {}", note_id, exc)
-
-        await self._db.commit()
         logger.debug("Note created id={} title={!r}", note_id, title)
 
         return NoteEntry(
@@ -534,32 +399,31 @@ class NoteService:
             ),
         )
 
-        # Re-embed
-        if self._embed and (title is not None or content is not None):
+        await self._db.commit()
+
+        # Re-embed in Qdrant
+        if self._config.embedding_enabled and (
+            title is not None or content is not None
+        ):
             try:
-                text = f"{new_title}\n{new_content}"
-                vector = await self._embed.encode(text)
-                if len(vector) != self._config.embedding_dim:
-                    logger.warning(
-                        "Embedding dim mismatch: got {} expected {}",
-                        len(vector), self._config.embedding_dim,
-                    )
-                else:
-                    await self._db.execute(
-                        "DELETE FROM note_vectors WHERE id = ?",
-                        (note_id,),
-                    )
-                    await self._db.execute(
-                        "INSERT INTO note_vectors (id, embedding) "
-                        "VALUES (?, ?)",
-                        (note_id, _serialize_f32(vector)),
-                    )
+                embed_text = f"{new_title}\n{new_content}"
+                vector = await self._embedder.encode(embed_text)
+                point = models.PointStruct(
+                    id=note_id,
+                    vector=vector,
+                    payload={
+                        "id": note_id,
+                        "title": new_title,
+                        "folder_path": new_folder,
+                        "tags": ",".join(new_tags) if new_tags else "",
+                        "updated_at": now,
+                    },
+                )
+                await self._qdrant.upsert(COLLECTION_NOTES, [point])
             except Exception as exc:
                 logger.warning(
                     "Failed to re-embed note {}: {}", note_id, exc,
                 )
-
-        await self._db.commit()
         logger.debug("Note updated id={}", note_id)
 
         return NoteEntry(
@@ -586,11 +450,15 @@ class NoteService:
         cur = await self._db.execute(
             "DELETE FROM note_entries WHERE id = ?", (note_id,),
         )
-        if self._config.embedding_enabled:
-            await self._db.execute(
-                "DELETE FROM note_vectors WHERE id = ?", (note_id,),
-            )
         await self._db.commit()
+
+        if self._config.embedding_enabled:
+            try:
+                await self._qdrant.delete(COLLECTION_NOTES, ids=[note_id])
+            except Exception as exc:
+                logger.warning(
+                    "Failed to delete note vector {}: {}", note_id, exc,
+                )
         deleted = cur.rowcount > 0
         if deleted:
             logger.debug("Note deleted id={}", note_id)
@@ -658,26 +526,19 @@ class NoteService:
         except Exception as exc:
             logger.debug("FTS5 search failed (non-fatal): {}", exc)
 
-        # 2. Semantic search (if embedding enabled)
-        if self._embed and len(results) < limit:
+        # 2. Semantic search via Qdrant (if embedding enabled)
+        if self._config.embedding_enabled and len(results) < limit:
             try:
-                query_vec = await self._embed.encode(query)
-                sem_cur = await self._db.execute(
-                    """
-                    SELECT v.id, v.distance
-                    FROM note_vectors v
-                    WHERE v.embedding MATCH ?
-                    ORDER BY v.distance
-                    LIMIT ?
-                    """,
-                    (_serialize_f32(query_vec), limit * 2),
+                query_vec = await self._embedder.encode(query)
+                hits = await self._qdrant.search(
+                    COLLECTION_NOTES, query_vec, k=limit * 2,
                 )
-                for row in await sem_cur.fetchall():
-                    similarity = 1.0 - row["distance"]
+                for hit in hits:
+                    similarity = hit.score
                     if similarity < self._config.semantic_threshold:
                         continue
-                    nid = row["id"]
-                    if nid in seen:
+                    nid = str(hit.payload.get("id", "")) if hit.payload else ""
+                    if not nid or nid in seen:
                         continue
                     entry_cur = await self._db.execute(
                         "SELECT * FROM note_entries WHERE id = ?",
@@ -813,18 +674,29 @@ class NoteService:
                 folder_path, affected,
             )
         else:
+            # Collect IDs for Qdrant cleanup before deleting from SQLite
             if self._config.embedding_enabled:
-                await self._db.execute(
-                    "DELETE FROM note_vectors WHERE id IN "
-                    "(SELECT id FROM note_entries WHERE folder_path = ?)",
+                id_cur = await self._db.execute(
+                    "SELECT id FROM note_entries WHERE folder_path = ?",
                     (folder_path,),
                 )
+                del_ids = [r["id"] for r in await id_cur.fetchall()]
             cur = await self._db.execute(
                 "DELETE FROM note_entries WHERE folder_path = ?",
                 (folder_path,),
             )
             await self._db.commit()
             affected = cur.rowcount
+            # Clean up Qdrant vectors for deleted notes
+            if self._config.embedding_enabled and del_ids:
+                try:
+                    await self._qdrant.delete(
+                        COLLECTION_NOTES, ids=del_ids,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to delete folder vectors: {}", exc,
+                    )
             logger.info(
                 "Folder {!r} deleted — {} notes removed",
                 folder_path, affected,

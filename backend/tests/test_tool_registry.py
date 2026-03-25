@@ -641,3 +641,43 @@ class TestThreadSafety:
         assert len(set(names)) == 5
         for i in range(5):
             assert f"multi_tool_{i}" in names
+
+
+# ---------------------------------------------------------------------------
+# Tool RAG
+# ---------------------------------------------------------------------------
+
+
+class TestToolRAG:
+
+    @pytest.mark.asyncio
+    async def test_embed_tools(
+        self, event_bus, mock_qdrant_service, mock_embedding_client,
+    ):
+        """embed_tools inserts tool vectors into Qdrant."""
+        tool = _make_tool("info", description="Gets system info")
+        plugin = MockPlugin(tools=[tool], name="system_info")
+        pm = MockPluginManager({"system_info": plugin})
+        registry = ToolRegistry(
+            pm, event_bus,
+            qdrant_service=mock_qdrant_service,
+            embedding_client=mock_embedding_client,
+        )
+        await registry.refresh()
+
+        mock_qdrant_service.ensure_collection.assert_awaited()
+        mock_embedding_client.encode_batch.assert_awaited()
+        mock_qdrant_service.upsert.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_get_relevant_tools_fallback(self, event_bus):
+        """Falls back when no Qdrant available."""
+        tool = _make_tool("action")
+        plugin = MockPlugin(tools=[tool], name="plug")
+        pm = MockPluginManager({"plug": plugin})
+        registry = ToolRegistry(pm, event_bus)
+        await registry.refresh()
+
+        result = await registry.get_relevant_tools("test query")
+        available = await registry.get_available_tools()
+        assert result == available

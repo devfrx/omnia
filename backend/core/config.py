@@ -164,6 +164,10 @@ class LLMConfig(BaseSettings):
     """-1 = offload all layers to GPU. Set to 0 to force CPU."""
     keep_alive: str = "5m"
     """How long Ollama keeps the model loaded in memory after a request."""
+    tool_rag_enabled: bool = True
+    """Use semantic search to select relevant tools instead of sending all tool definitions."""
+    tool_rag_top_k: int = 15
+    """Number of most relevant tools retrieved via Tool RAG per LLM request."""
     # -- Context compression options --
     context_compression_enabled: bool = True
     """Enable automatic context compression when approaching context window limit."""
@@ -466,18 +470,6 @@ class MemoryConfig(BaseSettings):
     enabled: bool = False
     """Enable the Memory Service. False by default (opt-in)."""
 
-    db_path: str = "data/memory.db"
-    """Path to the dedicated memory SQLite file (separate from alice.db)."""
-
-    embedding_model: str = "text-embedding-mxbai-embed-large-v1"
-    """Embedding model name for LM Studio/Ollama /v1/embeddings."""
-
-    embedding_dim: int = 1024
-    """Vector dimensions of the chosen embedding model."""
-
-    embedding_fallback: bool = True
-    """If True, fall back to fastembed (CPU) when LLM embedding API is unavailable."""
-
     top_k: int = 5
     """Max memories retrieved for context injection."""
 
@@ -497,6 +489,33 @@ class MemoryConfig(BaseSettings):
     """Remove memories older than N days based on creation date (0 = disabled)."""
 
 
+class QdrantConfig(BaseSettings):
+    """Qdrant vector store configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="ALICE_QDRANT__")
+
+    mode: Literal["embedded", "server"] = "embedded"
+    """'embedded' runs in-process (no Docker needed); 'server' connects to a Qdrant instance."""
+
+    path: str = "data/qdrant"
+    """[embedded only] Directory where Qdrant stores data on disk."""
+
+    host: str = "localhost"
+    """[server only] Qdrant server hostname."""
+
+    port: int = 6333
+    """[server only] Qdrant server gRPC port."""
+
+    embedding_model: str = "text-embedding-bge-small-en-v1.5"
+    """Embedding model name for LM Studio/Ollama /v1/embeddings."""
+
+    embedding_dim: int = 1024
+    """Vector dimensions of the chosen embedding model."""
+
+    embedding_fallback: bool = True
+    """If True, fall back to fastembed (CPU) when LLM embedding API is unavailable."""
+
+
 class NotesConfig(BaseSettings):
     """Note system (Obsidian-like vault) configuration."""
 
@@ -509,16 +528,7 @@ class NotesConfig(BaseSettings):
     """Path to the dedicated notes SQLite file (separate from alice.db)."""
 
     embedding_enabled: bool = True
-    """Enable semantic search via sqlite-vec embeddings."""
-
-    embedding_model: str = "text-embedding-mxbai-embed-large-v1"
-    """Embedding model name for LM Studio/Ollama /v1/embeddings."""
-
-    embedding_dim: int = 1024
-    """Vector dimensions of the chosen embedding model."""
-
-    embedding_fallback: bool = True
-    """Fall back to fastembed (CPU) when LLM API is unavailable."""
+    """Enable semantic search via Qdrant vector embeddings."""
 
     max_content_chars_llm: int = 8000
     """Max note content chars included in LLM tool responses."""
@@ -773,6 +783,7 @@ class AliceConfig(BaseSettings):
     )
     file_search: FileSearchConfig = Field(default_factory=FileSearchConfig)
     news: NewsConfig = Field(default_factory=NewsConfig)
+    qdrant: QdrantConfig = Field(default_factory=QdrantConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     notes: NotesConfig = Field(default_factory=NotesConfig)
     mcp: McpConfig = Field(default_factory=McpConfig)
@@ -814,13 +825,20 @@ class AliceConfig(BaseSettings):
                     abs_path = PROJECT_ROOT / db_path
                     db_data["url"] = f"{prefix}:///{abs_path}"
 
-        # -- memory / notes db_path (resolve relative to PROJECT_ROOT) --
-        for section_key in ("memory", "notes"):
-            section_data = data.get(section_key)
-            if isinstance(section_data, dict):
-                raw_db = section_data.get("db_path", "")
-                if raw_db and not Path(raw_db).is_absolute():
-                    section_data["db_path"] = str(PROJECT_ROOT / raw_db)
+        # -- notes db_path (resolve relative to PROJECT_ROOT) --
+        notes_data = data.get("notes")
+        if isinstance(notes_data, dict):
+            raw_db = notes_data.get("db_path", "")
+            if raw_db and not Path(raw_db).is_absolute():
+                notes_data["db_path"] = str(PROJECT_ROOT / raw_db)
+
+        # -- qdrant path (resolve relative to PROJECT_ROOT) --
+        qdrant_data = data.get("qdrant")
+        if isinstance(qdrant_data, dict):
+            raw_path = qdrant_data.get("path", "")
+            if raw_path and not Path(raw_path).is_absolute():
+                qdrant_data["path"] = str(PROJECT_ROOT / raw_path)
+
         # -- MCP server commands: expand ~ and env vars in args --
         mcp_data = data.get("mcp", {})
         if isinstance(mcp_data, dict):
