@@ -30,7 +30,10 @@ def _get_store(request: Request):
 async def get_chart(chart_id: str, request: Request) -> JSONResponse:
     """Restituisce il JSON completo della ChartSpec (inclusa echarts_option)."""
     store = _get_store(request)
-    spec = await store.load(chart_id)
+    try:
+        spec = await store.load(chart_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if spec is None:
         raise HTTPException(status_code=404, detail=f"Grafico non trovato: {chart_id}")
     return JSONResponse(content=spec.model_dump(mode="json"))
@@ -58,7 +61,10 @@ async def list_charts(
 async def delete_chart(chart_id: str, request: Request) -> dict[str, str]:
     """Elimina il file JSON del grafico dal disco."""
     store = _get_store(request)
-    deleted = await store.delete(chart_id)
+    try:
+        deleted = await store.delete(chart_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Grafico non trovato: {chart_id}")
     return {"status": "deleted", "chart_id": chart_id}

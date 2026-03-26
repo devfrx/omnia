@@ -312,7 +312,7 @@ function preview(content: string): string {
     border: 1px solid var(--glass-border);
     border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), 0 0 1px rgba(255, 255, 255, 0.04);
+    /* box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), 0 0 1px rgba(255, 255, 255, 0.04); */
     flex-shrink: 0;
 }
 
@@ -365,7 +365,7 @@ function preview(content: string): string {
 }
 
 .browser__new-btn:hover {
-    background: rgba(232, 220, 200, 0.15);
+    background: var(--accent-medium);
 }
 
 .browser__view-toggle {
@@ -639,7 +639,7 @@ function preview(content: string): string {
 .browser__tag--active {
     background: var(--accent-dim);
     color: var(--accent);
-    border-color: rgba(232, 220, 200, 0.2);
+    border-color: var(--accent-border);
 }
 
 /* ------------------------------------------------- Note list */
@@ -790,8 +790,8 @@ function preview(content: string): string {
     padding: var(--space-2) var(--space-3);
     color: var(--error, #f87171);
     font-size: var(--text-xs);
-    background: rgba(248, 113, 113, 0.08);
-    border-top: 1px solid rgba(248, 113, 113, 0.2);
+    background: var(--danger-faint);
+    border-top: 1px solid var(--danger-hover);
 }
 
 /* ------------------------------------------------- Reduced motion */

@@ -121,12 +121,12 @@ onMounted(() => {
 }
 
 .plugin-badge--active {
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
+    background: var(--success-light);
+    color: var(--success);
 }
 
 .plugin-badge--inactive {
-    background: rgba(149, 165, 166, 0.15);
+    background: var(--surface-hover);
     color: var(--text-muted);
 }
 
@@ -186,9 +186,9 @@ onMounted(() => {
 }
 
 .settings-toggle--on {
-    background: rgba(201, 168, 76, 0.2);
+    background: var(--accent-medium);
     border-color: var(--accent);
-    box-shadow: 0 0 8px rgba(201, 168, 76, 0.1);
+    box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .settings-toggle__thumb {

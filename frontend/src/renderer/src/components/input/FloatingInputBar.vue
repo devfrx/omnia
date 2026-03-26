@@ -455,7 +455,7 @@ defineExpose({
     box-shadow:
         var(--shadow-floating),
         0 0 24px var(--accent-glow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        inset 0 1px 0 var(--white-subtle);
 }
 
 /* Expanded input */
@@ -465,8 +465,8 @@ defineExpose({
     background: var(--glass-bg);
     box-shadow:
         var(--shadow-floating),
-        0 0 32px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        var(--shadow-lg),
+        inset 0 1px 0 var(--white-subtle);
 }
 
 /* Active states pill */
@@ -903,7 +903,7 @@ defineExpose({
     color: var(--text-primary);
     border-color: var(--border-hover);
     background: var(--surface-3);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    box-shadow: 0 0 0 1px var(--white-subtle);
 }
 
 /* Divider */

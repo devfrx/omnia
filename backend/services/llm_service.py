@@ -132,6 +132,8 @@ class LLMService:
         # Cache for "auto" model resolution: (resolved_id, resolved_at_monotonic)
         self._auto_model_cache: tuple[str, float] | None = None
         self._auto_model_ttl: float = 300.0  # seconds
+        # None = unknown, True = supported, False = not supported
+        self._supports_stream_options: bool | None = None
 
     # ------------------------------------------------------------------
     # Model resolution helpers
@@ -185,14 +187,14 @@ class LLMService:
 
         # Try LM Studio v1 API first, then OAI-compat fallback.
         resolved: str | None = None
-        endpoints = (
-            [f"{self._config.base_url}/api/v1/models", "models"]
+        v1_url = (
+            f"{self._config.base_url}/api/v1/models"
             if not self._is_ollama
-            else [f"{self._config.base_url}/api/tags", "models"]
+            else f"{self._config.base_url}/api/tags"
         )
         try:
             resp = await self._client.get(
-                endpoints[0],
+                v1_url,
                 timeout=httpx.Timeout(connect=3.0, read=5.0, write=3.0, pool=3.0),
             )
             resp.raise_for_status()
@@ -1004,139 +1006,165 @@ class LLMService:
             pool=10.0,
         )
 
-        async with self._client.stream(
-            "POST", url, json=payload, timeout=_stream_timeout,
-        ) as resp:
-            resp.raise_for_status()
+        # Skip stream_options if a previous request already confirmed
+        # the server doesn't support it.
+        if self._supports_stream_options is False:
+            payload.pop("stream_options", None)
 
-            async for raw_line in resp.aiter_lines():
-                # Check for cancellation before processing each SSE line.
-                if cancel_event and cancel_event.is_set():
-                    logger.debug("LLM stream cancelled by cancel_event")
-                    break
-
-                line = raw_line.strip()
-                if not line or not line.startswith("data: "):
-                    continue
-
-                data_str = line[len("data: "):]
-
-                if data_str == "[DONE]":
-                    # Flush thinking parser leftovers.
-                    if think_parser:
-                        for kind, text in think_parser.flush():
-                            yield {
-                                "type": "thinking" if kind == "thinking" else "token",
-                                "content": text,
-                            }
-                    # Flush any accumulated tool calls before finishing.
-                    for _idx in sorted(tool_calls_acc):
-                        tc = tool_calls_acc[_idx]
-                        if not tc["name"]:
-                            logger.warning(
-                                "Discarding incomplete tool call: {}", tc,
-                            )
-                            continue
-                        if not tc["id"]:
-                            tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
-                        yield {
-                            "type": "tool_call",
-                            "id": tc["id"],
-                            "function": {
-                                "name": tc["name"],
-                                "arguments": tc["arguments"],
-                            },
-                        }
-                    if _last_usage:
-                        yield {
-                            "type": "usage",
-                            "input_tokens": _last_usage.get("prompt_tokens", 0),
-                            "output_tokens": _last_usage.get("completion_tokens", 0),
-                        }
-                    yield {
-                        "type": "done",
-                        "finish_reason": last_finish_reason or "stop",
-                    }
-                    return
-
-                try:
-                    chunk = json.loads(data_str)
-                except json.JSONDecodeError:
-                    logger.warning("Skipping malformed SSE chunk: {}", data_str)
-                    continue
-
-                # Capture usage data from final chunk (if present).
-                if chunk.get("usage"):
-                    _last_usage = chunk["usage"]
-
-                # Detect error responses from the LLM server (e.g.
-                # Jinja template rendering failures in LM Studio).
-                if "error" in chunk:
-                    err = chunk["error"]
-                    err_msg = (
-                        err.get("message", str(err))
-                        if isinstance(err, dict)
-                        else str(err)
+        for _attempt in range(2):
+            async with self._client.stream(
+                "POST", url, json=payload, timeout=_stream_timeout,
+            ) as resp:
+                if resp.status_code == 400 and _attempt == 0 and "stream_options" in payload:
+                    body = (await resp.aread()).decode(errors="replace")
+                    logger.warning(
+                        "OAI-compat 400 with stream_options — retrying without it. "
+                        "Server said: {}",
+                        body[:300],
                     )
+                    self._supports_stream_options = False
+                    payload.pop("stream_options")
+                    continue  # exit async with, try again without stream_options
+                if resp.status_code >= 400:
+                    body = (await resp.aread()).decode(errors="replace")
                     logger.error(
-                        "LLM server error during streaming: {}", err_msg,
+                        "OAI-compat chat error {} — {}",
+                        resp.status_code, body[:500],
                     )
-                    yield {"type": "error", "content": err_msg}
-                    yield {
-                        "type": "done",
-                        "finish_reason": "error",
-                    }
-                    return
+                    resp.raise_for_status()
+                if self._supports_stream_options is None and "stream_options" in payload:
+                    self._supports_stream_options = True
 
-                choices = chunk.get("choices")
-                if not choices:
-                    continue
+                async for raw_line in resp.aiter_lines():
+                    # Check for cancellation before processing each SSE line.
+                    if cancel_event and cancel_event.is_set():
+                        logger.debug("LLM stream cancelled by cancel_event")
+                        break
 
-                chunk_finish = choices[0].get("finish_reason")
-                if chunk_finish:
-                    last_finish_reason = chunk_finish
+                    line = raw_line.strip()
+                    if not line or not line.startswith("data: "):
+                        continue
 
-                delta = choices[0].get("delta", {})
+                    data_str = line[len("data: "):]
 
-                # --- explicit reasoning_content (LM Studio / Ollama extension) ---
-                reasoning = delta.get("reasoning_content")
-                if reasoning:
-                    if not saw_reasoning_content:
-                        saw_reasoning_content = True
-                        think_parser = None
-                    yield {"type": "thinking", "content": reasoning}
-
-                # --- content token (may contain inline <think> tags) ---
-                content = delta.get("content")
-                if content:
-                    if think_parser:
-                        for kind, text in think_parser.feed(content):
+                    if data_str == "[DONE]":
+                        # Flush thinking parser leftovers.
+                        if think_parser:
+                            for kind, text in think_parser.flush():
+                                yield {
+                                    "type": "thinking" if kind == "thinking" else "token",
+                                    "content": text,
+                                }
+                        # Flush any accumulated tool calls before finishing.
+                        for _idx in sorted(tool_calls_acc):
+                            tc = tool_calls_acc[_idx]
+                            if not tc["name"]:
+                                logger.warning(
+                                    "Discarding incomplete tool call: {}", tc,
+                                )
+                                continue
+                            if not tc["id"]:
+                                tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
                             yield {
-                                "type": "thinking" if kind == "thinking" else "token",
-                                "content": text,
+                                "type": "tool_call",
+                                "id": tc["id"],
+                                "function": {
+                                    "name": tc["name"],
+                                    "arguments": tc["arguments"],
+                                },
                             }
-                    else:
-                        yield {"type": "token", "content": content}
-
-                # --- tool calls (streamed in pieces) ---
-                for tc_delta in delta.get("tool_calls", []):
-                    idx: int = tc_delta.get("index", 0)
-
-                    if idx not in tool_calls_acc:
-                        tool_calls_acc[idx] = {
-                            "id": "",
-                            "name": "",
-                            "arguments": "",
+                        if _last_usage:
+                            yield {
+                                "type": "usage",
+                                "input_tokens": _last_usage.get("prompt_tokens", 0),
+                                "output_tokens": _last_usage.get("completion_tokens", 0),
+                            }
+                        yield {
+                            "type": "done",
+                            "finish_reason": last_finish_reason or "stop",
                         }
+                        return
 
-                    if tc_delta.get("id"):
-                        tool_calls_acc[idx]["id"] = tc_delta["id"]
+                    try:
+                        chunk = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        logger.warning("Skipping malformed SSE chunk: {}", data_str)
+                        continue
 
-                    func = tc_delta.get("function", {})
-                    if func.get("name"):
-                        tool_calls_acc[idx]["name"] = func["name"]
-                    if func.get("arguments") is not None:
-                        tool_calls_acc[idx]["arguments"] += func["arguments"]
+                    # Capture usage data from final chunk (if present).
+                    if chunk.get("usage"):
+                        _last_usage = chunk["usage"]
+
+                    # Detect error responses from the LLM server (e.g.
+                    # Jinja template rendering failures in LM Studio).
+                    if "error" in chunk:
+                        err = chunk["error"]
+                        err_msg = (
+                            err.get("message", str(err))
+                            if isinstance(err, dict)
+                            else str(err)
+                        )
+                        logger.error(
+                            "LLM server error during streaming: {}", err_msg,
+                        )
+                        yield {"type": "error", "content": err_msg}
+                        yield {
+                            "type": "done",
+                            "finish_reason": "error",
+                        }
+                        return
+
+                    choices = chunk.get("choices")
+                    if not choices:
+                        continue
+
+                    chunk_finish = choices[0].get("finish_reason")
+                    if chunk_finish:
+                        last_finish_reason = chunk_finish
+
+                    delta = choices[0].get("delta", {})
+
+                    # --- explicit reasoning_content (LM Studio / Ollama extension) ---
+                    reasoning = delta.get("reasoning_content")
+                    if reasoning:
+                        if not saw_reasoning_content:
+                            saw_reasoning_content = True
+                            think_parser = None
+                        yield {"type": "thinking", "content": reasoning}
+
+                    # --- content token (may contain inline <think> tags) ---
+                    content = delta.get("content")
+                    if content:
+                        if think_parser:
+                            for kind, text in think_parser.feed(content):
+                                yield {
+                                    "type": "thinking" if kind == "thinking" else "token",
+                                    "content": text,
+                                }
+                        else:
+                            yield {"type": "token", "content": content}
+
+                    # --- tool calls (streamed in pieces) ---
+                    for tc_delta in delta.get("tool_calls", []):
+                        idx: int = tc_delta.get("index", 0)
+
+                        if idx not in tool_calls_acc:
+                            tool_calls_acc[idx] = {
+                                "id": "",
+                                "name": "",
+                                "arguments": "",
+                            }
+
+                        if tc_delta.get("id"):
+                            tool_calls_acc[idx]["id"] = tc_delta["id"]
+
+                        func = tc_delta.get("function", {})
+                        if func.get("name"):
+                            tool_calls_acc[idx]["name"] = func["name"]
+                        if func.get("arguments") is not None:
+                            tool_calls_acc[idx]["arguments"] += func["arguments"]
+
+            break  # success — no retry needed
 
         # Stream ended without [DONE] — either cancelled or connection closed.
         cancelled = cancel_event is not None and cancel_event.is_set()

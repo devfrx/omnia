@@ -81,7 +81,7 @@ def test_plugins_enabled_list(config: AliceConfig) -> None:
     assert "pc_automation" in enabled
     assert "memory" in enabled
     assert "mcp_client" in enabled
-    assert len(enabled) == 17
+    assert len(enabled) == 18
 
 
 def test_stt_defaults(config: AliceConfig) -> None:

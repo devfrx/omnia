@@ -105,13 +105,13 @@ function close(result: boolean): void {
   state.customProps = {}
   state.width = null
   state.closeOnOverlay = true
+  state.previousFocus = null
 
   resolve?.(result)
 
   // Restore focus after the leave transition (~150ms) finishes
   setTimeout(() => {
     previousFocus?.focus?.()
-    state.previousFocus = null
   }, 160)
 }
 

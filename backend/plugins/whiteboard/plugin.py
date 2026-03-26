@@ -371,6 +371,9 @@ class WhiteboardPlugin(BasePlugin):
         if not self.ctx.config.whiteboard.enabled:
             return ToolResult.error("Plugin whiteboard non abilitato.")
 
+        if self._store is None:
+            return ToolResult.error("Whiteboard store not initialized.")
+
         handlers = {
             "create": self._create,
             "get": self._get,

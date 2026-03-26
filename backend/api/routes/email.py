@@ -13,6 +13,15 @@ _IMAP_ERRORS = (ConnectionError, OSError)
 router = APIRouter(prefix="/email", tags=["email"])
 
 
+def _validate_uid(uid: str) -> None:
+    """Validate that an IMAP UID is a non-empty numeric string."""
+    if not uid or not uid.isdigit():
+        raise HTTPException(
+            status_code=400,
+            detail=f"UID non valido: {uid!r} (deve essere numerico)",
+        )
+
+
 def _get_email_service(request: Request):
     """Recupera EmailService dal contesto; 503 se non disponibile."""
     ctx = request.app.state.context
@@ -67,6 +76,7 @@ async def get_email(
     uid: str, request: Request, folder: str = "INBOX",
 ) -> dict[str, Any]:
     """Restituisce headers + body plain-text di una email."""
+    _validate_uid(uid)
     svc = _get_email_service(request)
     try:
         mail = await svc.fetch_email(uid, folder=folder)
@@ -122,6 +132,7 @@ async def mark_read(
     read: bool = True,
 ) -> dict[str, bool]:
     """Imposta o rimuove il flag \\Seen."""
+    _validate_uid(uid)
     svc = _get_email_service(request)
     try:
         ok = await svc.mark_read(uid, folder=folder, read=read)
@@ -145,6 +156,7 @@ async def archive_email(
     uid: str, request: Request, from_folder: str = "INBOX",
 ) -> dict[str, bool]:
     """Sposta l'email nella cartella di archivio configurata."""
+    _validate_uid(uid)
     svc = _get_email_service(request)
     try:
         ok = await svc.archive(uid, from_folder=from_folder)

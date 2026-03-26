@@ -7,6 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from sqlmodel import select
 
 from backend.db.models import Conversation
@@ -38,7 +39,12 @@ def _get_store(request: Request):
 async def get_whiteboard(board_id: str, request: Request) -> JSONResponse:
     """Restituisce il JSON completo della WhiteboardSpec (incluso snapshot)."""
     store = _get_store(request)
-    spec = await store.load(board_id)
+    try:
+        spec = await store.load(board_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail=str(exc)
+        ) from exc
     if spec is None:
         raise HTTPException(
             status_code=404, detail=f"Lavagna non trovata: {board_id}"
@@ -108,7 +114,12 @@ async def delete_whiteboard(
 ) -> dict[str, str]:
     """Elimina il file JSON della lavagna dal disco."""
     store = _get_store(request)
-    deleted = await store.delete(board_id)
+    try:
+        deleted = await store.delete(board_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail=str(exc)
+        ) from exc
     if not deleted:
         raise HTTPException(
             status_code=404, detail=f"Lavagna non trovata: {board_id}"
@@ -116,27 +127,27 @@ async def delete_whiteboard(
     return {"status": "deleted", "board_id": board_id}
 
 
+class UpdateSnapshotRequest(BaseModel):
+    """Payload for updating a whiteboard snapshot."""
+
+    snapshot: dict
+
+
 @router.patch(
     "/{board_id}/snapshot",
     summary="Aggiorna lo snapshot tldraw di una lavagna",
 )
 async def update_snapshot(
-    board_id: str, request: Request
+    board_id: str, body: UpdateSnapshotRequest, request: Request,
 ) -> dict[str, Any]:
     """Aggiorna lo snapshot tldraw (chiamato dal frontend dopo editing)."""
     store = _get_store(request)
     try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
-    snapshot = body.get("snapshot")
-    if not isinstance(snapshot, dict):
+        updated = await store.update_snapshot(board_id, body.snapshot)
+    except ValueError as exc:
         raise HTTPException(
-            status_code=422,
-            detail="Body deve contenere un campo 'snapshot' di tipo oggetto.",
-        )
-
-    updated = await store.update_snapshot(board_id, snapshot)
+            status_code=400, detail=str(exc)
+        ) from exc
     if not updated:
         raise HTTPException(
             status_code=404, detail=f"Lavagna non trovata: {board_id}"

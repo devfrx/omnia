@@ -358,8 +358,8 @@ const ringOuterStyle = computed(() => ({
   min-width: 240px;
   max-width: 340px;
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-1) 0;

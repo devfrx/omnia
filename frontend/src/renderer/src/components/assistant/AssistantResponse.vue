@@ -7,7 +7,7 @@
  * thinking/reasoning section, tool call/execution timeline, and streaming.
  */
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
-import { renderMarkdown } from '../../utils/markdownRenderer'
+import { renderMarkdown } from '../../composables/useMarkdown'
 import AliceSpinner from '../../components/ui/AliceSpinner.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import ToolCallSection from '../chat/ToolCallSection.vue'
@@ -299,7 +299,7 @@ onMounted(() => {
     padding: var(--space-1) var(--space-3);
     font-size: var(--text-xs);
     color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--white-faint);
     border-radius: var(--radius-md);
     max-width: 80%;
     white-space: nowrap;
@@ -579,7 +579,7 @@ onMounted(() => {
 
 .tool-activity :deep(.tool-section__args),
 .tool-activity :deep(.tool-exec__result-full) {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--white-faint);
     border-color: var(--border);
 }
 

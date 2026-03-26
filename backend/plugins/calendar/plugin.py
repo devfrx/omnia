@@ -501,8 +501,14 @@ class CalendarPlugin(BasePlugin):
         if not title:
             raise ValueError("title is required and cannot be empty")
 
-        start_dt = self._parse_to_utc(args["start"])
-        end_dt = self._parse_to_utc(args["end"])
+        start_raw = args.get("start")
+        if not start_raw:
+            raise ValueError("'start' is required")
+        end_raw = args.get("end")
+        if not end_raw:
+            raise ValueError("'end' is required")
+        start_dt = self._parse_to_utc(start_raw)
+        end_dt = self._parse_to_utc(end_raw)
 
         if end_dt <= start_dt:
             raise ValueError("end must be after start")
@@ -627,11 +633,14 @@ class CalendarPlugin(BasePlugin):
         Returns:
             A confirmation string.
         """
+        raw_id = args.get("event_id", "")
+        if not raw_id:
+            raise ValueError("'event_id' is required")
         try:
-            event_id = uuid.UUID(args["event_id"])
+            event_id = uuid.UUID(raw_id)
         except ValueError:
             raise ValueError(
-                f"Invalid event_id: '{args['event_id']}' "
+                f"Invalid event_id: '{raw_id}' "
                 "is not a valid UUID"
             )
 
@@ -683,11 +692,14 @@ class CalendarPlugin(BasePlugin):
         Returns:
             A confirmation string.
         """
+        raw_id = args.get("event_id", "")
+        if not raw_id:
+            raise ValueError("'event_id' is required")
         try:
-            event_id = uuid.UUID(args["event_id"])
+            event_id = uuid.UUID(raw_id)
         except ValueError:
             raise ValueError(
-                f"Invalid event_id: '{args['event_id']}' "
+                f"Invalid event_id: '{raw_id}' "
                 "is not a valid UUID"
             )
 

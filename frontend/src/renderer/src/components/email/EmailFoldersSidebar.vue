@@ -88,7 +88,7 @@ const secondaryFolders = computed(() =>
   border-radius: 14px;
   overflow-y: auto;
   overflow-x: hidden;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), 0 0 1px rgba(255, 255, 255, 0.04);
+  /* box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), 0 0 1px rgba(255, 255, 255, 0.04); */
 }
 
 .folders__header {

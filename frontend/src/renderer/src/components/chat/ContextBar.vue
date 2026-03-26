@@ -262,7 +262,7 @@ const hasBreakdown = computed(() => breakdownRows.value.length > 0)
     border-radius: var(--radius-md);
     padding: 8px 10px;
     min-width: 192px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-dropdown);
     pointer-events: none;
     font-size: 11px;
     line-height: 1.4;

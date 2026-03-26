@@ -362,19 +362,19 @@ onMounted(() => {
 }
 
 .mem-btn--secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--white-light);
     color: var(--text-primary, #e8e4de);
 }
 
 .mem-btn--danger {
-    background: rgba(220, 80, 80, 0.1);
-    border-color: rgba(220, 80, 80, 0.25);
-    color: rgba(220, 80, 80, 0.9);
+    background: var(--danger-light);
+    border-color: var(--danger-border);
+    color: var(--danger);
 }
 
 .mem-btn--danger:hover:not(:disabled) {
-    background: rgba(220, 80, 80, 0.18);
-    border-color: rgba(220, 80, 80, 0.4);
+    background: var(--danger-hover);
+    border-color: var(--danger-strong);
 }
 
 .mem-btn--text {
@@ -402,10 +402,10 @@ onMounted(() => {
 }
 
 .mem-error {
-    color: rgba(220, 80, 80, 0.9);
+    color: var(--danger);
     padding: var(--space-2, 8px);
     font-size: var(--text-sm, 0.8125rem);
-    background: rgba(220, 80, 80, 0.06);
+    background: var(--danger-faint);
     border-radius: var(--radius-sm, 4px);
     margin-bottom: var(--space-2, 8px);
 }
@@ -460,7 +460,7 @@ onMounted(() => {
 }
 
 .mem-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(201, 168, 76, 0.25);
+    background: var(--accent-strong);
 }
 
 /* ── Memory entry card ─────────────────────────────────────── */
@@ -503,17 +503,17 @@ onMounted(() => {
 }
 
 .mem-badge--scope {
-    background: rgba(201, 168, 76, 0.12);
+    background: var(--accent-light);
     color: var(--accent, #c9a84c);
 }
 
 .mem-badge--category {
-    background: rgba(100, 160, 220, 0.12);
-    color: rgba(100, 160, 220, 0.9);
+    background: var(--accent-dim);
+    color: var(--text-secondary);
 }
 
 .mem-badge--source {
-    background: rgba(149, 165, 166, 0.12);
+    background: var(--surface-hover);
     color: var(--text-muted, #5c584f);
 }
 
@@ -548,8 +548,8 @@ onMounted(() => {
 }
 
 .mem-entry__delete:hover {
-    background: rgba(220, 80, 80, 0.12);
-    color: rgba(220, 80, 80, 0.9);
+    background: var(--danger-light);
+    color: var(--danger);
 }
 
 /* ── Confirm dialog overlay ────────────────────────────────── */
@@ -560,9 +560,9 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: var(--black-heavy);
+    backdrop-filter: blur(var(--blur-sm));
+    -webkit-backdrop-filter: blur(var(--blur-sm));
 }
 
 .mem-confirm {
@@ -572,7 +572,7 @@ onMounted(() => {
     padding: var(--space-6, 24px);
     max-width: 400px;
     width: 90%;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-floating);
 }
 
 .mem-confirm__message {

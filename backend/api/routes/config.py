@@ -115,6 +115,8 @@ async def get_config(request: Request) -> dict[str, Any]:
             "context_compression_enabled": cfg.llm.context_compression_enabled,
             "context_compression_threshold": cfg.llm.context_compression_threshold,
             "context_compression_reserve": cfg.llm.context_compression_reserve,
+            "tool_rag_enabled": cfg.llm.tool_rag_enabled,
+            "tool_rag_top_k": cfg.llm.tool_rag_top_k,
         },
         "stt": {
             "engine": cfg.stt.engine,
@@ -268,6 +270,18 @@ async def update_config(request: Request) -> dict[str, Any]:
                     "context_compression_reserve must be between 512 and 8192",
                 )
             object.__setattr__(cfg.llm, "context_compression_reserve", res)
+        if "tool_rag_enabled" in llm_updates:
+            if not isinstance(llm_updates["tool_rag_enabled"], bool):
+                raise HTTPException(400, "tool_rag_enabled must be a boolean")
+            object.__setattr__(cfg.llm, "tool_rag_enabled", llm_updates["tool_rag_enabled"])
+        if "tool_rag_top_k" in llm_updates:
+            try:
+                trk = int(llm_updates["tool_rag_top_k"])
+            except (TypeError, ValueError):
+                raise HTTPException(400, "tool_rag_top_k must be an integer")
+            if not (1 <= trk <= 100):
+                raise HTTPException(400, "tool_rag_top_k must be between 1 and 100")
+            object.__setattr__(cfg.llm, "tool_rag_top_k", trk)
 
     if "ui" in body:
         ui_updates = body["ui"]

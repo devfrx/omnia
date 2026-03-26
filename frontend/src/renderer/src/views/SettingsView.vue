@@ -282,21 +282,19 @@ onUnmounted(() => {
 
 /* ── Layout ───────────────────────────────────────────────── */
 .sv {
-  position: relative;
   display: flex;
   height: calc(100% - 16px);
   margin: 8px;
+  gap: 16px;
   color: var(--text-primary);
   overflow: hidden;
 }
 
 /* ── Sidebar navigation ──────────────────────────────────── */
 .sv__nav {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  bottom: 12px;
+  flex-shrink: 0;
   width: 180px;
+  margin: 12px 0 12px 12px;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -308,7 +306,6 @@ onUnmounted(() => {
   border-radius: 16px;
   box-shadow: var(--shadow-floating);
   overflow-y: auto;
-  z-index: 1;
 }
 
 .sv__nav::-webkit-scrollbar {
@@ -382,11 +379,10 @@ onUnmounted(() => {
 .sv__content {
   flex: 1;
   overflow-y: auto;
-  /* 180px nav + 12px left-offset + 16px gap */
-  padding: var(--space-6) var(--space-8) var(--space-6) calc(180px + 12px + 16px);
+  padding: var(--space-6) var(--space-8);
   scroll-behavior: smooth;
   background: var(--bg-primary);
-  box-shadow: var(--shadow-floating);
+  border-radius: var(--radius-lg);
   box-sizing: border-box;
 }
 

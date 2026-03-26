@@ -295,27 +295,27 @@ onMounted(() => {
 }
 
 .mcp-badge--connected {
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
+    background: var(--success-light);
+    color: var(--success);
 }
 
 .mcp-badge--disconnected {
-    background: rgba(149, 165, 166, 0.15);
+    background: var(--surface-hover);
     color: var(--text-muted);
 }
 
 .mcp-badge--error {
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
+    background: var(--danger-light);
+    color: var(--danger);
 }
 
 .mcp-badge--not_loaded {
-    background: rgba(149, 165, 166, 0.15);
+    background: var(--surface-hover);
     color: var(--text-muted);
 }
 
 .mcp-badge--transport {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--white-light);
     color: var(--text-secondary);
     font-family: var(--font-mono, monospace);
     font-size: 0.6rem;
@@ -351,8 +351,8 @@ onMounted(() => {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #2ecc71;
-    box-shadow: 0 0 6px rgba(46, 204, 113, 0.4);
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success-glow);
 }
 
 .mcp-btn {
@@ -371,9 +371,9 @@ onMounted(() => {
 }
 
 .mcp-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--white-medium);
     color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--border-hover);
 }
 
 .mcp-btn:disabled {
@@ -406,6 +406,6 @@ onMounted(() => {
 }
 
 .mcp-btn--refresh {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-hover);
 }
 </style>

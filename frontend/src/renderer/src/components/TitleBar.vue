@@ -190,7 +190,7 @@ onUnmounted(() => {
   font-family: var(--font-display);
   font-size: 10px;
   font-weight: var(--weight-semibold);
-  letter-spacing: 2.5px;
+  letter-spacing: 0px;
   color: var(--text-muted);
   opacity: 0.6;
   padding-right: var(--space-3);

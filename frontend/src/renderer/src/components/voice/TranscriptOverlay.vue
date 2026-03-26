@@ -102,8 +102,8 @@ function handleDismiss(): void {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   z-index: var(--z-sticky);

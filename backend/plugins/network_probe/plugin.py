@@ -346,7 +346,9 @@ class NetworkProbePlugin(BasePlugin):
         self, args: dict[str, Any], start: float
     ) -> ToolResult:
         """Validate host and execute ping."""
-        host: str = args["host"]
+        host = (args.get("host") or "").strip()
+        if not host:
+            return ToolResult.error("Missing required parameter: host")
         count: int = args.get("count", 4)
         await async_validate_host_local(host)
         result = await self._prober.ping_host(host, count)  # type: ignore[union-attr]
@@ -361,8 +363,10 @@ class NetworkProbePlugin(BasePlugin):
         self, args: dict[str, Any], start: float
     ) -> ToolResult:
         """Validate host and scan TCP ports."""
-        host: str = args["host"]
-        ports: list[int] = args["ports"]
+        host = (args.get("host") or "").strip()
+        if not host:
+            return ToolResult.error("Missing required parameter: host")
+        ports: list[int] = args.get("ports", [])
         cfg = self.ctx.config.network_probe
         timeout_s: float = args.get("timeout_s", cfg.port_scan_timeout_s)
 
@@ -395,9 +399,17 @@ class NetworkProbePlugin(BasePlugin):
         self, args: dict[str, Any], start: float
     ) -> ToolResult:
         """Validate host and check a specific service."""
-        host: str = args["host"]
-        port: int = args["port"]
-        protocol: str = args["protocol"]
+        host = (args.get("host") or "").strip()
+        if not host:
+            return ToolResult.error("Missing required parameter: host")
+        if "port" not in args:
+            return ToolResult.error("Missing required parameter: port")
+        port: int = int(args["port"])
+        protocol = (args.get("protocol") or "").strip()
+        if not protocol:
+            return ToolResult.error(
+                "Missing required parameter: protocol"
+            )
         await async_validate_host_local(host)
         result = await self._prober.check_service(host, port, protocol)  # type: ignore[union-attr]
         elapsed_ms = (time.perf_counter() - start) * 1000
@@ -443,7 +455,9 @@ class NetworkProbePlugin(BasePlugin):
         self, args: dict[str, Any], start: float
     ) -> ToolResult:
         """Validate host and run traceroute."""
-        host: str = args["host"]
+        host = (args.get("host") or "").strip()
+        if not host:
+            return ToolResult.error("Missing required parameter: host")
         max_hops: int = args.get("max_hops", 15)
         await async_validate_host_local(host)
         result = await self._prober.traceroute_host(host, max_hops)  # type: ignore[union-attr]
@@ -458,7 +472,9 @@ class NetworkProbePlugin(BasePlugin):
         self, args: dict[str, Any], start: float
     ) -> ToolResult:
         """Perform DNS forward or reverse lookup."""
-        query: str = args["query"]
+        query = (args.get("query") or "").strip()
+        if not query:
+            return ToolResult.error("Missing required parameter: query")
         result = await self._prober.resolve_hostname(query)  # type: ignore[union-attr]
         elapsed_ms = (time.perf_counter() - start) * 1000
         return ToolResult.ok(

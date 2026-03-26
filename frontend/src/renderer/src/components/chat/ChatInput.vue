@@ -384,8 +384,8 @@ defineExpose({
 }
 
 .ci:focus-within {
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: var(--shadow-elevated), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-elevated), 0 0 0 1px var(--white-subtle);
 }
 
 /* ============================================================
@@ -410,13 +410,13 @@ defineExpose({
   height: 56px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-hover);
+  box-shadow: var(--shadow-md);
   transition: border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .ci__thumb:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--border-hover);
   transform: translateY(-1px);
 }
 
@@ -436,7 +436,7 @@ defineExpose({
   border-radius: var(--radius-full);
   background: var(--surface-4);
   border: 1px solid var(--border);
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -451,7 +451,7 @@ defineExpose({
 }
 
 .ci__thumb-rm:hover {
-  background: rgba(196, 92, 92, 0.85);
+  background: var(--danger);
   transform: scale(1.1);
 }
 
@@ -583,7 +583,7 @@ defineExpose({
   color: var(--text-primary);
   border-color: var(--border-hover);
   background: var(--surface-3);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px var(--white-subtle);
 }
 
 /* Divider */
@@ -628,7 +628,7 @@ defineExpose({
 .ci__body:focus-within {
   border-color: var(--border);
   background: var(--surface-0);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px var(--white-subtle);
 }
 
 /* Drag-over: subtle glow on the input border */
@@ -744,11 +744,11 @@ defineExpose({
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 
   50% {
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 8px var(--white-light);
   }
 }
 

@@ -454,3 +454,117 @@ textarea:focus:not(:focus-visible) {
   width: 100%;
   height: 100%;
 }
+
+/*
+ * ═══════════════════════════════════════════════════════════════
+ *  AL\CE — Light Theme: Bianco Panna / Crema
+ *  Inverse of the dark theme: dark warm ink on warm cream paper.
+ *  Applied via  data-theme="light"  on <html>.
+ * ═══════════════════════════════════════════════════════════════
+ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* ── Backgrounds ─────────────────────────────────────────── */
+  --bg-primary: #FAFAF7;                       /* Warm near-white base */
+  --bg-secondary: #F3EFE9;                     /* Panna panel / sidebar */
+  --bg-tertiary: #EAE4DB;                      /* Elevated surfaces (cards, tooltips) */
+  --bg-input: rgba(60, 45, 30, 0.04);          /* Input fields */
+  --bg-tool: rgba(224, 215, 202, 0.85);        /* Tool/code bubble background */
+
+  /* ── Surface Elevation System ────────────────────────────── */
+  --surface-0: #FAFAF7;
+  --surface-1: #F3EFE9;
+  --surface-2: #EAE4DB;
+  --surface-3: #DFD7CB;
+  --surface-4: #D2C9BA;
+  --surface-hover: rgba(60, 45, 30, 0.04);
+  --surface-active: rgba(60, 45, 30, 0.06);
+  --surface-selected: rgba(60, 45, 30, 0.09);
+  --surface-inset: rgba(0, 0, 0, 0.05);
+
+  /* ── Typography ──────────────────────────────────────────── */
+  --text-primary: #1E1B18;                     /* Dark warm ink */
+  --text-secondary: #5C5349;                   /* Medium warm brown */
+  --text-muted: #9E9890;                       /* Warm gray */
+
+  /* ── Accent — Warm Espresso / Cedar ─────────────────────── */
+  --accent: #7A5540;                           /* Espresso cedar — inverts cream-on-dark */
+  --accent-hover: #613D2A;                     /* Deeper on hover */
+  --accent-dim: rgba(122, 85, 64, 0.10);
+  --accent-border: rgba(122, 85, 64, 0.25);
+  --accent-glow: rgba(122, 85, 64, 0.08);
+  --accent-faint: rgba(122, 85, 64, 0.04);
+  --accent-subtle: rgba(122, 85, 64, 0.06);
+  --accent-light: rgba(122, 85, 64, 0.10);
+  --accent-medium: rgba(122, 85, 64, 0.18);
+  --accent-strong: rgba(122, 85, 64, 0.25);
+  --accent-vivid: rgba(122, 85, 64, 0.38);
+  --accent-text-glow: 0 0 20px rgba(122, 85, 64, 0.12);
+
+  /* ── Dark Overlays (replaces white-on-dark overlays) ─────── */
+  --white-faint: rgba(60, 45, 30, 0.02);
+  --white-subtle: rgba(60, 45, 30, 0.04);
+  --white-light: rgba(60, 45, 30, 0.06);
+  --white-medium: rgba(60, 45, 30, 0.08);
+  --white-strong: rgba(60, 45, 30, 0.12);
+  --white-heavy: rgba(60, 45, 30, 0.16);
+  --white-dim: rgba(60, 45, 30, 0.24);
+
+  /* ── Softened Black Overlays ─────────────────────────────── */
+  --black-light: rgba(0, 0, 0, 0.06);
+  --black-medium: rgba(0, 0, 0, 0.14);
+  --black-heavy: rgba(0, 0, 0, 0.38);
+  --black-overlay: rgba(0, 0, 0, 0.58);
+
+  /* ── Borders ─────────────────────────────────────────────── */
+  --border: rgba(60, 45, 30, 0.12);
+  --border-hover: rgba(60, 45, 30, 0.22);
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 12px rgba(0, 0, 0, 0.04);
+  --shadow-dropdown: 0 4px 14px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(60, 45, 30, 0.06);
+  --shadow-sidebar: 1px 0 6px rgba(0, 0, 0, 0.05);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-accent: 0 0 0 1px var(--accent-border), 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-focus: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--focus-ring-color);
+  --shadow-elevated: 0 6px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(60, 45, 30, 0.05);
+  --shadow-floating: 0 10px 30px rgba(0, 0, 0, 0.09), 0 0 0 1px rgba(60, 45, 30, 0.06);
+
+  /* ── Glass Effects ───────────────────────────────────────── */
+  --glass-bg: rgba(250, 250, 247, 0.88);
+  --glass-bg-light: rgba(250, 250, 247, 0.65);
+  --glass-border: rgba(60, 45, 30, 0.12);
+  --glass-border-hover: rgba(60, 45, 30, 0.22);
+
+  /* ── Gradient Accents ────────────────────────────────────── */
+  --gradient-gold: linear-gradient(135deg, rgba(122, 85, 64, 0.06), rgba(122, 85, 64, 0.02));
+  --gradient-gold-strong: linear-gradient(135deg, rgba(122, 85, 64, 0.12), rgba(122, 85, 64, 0.04));
+  --gradient-crimson: linear-gradient(135deg, rgba(184, 92, 92, 0.08), rgba(184, 92, 92, 0.02));
+  --gradient-emerald: linear-gradient(135deg, rgba(92, 154, 110, 0.08), rgba(92, 154, 110, 0.02));
+  --gradient-surface: linear-gradient(180deg, rgba(0, 0, 0, 0.01) 0%, transparent 100%);
+
+  /* ── State Colors ────────────────────────────────────────── */
+  --thinking: var(--accent);
+  --thinking-dim: var(--accent-dim);
+  --thinking-border: var(--accent-border);
+
+  /* ── Focus Ring ──────────────────────────────────────────── */
+  --focus-ring-color: rgba(122, 85, 64, 0.50);
+  --focus-ring-shadow:
+    0 0 0 var(--focus-ring-offset) var(--surface-0),
+    0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--focus-ring-color);
+
+  /* ── Legacy compat ───────────────────────────────────────── */
+  --color-background-mute: #EAE4DB;
+}
+
+/* ── Light theme: selection highlight ───────────────────────── */
+[data-theme="light"] ::selection {
+  background: rgba(122, 85, 64, 0.18);
+  color: var(--text-primary);
+}

@@ -181,7 +181,7 @@ function openUrl(url: string): void {
   font-size: 11px;
   font-weight: 700;
   background: var(--accent, #e94560);
-  color: #fff;
+  color: var(--bg-primary);
 }
 
 .search-panel__close {
@@ -333,7 +333,7 @@ function openUrl(url: string): void {
 
 .search-panel__btn--accent {
   background: var(--accent, #e94560);
-  color: #fff;
+  color: var(--bg-primary);
 }
 
 .search-panel__scrape-error {

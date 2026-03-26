@@ -6,7 +6,7 @@
  * without breaking the "AL\CE speaks" illusion. Slides from the left.
  */
 import { ref, watch, nextTick } from 'vue'
-import { renderMarkdown } from '../../utils/markdownRenderer'
+import { renderMarkdown } from '../../composables/useMarkdown'
 import MessageVersionNav from '../chat/MessageVersionNav.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import type { ChatMessage } from '../../types/chat'
@@ -138,7 +138,7 @@ function truncateContent(content: string, maxLen = 200): string {
     right: 0;
     bottom: 0;
     z-index: 900;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--black-medium);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
 }

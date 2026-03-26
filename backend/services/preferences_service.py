@@ -28,6 +28,8 @@ PERSISTABLE_LLM_KEYS: frozenset[str] = frozenset({
     "context_compression_enabled",
     "context_compression_threshold",
     "context_compression_reserve",
+    "tool_rag_enabled",
+    "tool_rag_top_k",
 })
 
 

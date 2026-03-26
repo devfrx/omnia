@@ -728,7 +728,7 @@ function fmtMs(v: number | null): string {
                             <div v-if="c.process_name" class="net-probe__row">
                                 <span class="net-probe__label-sm">Process</span>
                                 <span>{{ c.process_name }}<span v-if="c.pid" class="net-probe__port-svc"> (PID {{ c.pid
-                                        }})</span></span>
+                                }})</span></span>
                             </div>
                         </div>
                     </template>
@@ -750,7 +750,7 @@ function fmtMs(v: number | null): string {
     display: flex;
     flex-direction: column;
     background: var(--bg-primary, #161616);
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 1px solid var(--border);
     z-index: var(--z-dropdown);
     color: var(--text-primary, #EDEDE9);
     font-size: 13px;
@@ -763,7 +763,7 @@ function fmtMs(v: number | null): string {
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--border);
 }
 
 .net-probe__title {
@@ -795,7 +795,7 @@ function fmtMs(v: number | null): string {
 }
 
 .net-probe__close:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--white-medium);
 }
 
 /* ── Tabs ───────────────────────────────────────────────────────────── */
@@ -804,7 +804,7 @@ function fmtMs(v: number | null): string {
     display: flex;
     gap: 0;
     padding: 0 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--border);
 }
 
 .net-probe__tab {
@@ -868,7 +868,7 @@ function fmtMs(v: number | null): string {
     box-sizing: border-box;
     padding: 7px 10px;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
     background: var(--surface-2, #232323);
     color: var(--text-primary, #EDEDE9);
     font-size: 13px;
@@ -893,7 +893,7 @@ function fmtMs(v: number | null): string {
 .net-probe__select {
     padding: 7px 8px;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
     background: var(--surface-2, #232323);
     color: var(--text-primary, #EDEDE9);
     font-size: 12px;
@@ -916,7 +916,7 @@ function fmtMs(v: number | null): string {
     gap: 6px;
     padding: 7px 14px;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
     background: var(--surface-3, #2A2A2A);
     color: var(--text-primary, #EDEDE9);
     font-size: 12px;
@@ -961,7 +961,7 @@ function fmtMs(v: number | null): string {
 .net-probe__card {
     padding: 10px;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
     background: var(--surface-1, #1C1C1C);
     display: flex;
     flex-direction: column;
@@ -1090,7 +1090,7 @@ function fmtMs(v: number | null): string {
 
 .net-probe__divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--white-medium);
     margin: 6px 0;
 }
 

@@ -59,7 +59,7 @@ const audioBarWidth = computed(() => Math.min(props.audioLevel * 100, 100))
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     overflow: hidden;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 1px 0 var(--white-faint);
     transition:
         border-color 300ms var(--ease-smooth),
         box-shadow 300ms var(--ease-smooth);
@@ -69,7 +69,7 @@ const audioBarWidth = computed(() => Math.min(props.audioLevel * 100, 100))
 .assistant-transcript--listening {
     border-color: var(--listening-border);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.03),
+        inset 0 1px 0 var(--white-faint),
         0 0 14px rgba(224, 96, 96, 0.06);
 }
 
@@ -77,7 +77,7 @@ const audioBarWidth = computed(() => Math.min(props.audioLevel * 100, 100))
 .assistant-transcript--processing {
     border-color: var(--thinking-border);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.03),
+        inset 0 1px 0 var(--white-faint),
         0 0 14px var(--accent-glow);
 }
 

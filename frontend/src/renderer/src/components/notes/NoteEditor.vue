@@ -315,7 +315,7 @@ function handleEditorKeydown(e: KeyboardEvent): void {
     background: var(--surface-1);
     border: 1px solid var(--glass-border);
     border-radius: 14px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    /* box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15); */
 }
 
 .editor__empty {
@@ -401,13 +401,13 @@ function handleEditorKeydown(e: KeyboardEvent): void {
 .editor__btn--active {
     background: var(--accent-dim);
     color: var(--accent);
-    border-color: rgba(232, 220, 200, 0.2);
+    border-color: var(--accent-border);
 }
 
 .editor__btn--danger:hover {
-    background: rgba(184, 92, 92, 0.15);
+    background: var(--danger-hover);
     color: var(--danger);
-    border-color: rgba(184, 92, 92, 0.3);
+    border-color: var(--danger-border);
 }
 
 /* ------------------------------------------------- Folder selector */
@@ -462,7 +462,7 @@ function handleEditorKeydown(e: KeyboardEvent): void {
     background: var(--surface-1);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-md);
     padding: var(--space-1) 0;
 }
 

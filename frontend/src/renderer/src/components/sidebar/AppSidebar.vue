@@ -210,7 +210,7 @@ async function onOpenFile(id: string): Promise<void> {
   position: fixed;
   inset: 0;
   top: var(--titlebar-height, 38px);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--black-light);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   z-index: calc(var(--z-overlay) - 2);

@@ -315,9 +315,11 @@ class EmailPlugin(BasePlugin):
 
     async def get_connection_status(self) -> ConnectionStatus:
         """Return CONNECTED if email service is available."""
-        if not self.ctx.config.email.enabled:
+        if self._ctx is None:
             return ConnectionStatus.DISCONNECTED
-        if self._ctx and self._ctx.email_service is not None:
+        if not self._ctx.config.email.enabled:
+            return ConnectionStatus.DISCONNECTED
+        if self._ctx.email_service is not None:
             return ConnectionStatus.CONNECTED
         return ConnectionStatus.ERROR
 

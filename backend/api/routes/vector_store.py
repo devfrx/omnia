@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from loguru import logger
 
 from backend.core.context import AppContext
@@ -44,7 +44,11 @@ async def get_stats(request: Request) -> dict[str, Any]:
                 "points_count": count,
                 "vectors_size": dim,
             })
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "Failed to get stats for collection '{}': {}",
+                coll_name, exc,
+            )
             collections_info.append({
                 "name": coll_name,
                 "points_count": 0,
@@ -69,11 +73,11 @@ async def reembed_tools(request: Request) -> dict[str, str]:
     ctx = _get_ctx(request)
 
     if not ctx.tool_registry:
-        return {"status": "error", "message": "Tool registry not available"}
+        raise HTTPException(503, "Tool registry not available")
 
     try:
         await ctx.tool_registry.embed_tools()
         return {"status": "ok"}
     except Exception as exc:
         logger.error("Re-embed tools failed: {}", exc)
-        return {"status": "error", "message": str(exc)}
+        raise HTTPException(500, "Re-embedding failed")

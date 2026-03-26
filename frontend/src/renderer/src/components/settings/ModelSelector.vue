@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--white-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
@@ -346,23 +346,23 @@ onBeforeUnmount(() => {
 }
 
 .ms__trigger:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--white-light);
   border-color: var(--border-hover);
   color: var(--text-primary);
 }
 
 .ms__trigger--open {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-medium);
   border-color: var(--accent-border);
   color: var(--text-primary);
 }
 
 .ms__trigger--embedding {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-faint);
 }
 
 .ms__trigger--embedding:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--white-light);
 }
 
 .ms__warn-icon {
@@ -413,15 +413,12 @@ onBeforeUnmount(() => {
   left: 0;
   min-width: 340px;
   max-width: min(440px, calc(100vw - 32px));
-  background: rgba(28, 28, 28, 1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-2);
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+  border: 1px solid var(--border-hover);
   border-radius: var(--radius-md);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-floating), inset 0 1px 0 var(--white-subtle);
   z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;
@@ -578,7 +575,7 @@ onBeforeUnmount(() => {
 
 .ms__section-dot--on {
   background: var(--success);
-  box-shadow: 0 0 4px var(--success-glow);
+  /* box-shadow: 0 0 4px var(--success-glow); */
 }
 
 .ms__section-dot--off {
@@ -606,7 +603,7 @@ onBeforeUnmount(() => {
 }
 
 .ms__item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--white-subtle);
 }
 
 .ms__item--loaded {
@@ -614,7 +611,7 @@ onBeforeUnmount(() => {
 }
 
 .ms__item--loaded:hover {
-  background: rgba(92, 154, 110, 0.06);
+  background: var(--success-light);
 }
 
 .ms__item--busy {
@@ -641,8 +638,8 @@ onBeforeUnmount(() => {
   bottom: 4px;
   width: 2px;
   border-radius: 0 2px 2px 0;
-  background: var(--success);
-  box-shadow: 0 0 6px var(--success-glow);
+  /* background: var(--success); */
+  /* box-shadow: 0 0 6px var(--success-glow); */
 }
 
 /* ── Item top row (dot + name + action) ───────────────────────── */
@@ -662,7 +659,7 @@ onBeforeUnmount(() => {
 
 .ms__dot--on {
   background: var(--success);
-  box-shadow: 0 0 4px var(--success-glow);
+  /* box-shadow: 0 0 4px var(--success-glow); */
 }
 
 .ms__dot--off {
@@ -690,7 +687,7 @@ onBeforeUnmount(() => {
   padding: 0;
   margin-left: auto;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--white-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
@@ -699,7 +696,7 @@ onBeforeUnmount(() => {
 }
 
 .ms__action-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--white-medium);
   border-color: var(--accent-border);
   color: var(--accent);
 }
@@ -754,7 +751,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   width: 18px;
   height: 18px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-faint);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-muted);

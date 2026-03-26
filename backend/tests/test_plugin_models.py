@@ -299,7 +299,7 @@ class TestConstants:
         assert MAX_TOOL_DESCRIPTION_LENGTH == 1024
 
     def test_max_tool_result_length(self) -> None:
-        assert MAX_TOOL_RESULT_LENGTH == 4096
+        assert MAX_TOOL_RESULT_LENGTH == 15_000
 
     def test_plugin_api_version(self) -> None:
         assert PLUGIN_API_VERSION == "1.0.0"

@@ -1229,11 +1229,17 @@ async def ws_chat(websocket: WebSocket) -> None:
                     # still preparing its response).  Treat as cancel.
                     logger.debug("LLM stream task cancelled")
                     cancel_event.set()
-                except Exception:
+                except Exception as exc:
                     logger.exception("LLM streaming error")
                     finish_reason = "error"
+                    # Surface the server's error message to the user
+                    err_detail = "LLM error"
+                    if hasattr(exc, "response"):
+                        err_detail = (
+                            f"LLM returned {exc.response.status_code}"
+                        )
                     await websocket.send_json(
-                        {"type": "error", "content": "LLM error"},
+                        {"type": "error", "content": err_detail},
                     )
                     await websocket.send_json({
                         "type": "done",
@@ -2137,7 +2143,14 @@ async def update_conversation_title(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
 
-    new_title: str = str(body.get("title", "")).strip()
+    raw_title = body.get("title")
+    if raw_title is None:
+        raw_title = ""
+    if not isinstance(raw_title, str):
+        raise HTTPException(
+            status_code=400, detail="title must be a string",
+        )
+    new_title = raw_title.strip()
     if len(new_title) > 500:
         raise HTTPException(status_code=400, detail="Title too long (max 500 chars)")
 

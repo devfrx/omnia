@@ -87,7 +87,7 @@ const showStatus = computed(() => props.state !== 'idle')
     font-weight: var(--weight-medium);
     color: var(--text-secondary);
     pointer-events: auto;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
     transition:
         border-color 250ms var(--ease-smooth),
         color 250ms var(--ease-smooth),
@@ -97,19 +97,19 @@ const showStatus = computed(() => props.state !== 'idle')
 .status-capsule--listening {
     border-color: var(--listening-border);
     color: var(--listening);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 12px rgba(174, 65, 65, 0.12);
+    box-shadow: var(--shadow-md), 0 0 12px var(--listening-dim);
 }
 
 .status-capsule--thinking {
     border-color: var(--thinking-border);
     color: var(--thinking);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 12px rgba(232, 220, 200, 0.08);
+    box-shadow: var(--shadow-md), 0 0 12px var(--accent-glow);
 }
 
 .status-capsule--speaking {
     border-color: var(--speaking-border);
     color: var(--speaking);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 12px rgba(55, 103, 68, 0.12);
+    box-shadow: var(--shadow-md), 0 0 12px var(--speaking-dim);
 }
 
 .status-capsule--processing {
@@ -159,7 +159,7 @@ const showStatus = computed(() => props.state !== 'idle')
     font-size: var(--text-2xs);
     color: var(--accent);
     pointer-events: auto;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-sm);
     transition:
         border-color 200ms ease,
         box-shadow 200ms ease;

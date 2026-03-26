@@ -9,6 +9,7 @@ from dateutil import parser as dt_parser
 from dateutil.rrule import rrulestr
 from fastapi import APIRouter, HTTPException, Query, Request
 from loguru import logger
+from pydantic import BaseModel, Field, field_validator
 from sqlmodel import select
 from zoneinfo import ZoneInfo
 
@@ -267,59 +268,60 @@ def _parse_to_utc(value: str, tz: ZoneInfo) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-@router.post("/events")
-async def create_event(request: Request) -> dict:
-    """Create a new calendar event.
+# ---------------------------------------------------------------------------
+# Request models
+# ---------------------------------------------------------------------------
 
-    Body JSON: title, start_time, end_time,
-    optional description, reminder_minutes, recurrence_rule.
-    """
+
+class CreateEventRequest(BaseModel):
+    """Body for POST /calendar/events."""
+
+    title: str = Field(..., min_length=1, max_length=500)
+    start_time: str
+    end_time: str
+    description: str | None = None
+    reminder_minutes: int | None = Field(None, ge=1)
+    recurrence_rule: str | None = None
+
+
+class UpdateEventRequest(BaseModel):
+    """Body for PUT /calendar/events/{event_id}."""
+
+    title: str | None = Field(None, min_length=1, max_length=500)
+    start_time: str | None = None
+    end_time: str | None = None
+    description: str | None = None
+    reminder_minutes: int | None = Field(None, ge=1)
+    recurrence_rule: str | None = None
+
+
+@router.post("/events", status_code=201)
+async def create_event(
+    body: CreateEventRequest, request: Request,
+) -> dict:
+    """Create a new calendar event."""
     ctx: AppContext = request.app.state.context
     tz = _get_tz(ctx)
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
 
-    title = body.get("title")
-    if not title:
-        raise HTTPException(status_code=400, detail="title is required")
-
-    raw_start = body.get("start_time")
-    raw_end = body.get("end_time")
-    if not raw_start or not raw_end:
-        raise HTTPException(
-            status_code=400, detail="start_time and end_time are required",
-        )
-
-    start_utc = _parse_to_utc(raw_start, tz)
-    end_utc = _parse_to_utc(raw_end, tz)
+    start_utc = _parse_to_utc(body.start_time, tz)
+    end_utc = _parse_to_utc(body.end_time, tz)
     if end_utc <= start_utc:
         raise HTTPException(
             status_code=400, detail="end_time must be after start_time",
         )
 
-    reminder_minutes = body.get("reminder_minutes")
-    if reminder_minutes is not None:
-        if not isinstance(reminder_minutes, int) or reminder_minutes < 1:
-            raise HTTPException(
-                status_code=400,
-                detail="reminder_minutes must be a positive integer",
-            )
-
-    rrule = body.get("recurrence_rule")
-    if rrule:
-        rrule_err = validate_rrule(rrule)
+    if body.recurrence_rule:
+        rrule_err = validate_rrule(body.recurrence_rule)
         if rrule_err:
             raise HTTPException(status_code=400, detail=rrule_err)
 
     event = CalendarEvent(
-        title=title,
-        description=body.get("description"),
+        title=body.title,
+        description=body.description,
         start_time=start_utc,
         end_time=end_utc,
-        reminder_minutes=reminder_minutes,
-        recurrence_rule=rrule,
+        reminder_minutes=body.reminder_minutes,
+        recurrence_rule=body.recurrence_rule,
         created_by="user",
     )
 
@@ -340,16 +342,14 @@ async def create_event(request: Request) -> dict:
 
 
 @router.put("/events/{event_id}")
-async def update_event(request: Request, event_id: str) -> dict:
+async def update_event(
+    body: UpdateEventRequest, request: Request, event_id: str,
+) -> dict:
     """Update an existing calendar event by UUID."""
-    import uuid as _uuid  # noqa: N812 — local alias
+    import uuid as _uuid
 
     ctx: AppContext = request.app.state.context
     tz = _get_tz(ctx)
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
 
     try:
         eid = _uuid.UUID(event_id)
@@ -361,30 +361,24 @@ async def update_event(request: Request, event_id: str) -> dict:
         if event is None:
             raise HTTPException(status_code=404, detail="Event not found")
 
-        if "title" in body:
-            event.title = body["title"]
-        if "description" in body:
-            event.description = body["description"]
-        if "start_time" in body:
-            event.start_time = _parse_to_utc(body["start_time"], tz)
-        if "end_time" in body:
-            event.end_time = _parse_to_utc(body["end_time"], tz)
-        if "reminder_minutes" in body:
-            rm = body["reminder_minutes"]
-            if rm is not None:
-                if not isinstance(rm, int) or rm < 1:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="reminder_minutes must be a positive integer",
-                    )
-            event.reminder_minutes = rm
-        if "recurrence_rule" in body:
-            new_rrule = body["recurrence_rule"]
-            if new_rrule:
-                rrule_err = validate_rrule(new_rrule)
+        if body.title is not None:
+            event.title = body.title
+        if body.description is not None:
+            event.description = body.description
+        if body.start_time is not None:
+            event.start_time = _parse_to_utc(body.start_time, tz)
+        if body.end_time is not None:
+            event.end_time = _parse_to_utc(body.end_time, tz)
+        if body.reminder_minutes is not None:
+            event.reminder_minutes = body.reminder_minutes
+        if body.recurrence_rule is not None:
+            if body.recurrence_rule:
+                rrule_err = validate_rrule(body.recurrence_rule)
                 if rrule_err:
-                    raise HTTPException(status_code=400, detail=rrule_err)
-            event.recurrence_rule = new_rrule
+                    raise HTTPException(
+                        status_code=400, detail=rrule_err,
+                    )
+            event.recurrence_rule = body.recurrence_rule
 
         end = _ensure_utc(event.end_time)
         start = _ensure_utc(event.start_time)

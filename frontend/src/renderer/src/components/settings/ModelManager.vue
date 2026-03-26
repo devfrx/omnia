@@ -129,75 +129,77 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="model-manager">
-        <!-- ── Status Header ── -->
-        <div class="mm-header">
-            <div class="mm-header__title">
-                <h3>Gestione Modelli</h3>
-                <span class="mm-header__status"
-                    :class="settingsStore.lmStudioConnected ? 'mm-header__status--ok' : 'mm-header__status--err'">
-                    <span class="mm-header__dot" />
-                    {{ settingsStore.lmStudioConnected ? 'LM Studio connesso' : 'LM Studio disconnesso' }}
-                </span>
-            </div>
-            <div class="mm-header__stats">
-                <span class="mm-header__stat">
-                    <strong>{{ settingsStore.loadedModelCount }}</strong> caricati
-                </span>
-                <span class="mm-header__stat-sep">·</span>
-                <span class="mm-header__stat">
-                    <strong>{{ settingsStore.models.length }}</strong> disponibili
-                </span>
-            </div>
+    <section class="settings-section">
+        <!-- ── Header ── -->
+        <h3 class="settings-section__title">Gestione Modelli</h3>
+        <div class="mm-status-row">
+            <span class="mm-conn-badge"
+                :class="settingsStore.lmStudioConnected ? 'mm-conn-badge--ok' : 'mm-conn-badge--err'">
+                <span class="mm-conn-dot" />
+                {{ settingsStore.lmStudioConnected ? 'LM Studio connesso' : 'LM Studio disconnesso' }}
+            </span>
+            <span class="mm-stats">
+                <strong>{{ settingsStore.loadedModelCount }}</strong> caricati
+                <span class="mm-stats__sep">·</span>
+                <strong>{{ settingsStore.models.length }}</strong> disponibili
+            </span>
         </div>
 
         <!-- ── Error banner ── -->
         <div v-if="errorMessage" class="mm-error">
-            {{ errorMessage }}
+            <span>{{ errorMessage }}</span>
             <button class="mm-error__close" aria-label="Chiudi errore" @click="errorMessage = null">
                 <AppIcon name="x" :size="14" />
             </button>
         </div>
 
-        <!-- Global operation in progress -->
+        <!-- ── Operation banner ── -->
         <div v-if="settingsStore.isAnyOperationInProgress" class="mm-operation">
-            <div class="mm-operation__bar">
-                <div class="mm-operation__bar-fill" />
+            <div class="mm-operation__track">
+                <div class="mm-operation__fill" />
             </div>
-            <span class="mm-operation__text">{{ settingsStore.operationDescription }}</span>
+            <span>{{ settingsStore.operationDescription }}</span>
         </div>
 
-        <!-- ── Loading spinner ── -->
+        <!-- ── Loading ── -->
         <div v-if="settingsStore.isLoadingModels" class="mm-loading">
             <AliceSpinner size="sm" label="Caricamento lista modelli…" />
         </div>
 
-        <!-- ── Models List ── -->
-        <div v-else class="mm-models">
+        <!-- ── Models list ── -->
+        <div v-else class="mm-list">
             <div v-if="settingsStore.models.length === 0" class="mm-empty">
                 Nessun modello disponibile. Verifica la connessione a LM Studio.
             </div>
 
             <div v-for="model in settingsStore.models" :key="model.name" class="mm-model" :class="{
                 'mm-model--loaded': model.loaded,
-                'mm-model--loading': settingsStore.isModelLoading(model.name),
-                'mm-model--unloading': model.loaded_instances.some(i => settingsStore.isInstanceUnloading(i.id))
+                'mm-model--busy': settingsStore.isModelLoading(model.name)
+                    || model.loaded_instances.some(i => settingsStore.isInstanceUnloading(i.id))
             }">
-                <div class="mm-model__accent-bar" v-if="model.loaded" />
-                <div class="mm-model__header">
-                    <div class="mm-model__info">
-                        <span class="mm-model__load-dot"
-                            :class="model.loaded ? 'mm-model__load-dot--on' : 'mm-model__load-dot--off'" />
-                        <span class="mm-model__name">{{ model.display_name || model.name }}</span>
+                <!-- Name row -->
+                <div class="mm-model__name-row">
+                    <span class="mm-dot" :class="model.loaded ? 'mm-dot--on' : 'mm-dot--off'" />
+                    <span class="mm-model__name">{{ model.display_name || model.name }}</span>
+                    <div v-if="model.capabilities.vision || model.capabilities.thinking || model.capabilities.trained_for_tool_use"
+                        class="mm-model__caps">
+                        <span v-if="model.capabilities.vision" class="mm-cap" title="Vision">
+                            <AppIcon name="eye" :size="11" />
+                        </span>
+                        <span v-if="model.capabilities.thinking" class="mm-cap" title="Thinking">
+                            <AppIcon name="thinking-cap" :size="11" />
+                        </span>
+                        <span v-if="model.capabilities.trained_for_tool_use" class="mm-cap" title="Tool Use">
+                            <AppIcon name="tool" :size="11" />
+                        </span>
                     </div>
                     <div class="mm-model__actions">
-                        <button v-if="!model.loaded" class="mm-btn mm-btn--primary mm-btn--sm"
+                        <button v-if="!model.loaded" class="mm-btn mm-btn--load"
                             :disabled="settingsStore.isModelLoading(model.name) || settingsStore.isAnyOperationInProgress"
                             @click="openLoadDialog(model)">
                             {{ settingsStore.isModelLoading(model.name) ? 'Caricamento…' : 'Carica' }}
                         </button>
-                        <button v-for="inst in model.loaded_instances" :key="inst.id"
-                            class="mm-btn mm-btn--danger mm-btn--sm"
+                        <button v-for="inst in model.loaded_instances" :key="inst.id" class="mm-btn mm-btn--unload"
                             :disabled="settingsStore.isInstanceUnloading(inst.id) || settingsStore.isAnyOperationInProgress"
                             @click="handleUnload(inst.id)">
                             {{ settingsStore.isInstanceUnloading(inst.id) ? 'Scaricamento…' : 'Scarica' }}
@@ -205,47 +207,28 @@ onMounted(() => {
                     </div>
                 </div>
 
+                <!-- Meta row -->
                 <div class="mm-model__meta">
-                    <span class="mm-model__meta-item" title="Editore">{{ getPublisher(model.name) }}</span>
-                    <span v-if="model.architecture" class="mm-model__meta-item" title="Architettura">{{
-                        model.architecture }}</span>
-                    <span v-if="model.params_string" class="mm-model__meta-item mm-model__meta-item--accent">{{
-                        model.params_string }}</span>
-                    <span class="mm-model__meta-item">{{ formatSize(model.size) }}</span>
-                    <span v-if="model.quantization?.name" class="mm-model__meta-item">{{ model.quantization.name
-                    }}</span>
-                    <span v-if="model.format" class="mm-model__meta-item">{{ model.format.toUpperCase() }}</span>
-                    <span class="mm-model__meta-item">ctx {{ model.max_context_length.toLocaleString() }}</span>
-                </div>
-
-                <!-- Capabilities -->
-                <div v-if="model.capabilities.vision || model.capabilities.thinking || model.capabilities.trained_for_tool_use"
-                    class="mm-model__caps">
-                    <span v-if="model.capabilities.vision" class="mm-cap">
-                        <AppIcon name="eye" :size="12" />
-                        Vision
-                    </span>
-                    <span v-if="model.capabilities.thinking" class="mm-cap">
-                        <AppIcon name="thinking-cap" :size="12" />
-                        Thinking
-                    </span>
-                    <span v-if="model.capabilities.trained_for_tool_use" class="mm-cap">
-                        <AppIcon name="tool" :size="12" />
-                        Tool Use
-                    </span>
+                    <span>{{ getPublisher(model.name) }}</span>
+                    <span v-if="model.architecture">{{ model.architecture }}</span>
+                    <span v-if="model.params_string" class="mm-model__params">{{ model.params_string }}</span>
+                    <span>{{ formatSize(model.size) }}</span>
+                    <span v-if="model.quantization?.name">{{ model.quantization.name }}</span>
+                    <span v-if="model.format">{{ model.format.toUpperCase() }}</span>
+                    <span>ctx {{ model.max_context_length.toLocaleString() }}</span>
                 </div>
 
                 <!-- Loaded instances detail -->
                 <div v-if="model.loaded_instances.length > 0" class="mm-model__instances">
                     <div v-for="inst in model.loaded_instances" :key="inst.id" class="mm-instance">
                         <span class="mm-instance__id">{{ inst.id.slice(0, 12) }}…</span>
-                        <span class="mm-instance__detail">ctx {{ inst.config.context_length.toLocaleString() }}</span>
-                        <span v-if="inst.config.flash_attention" class="mm-instance__detail">
-                            <AppIcon name="lightning-flash" :size="14" />
-                            Flash Attn
+                        <span>ctx {{ inst.config.context_length.toLocaleString() }}</span>
+                        <span v-if="inst.config.flash_attention" class="mm-instance__cap">
+                            <AppIcon name="lightning-flash" :size="11" />Flash Attn
                         </span>
-                        <span v-if="inst.config.eval_batch_size" class="mm-instance__detail">batch {{
-                            inst.config.eval_batch_size }}</span>
+                        <span v-if="inst.config.eval_batch_size">
+                            batch {{ inst.config.eval_batch_size }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -257,7 +240,7 @@ onMounted(() => {
             <div class="mm-download__form">
                 <input v-model="downloadModelId" class="mm-input" type="text"
                     placeholder="Identificativo modello (es. ibm/granite-4-micro)" @keyup.enter="handleDownload" />
-                <input v-model="downloadQuantization" class="mm-input mm-input--small" type="text"
+                <input v-model="downloadQuantization" class="mm-input mm-input--narrow" type="text"
                     placeholder="Quantizzazione (opzionale)" />
                 <button class="mm-btn mm-btn--primary" :disabled="!downloadModelId.trim() || isDownloading"
                     @click="handleDownload">
@@ -268,21 +251,19 @@ onMounted(() => {
 
             <!-- Active downloads -->
             <div v-if="activeDownloadsList.length > 0" class="mm-download__active">
-                <div v-for="dl in activeDownloadsList" :key="dl.job_id" class="mm-dl-item">
-                    <div class="mm-dl-item__header">
-                        <span class="mm-dl-item__id">{{ dl.job_id }}</span>
-                        <span class="mm-dl-item__status" :class="`mm-dl-item__status--${dl.status}`">
-                            {{ dl.status }}
-                        </span>
+                <div v-for="dl in activeDownloadsList" :key="dl.job_id" class="mm-dl">
+                    <div class="mm-dl__header">
+                        <span class="mm-dl__id">{{ dl.job_id }}</span>
+                        <span class="mm-dl__status" :class="`mm-dl__status--${dl.status}`">{{ dl.status }}</span>
                     </div>
-                    <div class="mm-dl-item__bar-container">
-                        <div class="mm-dl-item__bar"
+                    <div class="mm-dl__track">
+                        <div class="mm-dl__fill"
                             :style="{ width: downloadProgress(dl.downloaded_bytes, dl.total_size_bytes) + '%' }" />
                     </div>
-                    <span class="mm-dl-item__percent">
-                        {{ downloadProgress(dl.downloaded_bytes, dl.total_size_bytes) }}%
-                    </span>
-                    <div class="mm-dl-item__details">
+                    <div class="mm-dl__footer">
+                        <span class="mm-dl__pct">
+                            {{ downloadProgress(dl.downloaded_bytes, dl.total_size_bytes) }}%
+                        </span>
                         <span v-if="dl.downloaded_bytes != null && dl.total_size_bytes">
                             {{ formatSize(dl.downloaded_bytes) }} / {{ formatSize(dl.total_size_bytes) }}
                         </span>
@@ -304,7 +285,7 @@ onMounted(() => {
 
                         <label class="mm-dialog__label">
                             Lunghezza contesto
-                            <span class="mm-dialog__label-value">{{ loadContextLength.toLocaleString() }}</span>
+                            <span class="mm-dialog__label-val">{{ loadContextLength.toLocaleString() }}</span>
                         </label>
                         <input v-model.number="loadContextLength" type="range" class="mm-dialog__slider" :min="512"
                             :max="loadDialogModel.max_context_length" :step="256" />
@@ -337,90 +318,73 @@ onMounted(() => {
                 </div>
             </Transition>
         </Teleport>
-    </div>
+    </section>
 </template>
 
 <style scoped>
-.model-manager {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-}
-
-/* ── Header ── */
-.mm-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-}
-
-.mm-header__title {
+/* ── Section header ── */
+.mm-status-row {
     display: flex;
     align-items: center;
     gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
 }
 
-.mm-header__title h3 {
-    margin: 0;
-    font-size: var(--text-lg);
-    color: var(--text-primary);
-}
-
-.mm-header__status {
+.mm-conn-badge {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1-5);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     padding: var(--space-0-5) var(--space-2);
     border-radius: var(--radius-sm);
 }
 
-.mm-header__status--ok {
+.mm-conn-badge--ok {
     color: var(--success);
     background: var(--success-light);
 }
 
-.mm-header__status--err {
+.mm-conn-badge--err {
     color: var(--danger);
-    background: var(--danger-hover);
+    background: var(--danger-faint);
+    border: 1px solid var(--danger-border);
 }
 
-.mm-header__dot {
-    width: 6px;
-    height: 6px;
+.mm-conn-dot {
+    width: 5px;
+    height: 5px;
     border-radius: var(--radius-full);
     background: currentColor;
 }
 
-.mm-header__stats {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1-5);
-    color: var(--text-secondary);
-    font-size: var(--text-base);
-}
-
-.mm-header__stat strong {
-    color: var(--text-primary);
-}
-
-.mm-header__stat-sep {
+.mm-stats {
+    font-size: var(--text-xs);
     color: var(--text-muted);
 }
 
-/* ── Error ── */
+.mm-stats strong {
+    color: var(--text-secondary);
+}
+
+.mm-stats__sep {
+    margin: 0 var(--space-1);
+    opacity: 0.5;
+}
+
+/* ── Error banner ── */
 .mm-error {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-2-5) 14px;
-    background: var(--danger-hover);
-    border: 1px solid var(--danger);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--danger-faint);
+    border: 1px solid var(--danger-border);
     border-radius: var(--radius-sm);
     color: var(--danger);
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-3);
 }
 
 .mm-error__close {
@@ -428,232 +392,222 @@ onMounted(() => {
     border: none;
     color: var(--danger);
     cursor: pointer;
-    font-size: var(--text-md);
-    padding: 0 var(--space-1);
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: var(--opacity-medium);
+    transition: opacity var(--transition-fast);
 }
 
-/* ── Loading ── */
-.mm-loading {
+.mm-error__close:hover {
+    opacity: 1;
+}
+
+/* ── Operation banner ── */
+.mm-operation {
     display: flex;
     align-items: center;
-    gap: var(--space-2-5);
-    padding: var(--space-6);
-    color: var(--text-secondary);
-    font-size: var(--text-base);
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: var(--accent-faint);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--accent);
+    margin-bottom: var(--space-3);
+}
+
+.mm-operation__track {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+
+.mm-operation__fill {
+    height: 100%;
+    width: 40%;
+    background: var(--accent);
+    border-radius: var(--radius-pill);
+    animation: mmOpProgress 1.2s ease-in-out infinite;
+}
+
+@keyframes mmOpProgress {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(350%);
+    }
+}
+
+/* ── Loading / empty ── */
+.mm-loading {
+    display: flex;
     justify-content: center;
+    padding: var(--space-8);
 }
 
 .mm-empty {
-    padding: var(--space-6);
+    padding: var(--space-5);
     text-align: center;
     color: var(--text-muted);
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
 }
 
-/* ── Models List ── */
-.mm-models {
+/* ── Model list ── */
+.mm-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-1-5);
+    margin-bottom: var(--space-5);
 }
 
+/* ── Model item ── */
 .mm-model {
-    position: relative;
-    background: var(--bg-tertiary);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1-5);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-0);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: var(--space-3) var(--space-4);
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
+    transition: border-color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .mm-model:hover {
     border-color: var(--border-hover);
 }
 
-.mm-model--active {
-    border-color: var(--accent-border);
-}
-
 .mm-model--loaded {
-    background: linear-gradient(135deg, var(--bg-tertiary), var(--success-faint));
-    border-radius: 2px var(--radius-md) var(--radius-md) 2px;
+    /* background: var(--success-faint); */
+    /* border-color: var(--success-border); */
+    /* border-left: 2px solid var(--success); */
 }
 
-.mm-model--loading {
-    animation: mmLoadPulse 1.8s ease-in-out infinite;
-    border-color: var(--accent-border);
-}
-
-@keyframes mmLoadPulse {
-
-    0%,
-    100% {
-        box-shadow: 0 0 0 0 transparent;
-    }
-
-    50% {
-        box-shadow: 0 0 12px var(--accent-glow);
-    }
-}
-
-.mm-model--unloading {
+.mm-model--busy {
     opacity: var(--opacity-soft);
-    animation: mmUnloadFade 1s ease-in-out infinite alternate;
 }
 
-@keyframes mmUnloadFade {
-    from {
-        opacity: 0.6;
-    }
-
-    to {
-        opacity: 0.35;
-    }
-}
-
-.mm-model__accent-bar {
-    position: absolute;
-    left: 0;
-    top: 4px;
-    bottom: 4px;
-    width: 3px;
-    border-radius: 0 2px 2px 0;
-    background: var(--success);
-    box-shadow: 0 0 6px var(--success-glow);
-}
-
-.mm-model__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-}
-
-.mm-model__info {
+/* ── Name row ── */
+.mm-model__name-row {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    min-width: 0;
+    flex-wrap: wrap;
 }
 
-.mm-model__load-dot {
-    width: 8px;
-    height: 8px;
+.mm-dot {
+    width: 7px;
+    height: 7px;
     border-radius: var(--radius-full);
     flex-shrink: 0;
 }
 
-.mm-model__load-dot--on {
+.mm-dot--on {
     background: var(--success);
-    box-shadow: 0 0 6px var(--success-glow);
+    box-shadow: 0 0 5px var(--success-glow);
 }
 
-.mm-model__load-dot--off {
-    background: var(--text-muted);
+.mm-dot--off {
+    background: var(--border-hover);
 }
 
 .mm-model__name {
-    font-size: var(--text-md);
+    font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
     color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.mm-model__active-badge {
-    font-size: var(--text-2xs);
-    font-weight: var(--weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--accent);
-    background: var(--accent-dim);
-    padding: var(--space-px) var(--space-1-5);
-    border-radius: var(--radius-sm);
-}
-
-.mm-model__actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1-5);
-    flex-shrink: 0;
-}
-
-.mm-model__meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    margin-top: var(--space-2);
-}
-
-.mm-model__meta-item {
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-    background: var(--bg-secondary);
-    padding: var(--space-px) var(--space-1-5);
-    border-radius: var(--radius-sm);
-}
-
-.mm-model__meta-item--accent {
-    color: var(--accent);
-    font-weight: var(--weight-semibold);
-}
-
+/* ── Capability icons ── */
 .mm-model__caps {
     display: flex;
-    gap: var(--space-2);
-    margin-top: var(--space-1-5);
+    gap: 3px;
 }
 
 .mm-cap {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-0-5) var(--space-2);
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     background: var(--white-subtle);
     border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-    transition: all var(--transition-fast);
-}
-
-.mm-cap svg {
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: default;
     flex-shrink: 0;
-    opacity: var(--opacity-medium);
 }
 
-/* ── Loaded instances ── */
+/* ── Actions ── */
+.mm-model__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* ── Meta row ── */
+.mm-model__meta {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    font-size: var(--text-2xs);
+    color: var(--text-muted);
+    padding-left: calc(7px + var(--space-2));
+}
+
+.mm-model__meta>span {
+    padding-right: var(--space-1-5);
+}
+
+.mm-model__meta>span+span::before {
+    content: '·';
+    margin-right: var(--space-1-5);
+    opacity: 0.4;
+}
+
+.mm-model__params {
+    color: var(--accent);
+    font-weight: var(--weight-semibold);
+}
+
+/* ── Instances ── */
 .mm-model__instances {
-    margin-top: var(--space-2);
-    padding-top: var(--space-2);
+    padding-left: calc(7px + var(--space-2));
+    padding-top: var(--space-1-5);
     border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .mm-instance {
     display: flex;
     align-items: center;
-    gap: var(--space-2-5);
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-    padding: var(--space-0-5) 0;
+    gap: var(--space-2);
+    font-size: var(--text-2xs);
+    color: var(--text-muted);
 }
 
 .mm-instance__id {
     font-family: var(--font-mono);
-    color: var(--text-muted);
+    opacity: 0.7;
 }
 
-.mm-instance__detail {
+.mm-instance__cap {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-}
-
-.mm-instance__detail svg {
-    flex-shrink: 0;
     opacity: var(--opacity-medium);
 }
 
@@ -662,51 +616,16 @@ onMounted(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-1-5) 14px;
-    font-size: var(--text-base);
+    padding: var(--space-1) var(--space-2-5);
+    font-size: var(--text-xs);
     font-family: var(--font-sans);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     cursor: pointer;
     white-space: nowrap;
-    transition: all var(--transition-fast);
-}
-
-.mm-btn--sm {
-    padding: 3px var(--space-2-5);
-    font-size: var(--text-sm);
-}
-
-.mm-btn--primary {
-    background: var(--accent-dim);
-    border-color: var(--accent-border);
-    color: var(--accent);
-}
-
-.mm-btn--primary:hover {
-    background: var(--accent);
-    color: var(--bg-primary);
-}
-
-.mm-btn--ghost {
     background: transparent;
-    border-color: var(--border);
     color: var(--text-secondary);
-}
-
-.mm-btn--ghost:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-}
-
-.mm-btn--danger {
-    background: transparent;
-    border-color: var(--danger);
-    color: var(--danger);
-}
-
-.mm-btn--danger:hover {
-    background: var(--danger-hover);
+    transition: all var(--transition-fast);
 }
 
 .mm-btn:disabled {
@@ -715,9 +634,49 @@ onMounted(() => {
     pointer-events: none;
 }
 
-/* ── Download Section ── */
+.mm-btn--load {
+    border-color: var(--accent-border);
+    color: var(--accent);
+    background: var(--accent-faint);
+}
+
+.mm-btn--load:hover:not(:disabled) {
+    background: var(--accent-dim);
+}
+
+.mm-btn--unload {
+    border-color: var(--danger-border);
+    color: var(--danger);
+}
+
+.mm-btn--unload:hover:not(:disabled) {
+    background: var(--danger-faint);
+}
+
+.mm-btn--primary {
+    border-color: var(--accent-border);
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+.mm-btn--primary:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--bg-primary);
+}
+
+.mm-btn--ghost {
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+.mm-btn--ghost:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+/* ── Download section ── */
 .mm-download {
-    background: var(--bg-tertiary);
+    background: var(--surface-0);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: var(--space-4);
@@ -725,7 +684,8 @@ onMounted(() => {
 
 .mm-download__title {
     margin: 0 0 var(--space-3) 0;
-    font-size: var(--text-md);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
     color: var(--text-primary);
 }
 
@@ -738,13 +698,13 @@ onMounted(() => {
 .mm-input {
     flex: 1;
     min-width: 200px;
-    padding: 7px var(--space-3);
+    padding: var(--space-1-5) var(--space-3);
     background: var(--bg-input);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     outline: none;
     transition: border-color var(--transition-fast);
 }
@@ -757,47 +717,52 @@ onMounted(() => {
     color: var(--text-muted);
 }
 
-.mm-input--small {
+.mm-input--narrow {
     min-width: 140px;
     flex: 0.4;
 }
 
 .mm-download__error {
     margin-top: var(--space-2);
+    font-size: var(--text-xs);
     color: var(--danger);
-    font-size: var(--text-sm);
 }
 
 .mm-download__active {
     margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
 }
 
 /* ── Download item ── */
-.mm-dl-item {
+.mm-dl {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: var(--space-2-5) var(--space-3);
 }
 
-.mm-dl-item__header {
+.mm-dl__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--space-1-5);
+    gap: var(--space-2);
 }
 
-.mm-dl-item__id {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-}
-
-.mm-dl-item__status {
+.mm-dl__id {
     font-size: var(--text-xs);
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+.mm-dl__status {
+    font-size: var(--text-2xs);
     font-weight: var(--weight-semibold);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -805,73 +770,55 @@ onMounted(() => {
     border-radius: var(--radius-sm);
 }
 
-.mm-dl-item__status--downloading {
+.mm-dl__status--downloading {
     color: var(--accent);
     background: var(--accent-dim);
 }
 
-.mm-dl-item__status--paused {
-    color: var(--text-secondary);
-    background: var(--bg-tertiary);
-}
-
-.mm-dl-item__status--completed {
+.mm-dl__status--completed,
+.mm-dl__status--already_downloaded {
     color: var(--success);
     background: var(--success-light);
 }
 
-.mm-dl-item__status--failed {
-    color: var(--danger);
-    background: var(--danger-hover);
+.mm-dl__status--paused {
+    color: var(--text-secondary);
+    background: var(--surface-hover);
 }
 
-.mm-dl-item__bar-container {
-    height: var(--space-1);
-    background: var(--bg-primary);
-    border-radius: var(--space-0-5);
+.mm-dl__status--failed {
+    color: var(--danger);
+    background: var(--danger-faint);
+}
+
+.mm-dl__track {
+    height: 2px;
+    background: var(--border);
+    border-radius: var(--radius-pill);
     overflow: hidden;
 }
 
-.mm-dl-item__bar {
+.mm-dl__fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 50%, var(--accent) 100%);
-    background-size: 200% 100%;
-    animation: mmShimmer 1.5s ease-in-out infinite;
-    border-radius: var(--space-0-5);
+    background: var(--accent);
+    border-radius: var(--radius-pill);
     transition: width 0.3s ease;
 }
 
-@keyframes mmShimmer {
-    0% {
-        background-position: 200% 0;
-    }
-
-    100% {
-        background-position: -200% 0;
-    }
-}
-
-.mm-dl-item__percent {
-    font-size: var(--text-xs);
-    font-weight: var(--weight-semibold);
-    color: var(--accent);
-    margin-top: var(--space-0-5);
-}
-
-.mm-dl-item__details {
+.mm-dl__footer {
     display: flex;
     gap: var(--space-3);
-    margin-top: var(--space-1);
-    font-size: var(--text-xs);
+    font-size: var(--text-2xs);
     color: var(--text-muted);
+    flex-wrap: wrap;
 }
 
-.mm-dl-item__status--already_downloaded {
-    color: var(--success);
-    background: var(--success-light);
+.mm-dl__pct {
+    color: var(--accent);
+    font-weight: var(--weight-semibold);
 }
 
-/* ── Dialog Overlay ── */
+/* ── Dialog overlay ── */
 .mm-overlay {
     position: fixed;
     inset: 0;
@@ -887,37 +834,39 @@ onMounted(() => {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-6);
-    width: 400px;
+    width: 420px;
     max-width: 90vw;
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-floating);
 }
 
 .mm-dialog__title {
     margin: 0 0 var(--space-1) 0;
-    font-size: var(--text-lg);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
     color: var(--text-primary);
 }
 
 .mm-dialog__subtitle {
-    margin: 0 0 var(--space-4) 0;
-    font-size: var(--text-base);
-    color: var(--text-secondary);
+    margin: 0 0 var(--space-5) 0;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
 }
 
 .mm-dialog__label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     color: var(--text-secondary);
     margin-bottom: var(--space-1-5);
 }
 
-.mm-dialog__label-value {
+.mm-dialog__label-val {
     color: var(--accent);
     font-weight: var(--weight-semibold);
     font-family: var(--font-mono);
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
 }
 
 .mm-dialog__slider {
@@ -931,21 +880,20 @@ onMounted(() => {
     justify-content: space-between;
     font-size: var(--text-2xs);
     color: var(--text-muted);
-    margin-bottom: 14px;
+    margin-bottom: var(--space-4);
 }
 
 .mm-dialog__vram {
     display: flex;
     align-items: center;
     gap: var(--space-1-5);
-    padding: var(--space-2) var(--space-2-5);
-    background: var(--accent-dim);
+    padding: var(--space-2) var(--space-3);
+    background: var(--accent-faint);
     border: 1px solid var(--accent-border);
     border-radius: var(--radius-sm);
     color: var(--accent);
     font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-    margin-bottom: 14px;
+    margin-bottom: var(--space-4);
 }
 
 .mm-dialog__vram svg {
@@ -954,18 +902,19 @@ onMounted(() => {
 }
 
 .mm-dialog__vram-base {
-    color: var(--text-secondary);
-    font-weight: var(--weight-normal);
+    color: var(--text-muted);
+    margin-left: auto;
+    font-size: var(--text-xs);
 }
 
 .mm-dialog__toggle {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     color: var(--text-secondary);
     cursor: pointer;
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-5);
 }
 
 .mm-dialog__toggle input {
@@ -976,6 +925,8 @@ onMounted(() => {
     display: flex;
     justify-content: flex-end;
     gap: var(--space-2);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
 }
 
 /* ── Dialog transition ── */
@@ -994,54 +945,8 @@ onMounted(() => {
     opacity: 0;
 }
 
-.dialog-enter-from .mm-dialog {
-    transform: scale(0.95) translateY(10px);
-}
-
+.dialog-enter-from .mm-dialog,
 .dialog-leave-to .mm-dialog {
-    transform: scale(0.95) translateY(10px);
-}
-
-/* ── Global operation banner ── */
-.mm-operation {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1-5);
-    padding: var(--space-2-5) 14px;
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-border);
-    border-radius: var(--radius-sm);
-}
-
-.mm-operation__bar {
-    height: 3px;
-    background: var(--bg-primary);
-    border-radius: var(--space-0-5);
-    overflow: hidden;
-}
-
-.mm-operation__bar-fill {
-    height: 100%;
-    width: 40%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-    border-radius: var(--space-0-5);
-    animation: mmOpProgress 1.2s ease-in-out infinite;
-}
-
-@keyframes mmOpProgress {
-    0% {
-        transform: translateX(-100%);
-    }
-
-    100% {
-        transform: translateX(350%);
-    }
-}
-
-.mm-operation__text {
-    font-size: var(--text-sm);
-    color: var(--accent);
-    text-align: center;
-    font-weight: var(--weight-medium);
+    transform: scale(0.96) translateY(8px);
 }
 </style>

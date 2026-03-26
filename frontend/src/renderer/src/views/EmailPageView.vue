@@ -59,7 +59,7 @@ onMounted(async () => {
   border-radius: 14px;
   border: 1px solid var(--glass-border);
   background: var(--surface-0);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  /* box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15); */
 }
 
 .email-page__viewer {
@@ -67,7 +67,7 @@ onMounted(async () => {
   border-radius: 14px;
   border: 1px solid var(--glass-border);
   background: var(--surface-1);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  /* box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15); */
 }
 
 .email-page__empty {

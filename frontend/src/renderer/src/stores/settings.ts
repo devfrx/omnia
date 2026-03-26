@@ -472,6 +472,31 @@ export const useSettingsStore = defineStore('settings', () => {
     poll()
   }
 
+  /** Interval ID for periodic LM Studio connection checks. */
+  let _connectionPollInterval: ReturnType<typeof setInterval> | null = null
+
+  /** Start polling LM Studio connection status every 5 seconds. */
+  function startConnectionPolling(): void {
+    if (_connectionPollInterval !== null) return
+    _connectionPollInterval = setInterval(() => {
+      // Skip if a model operation is in progress — loadModels() will update state
+      if (!isAnyOperationInProgress.value) {
+        checkConnection()
+      }
+    }, 5000)
+  }
+
+  /** Stop the connection status polling interval. */
+  function stopConnectionPolling(): void {
+    if (_connectionPollInterval !== null) {
+      clearInterval(_connectionPollInterval)
+      _connectionPollInterval = null
+    }
+  }
+
+  // Start connection polling on store init
+  startConnectionPolling()
+
   /** Cancel all active polling timers. */
   function stopAllPolling(): void {
     for (const tid of pollTimeouts.value.values()) {
@@ -479,6 +504,7 @@ export const useSettingsStore = defineStore('settings', () => {
     }
     pollTimeouts.value.clear()
     stopOperationPolling()
+    stopConnectionPolling()
   }
 
   return {
@@ -516,6 +542,8 @@ export const useSettingsStore = defineStore('settings', () => {
     startOperationPolling,
     stopOperationPolling,
     resumeOperationTracking,
+    startConnectionPolling,
+    stopConnectionPolling,
     loadSettings,
     saveSettings,
     loadToggles

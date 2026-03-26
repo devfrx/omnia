@@ -94,6 +94,14 @@ export interface UseVoiceReturn {
 
 const STORAGE_KEY = 'alice_selected_mic_id'
 
+function loadSelectedDeviceId(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 export function useVoice(): UseVoiceReturn {
   const store = useVoiceStore()
   const chatStore = useChatStore()
@@ -105,15 +113,18 @@ export function useVoice(): UseVoiceReturn {
 
   // -- Device selection --
   const audioDevices = shallowRef<AudioDevice[]>([])
-  const savedDeviceId = localStorage.getItem(STORAGE_KEY) ?? ''
-  const selectedDeviceId = ref(savedDeviceId)
+  const selectedDeviceId = ref(loadSelectedDeviceId())
 
   // Persist mic selection
   watch(selectedDeviceId, (newId) => {
-    if (newId) {
-      localStorage.setItem(STORAGE_KEY, newId)
-    } else {
-      localStorage.removeItem(STORAGE_KEY)
+    try {
+      if (newId) {
+        localStorage.setItem(STORAGE_KEY, newId)
+      } else {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    } catch {
+      /* localStorage may be unavailable */
     }
   })
 

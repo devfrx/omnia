@@ -459,8 +459,8 @@ class TestResultProcessing:
 
     @pytest.mark.asyncio
     async def test_result_truncation_long_content(self, make_registry, ctx):
-        """Content of 5000 chars → truncated to ≤ MAX_TOOL_RESULT_LENGTH, truncated=True."""
-        long_content = "a" * 5000
+        """Content exceeding MAX_TOOL_RESULT_LENGTH → truncated, truncated=True."""
+        long_content = "a" * (MAX_TOOL_RESULT_LENGTH + 1000)
 
         async def long_fn(tool_name, args, context):
             return ToolResult.ok(long_content)

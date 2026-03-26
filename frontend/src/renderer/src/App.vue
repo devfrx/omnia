@@ -52,6 +52,11 @@ watchEffect(() => {
   }
 })
 
+// Apply data-theme attribute to <html> so CSS variable overrides take effect.
+watchEffect(() => {
+  document.documentElement.setAttribute('data-theme', settingsStore.settings.ui.theme)
+})
+
 onMounted(() => {
   settingsStore.resumeOperationTracking()
   pluginsStore.loadPlugins()

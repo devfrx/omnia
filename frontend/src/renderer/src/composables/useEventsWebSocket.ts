@@ -70,10 +70,12 @@ export function useEventsWebSocket() {
         }
 
         // Handle email events (Phase 15)
-        if (data.type === 'email.received') {
+        if (data.type === 'email.received' && typeof data.folder === 'string') {
           import('../stores/email').then(({ useEmailStore }) => {
             const emailStore = useEmailStore()
             emailStore.handleEmailReceived(data.folder as string)
+          }).catch((err) => {
+            console.warn('[ALICE Events WS] email handler error:', err)
           })
         }
 
@@ -87,6 +89,8 @@ export function useEventsWebSocket() {
             const notesStore = useNotesStore()
             void notesStore.loadNotes()
             void notesStore.loadFolders()
+          }).catch((err) => {
+            console.warn('[ALICE Events WS] notes handler error:', err)
           })
         }
       } catch {

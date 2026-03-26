@@ -144,7 +144,7 @@ onUnmounted(() => {
 }
 
 .weather__compact:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--white-light);
 }
 
 .weather__icon {
@@ -195,7 +195,7 @@ onUnmounted(() => {
   padding: 10px 12px;
   background: var(--bg-secondary, #16213e);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
   z-index: var(--z-dropdown);
   font-size: 12px;
   color: var(--text-primary, #eee);
@@ -205,7 +205,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   padding: 4px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border);
 }
 
 .weather__row:last-of-type {
@@ -223,7 +223,7 @@ onUnmounted(() => {
   border: none;
   border-radius: 4px;
   background: var(--accent, #e94560);
-  color: #fff;
+  color: var(--bg-primary);
   font-size: 12px;
   cursor: pointer;
   transition: opacity 0.2s;

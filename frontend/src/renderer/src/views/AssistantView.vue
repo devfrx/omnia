@@ -501,7 +501,7 @@ onMounted(() => {
                     @click="() => { sidePanelOpen = true; sidePanelTab = 'chart' }">
                     <AppIcon name="bar-chart" :size="16" :stroke-width="1.5" />
                     <span v-if="chartPayloads.length > 1" class="assistant-view__chart-badge">{{ chartPayloads.length
-                    }}</span>
+                        }}</span>
                 </button>
             </Transition>
 
@@ -549,7 +549,7 @@ onMounted(() => {
                         <AppIcon name="bar-chart" :size="14" :stroke-width="1.5" />
                         <span>Grafici</span>
                         <span v-if="chartPayloads.length > 1" class="side-panel__tab-badge">{{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                     </button>
                     <button v-if="hasWhiteboards" class="side-panel__tab"
                         :class="{ 'side-panel__tab--active': sidePanelTab === 'whiteboard' }"
@@ -585,7 +585,7 @@ onMounted(() => {
                             <AppIcon name="chevron-left" :size="14" />
                         </button>
                         <span class="side-panel__chart-counter">{{ chartActiveIndex + 1 }} / {{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                         <button class="side-panel__chart-nav-btn"
                             :disabled="chartActiveIndex >= chartPayloads.length - 1"
                             @click="chartActiveIndex = Math.min(chartPayloads.length - 1, chartActiveIndex + 1)">
@@ -1190,7 +1190,7 @@ onMounted(() => {
     align-items: center;
     gap: 6px;
     padding: 6px 16px;
-    border: 1px solid rgba(196, 92, 92, 0.25);
+    border: 1px solid var(--danger-border);
     border-radius: 20px;
     background: var(--glass-bg-light);
     backdrop-filter: blur(var(--glass-blur));
@@ -1201,7 +1201,7 @@ onMounted(() => {
     letter-spacing: 0.03em;
     white-space: nowrap;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 10px rgba(196, 92, 92, 0.08);
+    box-shadow: var(--shadow-md), 0 0 10px var(--danger-glow);
     transition:
         background 200ms var(--ease-smooth),
         border-color 200ms var(--ease-smooth),
@@ -1211,9 +1211,9 @@ onMounted(() => {
 }
 
 .assistant-view__stop-hint:hover {
-    background: rgba(196, 92, 92, 0.12);
-    border-color: rgba(196, 92, 92, 0.4);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 16px rgba(196, 92, 92, 0.15);
+    background: var(--danger-light);
+    border-color: var(--danger-strong);
+    box-shadow: var(--shadow-md), 0 0 16px var(--danger-glow);
     transform: translateX(-50%) scale(1.04);
 }
 

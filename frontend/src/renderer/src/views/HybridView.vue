@@ -134,6 +134,21 @@ function onResizeStart(e: MouseEvent): void {
 type WorkspaceTab = '3d' | 'chart' | 'whiteboard'
 const workspaceTab = ref<WorkspaceTab>('3d')
 
+/** Switch away from the current workspace tab to the next available one. */
+function dismissWorkspaceTab(): void {
+    const current = workspaceTab.value
+    if (current === '3d') {
+        if (hasCharts.value) { workspaceTab.value = 'chart'; return }
+        if (hasWhiteboards.value) { workspaceTab.value = 'whiteboard'; return }
+    } else if (current === 'chart') {
+        if (hasCadModels.value) { workspaceTab.value = '3d'; return }
+        if (hasWhiteboards.value) { workspaceTab.value = 'whiteboard'; return }
+    } else {
+        if (hasCadModels.value) { workspaceTab.value = '3d'; return }
+        if (hasCharts.value) { workspaceTab.value = 'chart'; return }
+    }
+}
+
 // ── Output payload extraction (ported from AssistantView) ──────────────────
 const cadModels = computed((): CadModelPayload[] => {
     const result: CadModelPayload[] = []
@@ -374,7 +389,7 @@ onBeforeUnmount(() => {
                         <AppIcon name="bar-chart" :size="13" />
                         <span>Grafici</span>
                         <span v-if="chartPayloads.length > 1" class="workspace-tab__badge">{{ chartPayloads.length
-                        }}</span>
+                            }}</span>
                     </button>
                     <button v-if="hasWhiteboards" class="workspace-tab"
                         :class="{ 'workspace-tab--active': workspaceTab === 'whiteboard' }"
@@ -408,7 +423,7 @@ onBeforeUnmount(() => {
             <!-- ── 3D CAD tab ── -->
             <div v-else-if="workspaceTab === '3d' && hasCadModels" class="workspace-viewer">
                 <ImmersiveCADCanvas :models="cadModels" :active-index="cadActiveIndex"
-                    @update:active-index="(i) => { cadActiveIndex = i }" @close="workspaceTab = 'response'" />
+                    @update:active-index="(i) => { cadActiveIndex = i }" @close="dismissWorkspaceTab" />
             </div>
 
             <!-- ── Chart tab ── -->
@@ -419,7 +434,7 @@ onBeforeUnmount(() => {
                         <AppIcon name="chevron-left" :size="14" />
                     </button>
                     <span class="workspace-viewer__counter">{{ chartActiveIndex + 1 }} / {{ chartPayloads.length
-                    }}</span>
+                        }}</span>
                     <button class="workspace-viewer__nav-btn" :disabled="chartActiveIndex >= chartPayloads.length - 1"
                         @click="chartActiveIndex = Math.min(chartPayloads.length - 1, chartActiveIndex + 1)">
                         <AppIcon name="chevron-right" :size="14" />

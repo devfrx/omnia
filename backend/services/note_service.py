@@ -675,6 +675,7 @@ class NoteService:
             )
         else:
             # Collect IDs for Qdrant cleanup before deleting from SQLite
+            del_ids: list[str] = []
             if self._config.embedding_enabled:
                 id_cur = await self._db.execute(
                     "SELECT id FROM note_entries WHERE folder_path = ?",

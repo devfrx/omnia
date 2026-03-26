@@ -239,6 +239,9 @@ class ChartGeneratorPlugin(BasePlugin):
         if not self.ctx.config.chart.enabled:
             return ToolResult.error("Plugin chart_generator non abilitato.")
 
+        if self._store is None:
+            return ToolResult.error("Chart store not initialized.")
+
         handlers = {
             "generate_chart": self._generate_chart,
             "update_chart": self._update_chart,

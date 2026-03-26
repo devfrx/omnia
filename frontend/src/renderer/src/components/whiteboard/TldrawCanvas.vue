@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
   --color-focus: var(--accent, #E8DCC8);
   --color-selected: var(--accent, #E8DCC8);
   --color-selection-stroke: var(--accent, #E8DCC8);
-  --color-selection-fill: rgba(232, 220, 200, 0.08);
+  --color-selection-fill: var(--accent-dim);
   --color-primary: var(--accent, #E8DCC8);
   --color-warn: #e8a87c;
   --color-text-shadow: none;
