@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 import { api } from '../services/api'
 import type { DownloadStatusResponse, LMStudioModel, ModelOperationResponse } from '../types/settings'
+import { useChatStore } from './chat'
 
 export interface AliceSettings {
   llm: {
@@ -321,7 +322,10 @@ export const useSettingsStore = defineStore('settings', () => {
     }
     try {
       models.value = await api.getModels()
-      await checkConnection()
+      // Derive connection state from the freshly-fetched model list instead
+      // of making a redundant /models/status round-trip via checkConnection().
+      lmStudioConnected.value = true
+      loadedModelCount.value = models.value.filter(m => m.loaded).length
     } finally {
       isLoadingModels.value = false
     }
@@ -479,8 +483,10 @@ export const useSettingsStore = defineStore('settings', () => {
   function startConnectionPolling(): void {
     if (_connectionPollInterval !== null) return
     _connectionPollInterval = setInterval(() => {
-      // Skip if a model operation is in progress — loadModels() will update state
-      if (!isAnyOperationInProgress.value) {
+      const chatStore = useChatStore()
+      // Skip if a model operation is in progress or the LLM is actively
+      // generating — both cases have inflight backend activity already.
+      if (!isAnyOperationInProgress.value && !chatStore.isStreaming) {
         checkConnection()
       }
     }, 5000)

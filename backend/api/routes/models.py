@@ -167,12 +167,14 @@ async def download_status(job_id: str, request: Request) -> dict:
 
 @router.get("/models/status")
 async def models_status(request: Request) -> ModelStatusResponse:
-    """Quick health-check + summary of loaded models."""
-    mgr = _manager(request)
-    connected = await mgr.check_health()
-    if not connected:
-        return ModelStatusResponse(connected=False)
+    """Quick health-check + summary of loaded models.
 
+    Uses a single ``list_models()`` call to both verify connectivity and
+    retrieve model state — avoids the previous double-hit to LM Studio
+    that happened when ``check_health()`` and ``list_models()`` were
+    called sequentially.
+    """
+    mgr = _manager(request)
     try:
         data = await mgr.list_models()
     except httpx.HTTPError:

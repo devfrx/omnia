@@ -154,9 +154,9 @@ class LLMConfig(BaseSettings):
     Priority plugins (memory, system_info) are always included first.
     Set to 0 to disable the limit."""
     priority_plugins: list[str] = Field(
-        default_factory=lambda: ["memory", "system_info"],
+        default_factory=lambda: ["memory", "system_info", "web_search"],
     )
-    """Plugins whose tools are always included when limiting by max_tools."""
+    """Plugins whose tools are always included regardless of tool_rag results."""
     # -- Ollama-specific options (ignored by other providers) --
     num_ctx: int = 8192
     """Context window size. Ollama defaults to 2048; 8192 is better for 9B+ models."""
@@ -166,7 +166,7 @@ class LLMConfig(BaseSettings):
     """How long Ollama keeps the model loaded in memory after a request."""
     tool_rag_enabled: bool = True
     """Use semantic search to select relevant tools instead of sending all tool definitions."""
-    tool_rag_top_k: int = 15
+    tool_rag_top_k: int = 20
     """Number of most relevant tools retrieved via Tool RAG per LLM request."""
     # -- Context compression options --
     context_compression_enabled: bool = True

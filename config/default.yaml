@@ -24,12 +24,16 @@ llm:
   max_tool_iterations: 25
   tool_execution_timeout: 120.0     # Seconds per parallel tool-gather before timeout
   max_tools: 0               # 0 = unlimited. Qwen3.5-9B handles 49 tools correctly.
+  priority_plugins:           # always included regardless of tool_rag results
+    - memory
+    - system_info
+    - web_search              # always expose web search — models hallucinate the tool name if absent
   # Ollama-specific options (ignored by LM Studio)
   num_ctx: 8192
   num_gpu: -1
   keep_alive: "5m"
   tool_rag_enabled: true
-  tool_rag_top_k: 15
+  tool_rag_top_k: 20          # was 15 — raised to reduce chance of relevant tools being cut off
   context_compression_enabled: true
   context_compression_threshold: 0.75
   context_compression_reserve: 4096
